@@ -40,10 +40,10 @@
       display: inline-block;
       white-space: nowrap;
       flex-shrink: 0;
+      cursor: pointer;
+      background: none;
+      line-height: 1.4;
     }
-
-    /* dia em destaque na tira de datas */
-    .day-chip.active { background: #1F4B4C; color: #EDEEE7; }
   </style>
 </head>
 <body class="min-h-screen bg-ticket-field">
@@ -70,41 +70,17 @@
 
       <div class="px-5 md:px-8 py-6">
 
-        <!-- Tira de dias -->
-        <div class="flex items-center gap-2 mb-6 overflow-x-auto pb-1">
-          <div class="day-chip flex flex-col items-center justify-center w-14 h-16 rounded-lg bg-white border border-ink/10 flex-shrink-0">
-            <span class="text-[10px] text-ink/40 font-mono-ticket">QUA</span>
-            <span class="text-lg font-display font-semibold text-ink">08</span>
-          </div>
-          <div class="day-chip active flex flex-col items-center justify-center w-14 h-16 rounded-lg flex-shrink-0">
-            <span class="text-[10px] font-mono-ticket opacity-70">QUI</span>
-            <span class="text-lg font-display font-semibold">09</span>
-            <span class="w-1.5 h-1.5 rounded-full bg-amber mt-0.5"></span>
-          </div>
-          <div class="day-chip flex flex-col items-center justify-center w-14 h-16 rounded-lg bg-white border border-ink/10 flex-shrink-0">
-            <span class="text-[10px] text-ink/40 font-mono-ticket">SEX</span>
-            <span class="text-lg font-display font-semibold text-ink">10</span>
-          </div>
-          <div class="day-chip flex flex-col items-center justify-center w-14 h-16 rounded-lg bg-white border border-ink/10 flex-shrink-0">
-            <span class="text-[10px] text-ink/40 font-mono-ticket">SÁB</span>
-            <span class="text-lg font-display font-semibold text-ink">11</span>
-            <span class="w-1.5 h-1.5 rounded-full bg-petrol mt-0.5"></span>
-          </div>
-          <div class="day-chip flex flex-col items-center justify-center w-14 h-16 rounded-lg bg-white border border-ink/10 flex-shrink-0">
-            <span class="text-[10px] text-ink/40 font-mono-ticket">DOM</span>
-            <span class="text-lg font-display font-semibold text-ink">12</span>
-          </div>
-        </div>
+        <!-- Alternar entre lista e calendário -->
+        <div id="viewToggle" class="inline-flex bg-white border border-ink/10 rounded-md p-1 gap-1 mb-4"></div>
+
+        <!-- Calendário mensal — só aparece na aba Calendário -->
+        <div id="calendarWrap" class="hidden bg-white border border-ink/10 rounded-lg p-4 mb-5"></div>
 
         <!-- Chip de filtro ativo (só aparece se veio de um card do dashboard) -->
         <div id="activeFilterChip" class="hidden mb-4"></div>
 
         <!-- Filtros por rede -->
-        <div class="flex items-center gap-2 mb-4 overflow-x-auto pb-1">
-          <button class="px-3.5 py-1.5 rounded-full bg-petrol text-paper text-xs font-medium flex-shrink-0">Todas</button>
-          <button class="px-3.5 py-1.5 rounded-full bg-white border border-ink/15 text-ink/60 text-xs font-medium flex-shrink-0">Instagram</button>
-          <button class="px-3.5 py-1.5 rounded-full bg-white border border-ink/15 text-ink/60 text-xs font-medium flex-shrink-0">Facebook</button>
-        </div>
+        <div id="redeChips" class="flex items-center gap-2 mb-4 overflow-x-auto pb-1"></div>
 
         <!-- Lista de posts -->
         <div id="postList" class="space-y-3"></div>
@@ -124,12 +100,151 @@
 
     const ICONE_REDE = { instagram: 'instagram', facebook: 'facebook' };
     const COR_REDE = { instagram: 'clay', facebook: 'petrol' };
+    const LABEL_REDE = { instagram: 'Instagram', facebook: 'Facebook' };
     const STATUS_INFO = {
       ideia:     { label: 'Ideia',     cor: 'ink/30' },
       producao:  { label: 'Produção',  cor: 'ink/40' },
       agendado:  { label: 'Agendado',  cor: 'amber' },
       publicado: { label: 'Publicado', cor: 'ink' },
     };
+    const ORDEM_STATUS = ['ideia', 'producao', 'agendado', 'publicado'];
+    const NOMES_MES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+    const DIAS_SEMANA = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB'];
+
+    // Lista ou Calendário, mês sendo navegado no calendário, e o dia
+    // selecionado (funciona como mais um filtro, junto de status/rede).
+    let vista = 'lista';
+    let mesCalendario = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+    let diaFiltro = null;
+
+    // "YYYY-MM-DD" local a partir de um ISO — usado pra agrupar posts por dia
+    // no calendário e pra comparar com o dia clicado.
+    function chaveDia(iso) {
+      const d = new Date(iso);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
+
+    // Filtro por rede social — null significa "Todas". Fica em memória,
+    // mesmo padrão do filtro de moeda no financeiro.html.
+    let redeFiltro = null;
+
+    function renderRedeChips() {
+      const chipBase = 'px-3.5 py-1.5 rounded-full text-xs font-medium flex-shrink-0 transition';
+      const chipAtivo = `${chipBase} bg-petrol text-paper`;
+      const chipInativo = `${chipBase} bg-white border border-ink/15 text-ink/60 hover:border-ink/30`;
+
+      $('redeChips').innerHTML = `
+        <button class="${redeFiltro === null ? chipAtivo : chipInativo}" onclick="selecionarRedeFiltro(null)">Todas</button>
+        ${Object.entries(LABEL_REDE).map(([valor, label]) => `<button class="${redeFiltro === valor ? chipAtivo : chipInativo}" onclick="selecionarRedeFiltro('${valor}')">${label}</button>`).join('')}
+      `;
+    }
+
+    function selecionarRedeFiltro(rede) {
+      redeFiltro = rede;
+      renderRedeChips();
+      if (vista === 'calendario') renderCalendario();
+      renderPosts();
+    }
+
+    // --- Alternar Lista / Calendário -------------------------------------
+
+    function renderViewToggle() {
+      const base = 'flex items-center gap-1.5 px-3.5 py-2 rounded-md text-sm font-medium transition';
+      const ativo = `${base} bg-petrol text-paper`;
+      const inativo = `${base} text-ink/60 hover:bg-paper`;
+
+      $('viewToggle').innerHTML = `
+        <button id="tabLista" class="${vista === 'lista' ? ativo : inativo}"><i data-lucide="list" class="w-4 h-4"></i> Lista</button>
+        <button id="tabCalendario" class="${vista === 'calendario' ? ativo : inativo}"><i data-lucide="calendar-days" class="w-4 h-4"></i> Calendário</button>`;
+      lucide.createIcons();
+
+      $('tabLista').onclick = () => { vista = 'lista'; diaFiltro = null; aplicarVista(); };
+      $('tabCalendario').onclick = () => { vista = 'calendario'; aplicarVista(); };
+    }
+
+    function aplicarVista() {
+      renderViewToggle();
+      $('calendarWrap').classList.toggle('hidden', vista !== 'calendario');
+      if (vista === 'calendario') renderCalendario();
+      renderPosts();
+    }
+
+    // Conta os posts por dia do mês em exibição, respeitando status/rede
+    // (o dia clicado é filtro à parte, não entra nesse mapa).
+    function postsPorDia() {
+      let posts = RotaDB.getPosts().filter(p => p.data_agendada);
+      if (statusFiltro) posts = posts.filter(p => p.status === statusFiltro);
+      if (redeFiltro) posts = posts.filter(p => p.rede_social === redeFiltro);
+
+      const mapa = {};
+      posts.forEach(p => {
+        const chave = chaveDia(p.data_agendada);
+        (mapa[chave] = mapa[chave] || []).push(p.status);
+      });
+      return mapa;
+    }
+
+    function renderCalendario() {
+      const ano = mesCalendario.getFullYear();
+      const mes = mesCalendario.getMonth();
+      const primeiroDiaSemana = new Date(ano, mes, 1).getDay();
+      const diasNoMes = new Date(ano, mes + 1, 0).getDate();
+      const mapa = postsPorDia();
+      const hojeChave = chaveDia(hoje.toISOString());
+
+      let celulas = '';
+      for (let i = 0; i < primeiroDiaSemana; i++) celulas += `<div></div>`;
+
+      for (let dia = 1; dia <= diasNoMes; dia++) {
+        const chave = `${ano}-${String(mes + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
+        const statusesDoDia = [...new Set(mapa[chave] || [])];
+        const dots = statusesDoDia.slice(0, 3)
+          .map(s => `<span class="w-1.5 h-1.5 rounded-full bg-${STATUS_INFO[s]?.cor || 'ink'}"></span>`).join('');
+
+        const selecionado = diaFiltro === chave;
+        const ehHoje = chave === hojeChave;
+        const estilo = selecionado
+          ? 'bg-petrol text-paper'
+          : (ehHoje ? 'bg-amber/15 text-ink font-semibold' : 'text-ink/70 hover:bg-paper');
+
+        celulas += `
+          <button data-dia="${chave}" class="diaCell aspect-square flex flex-col items-center justify-center gap-1 rounded-md text-sm ${estilo} transition">
+            <span class="font-mono-ticket">${dia}</span>
+            <span class="flex gap-0.5 h-1.5">${dots}</span>
+          </button>`;
+      }
+
+      $('calendarWrap').innerHTML = `
+        <div class="flex items-center justify-between mb-3">
+          <button id="mesAnterior" class="w-8 h-8 flex items-center justify-center rounded-md hover:bg-paper text-ink/60 transition"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
+          <p class="font-display text-sm font-semibold text-ink">${NOMES_MES[mes]} ${ano}</p>
+          <button id="mesProximo" class="w-8 h-8 flex items-center justify-center rounded-md hover:bg-paper text-ink/60 transition"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
+        </div>
+        <div class="grid grid-cols-7 gap-1 mb-1">
+          ${DIAS_SEMANA.map(d => `<div class="text-center text-[10px] font-mono-ticket text-ink/35">${d}</div>`).join('')}
+        </div>
+        <div class="grid grid-cols-7 gap-1">${celulas}</div>
+        ${diaFiltro ? `
+          <button id="limparDia" class="mt-3 text-xs text-petrol hover:text-ink font-medium transition">
+            Limpar filtro do dia (${diaFiltro.split('-').reverse().join('/')})
+          </button>` : ''}`;
+
+      lucide.createIcons();
+
+      document.querySelectorAll('.diaCell').forEach(btn => {
+        btn.onclick = () => {
+          diaFiltro = diaFiltro === btn.dataset.dia ? null : btn.dataset.dia;
+          renderCalendario();
+          renderPosts();
+        };
+      });
+
+      $('mesAnterior').onclick = () => { mesCalendario = new Date(ano, mes - 1, 1); renderCalendario(); };
+      $('mesProximo').onclick = () => { mesCalendario = new Date(ano, mes + 1, 1); renderCalendario(); };
+
+      const limparBtn = document.getElementById('limparDia');
+      if (limparBtn) limparBtn.onclick = () => { diaFiltro = null; renderCalendario(); renderPosts(); };
+    }
 
     // Filtro vindo de um card do dashboard (ex: marketing.html?status=agendado)
     const urlParams = new URLSearchParams(window.location.search);
@@ -152,6 +267,12 @@
       if (statusFiltro) {
         posts = posts.filter(p => p.status === statusFiltro);
       }
+      if (redeFiltro) {
+        posts = posts.filter(p => p.rede_social === redeFiltro);
+      }
+      if (diaFiltro) {
+        posts = posts.filter(p => p.data_agendada && chaveDia(p.data_agendada) === diaFiltro);
+      }
 
       posts = posts
         .slice()
@@ -169,66 +290,107 @@
             const cor = COR_REDE[p.rede_social] || 'ink';
             const dataLabel = p.data_agendada ? RotaDB.formatDate(p.data_agendada, 'weekday') : 'Sem data ainda';
             return `
-              <div class="bg-white border border-ink/10 rounded-lg p-4 flex items-start gap-3">
+              <div class="bg-white border border-ink/10 rounded-lg p-4 flex items-start gap-3 group">
                 <div class="w-10 h-10 rounded-full bg-${cor}/10 flex items-center justify-center flex-shrink-0">
                   <i data-lucide="${ICONE_REDE[p.rede_social] || 'megaphone'}" class="w-5 h-5 text-${cor}"></i>
                 </div>
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center justify-between gap-2 mb-1">
                     <p class="text-sm font-semibold text-ink">${dataLabel}</p>
-                    <span class="status-stamp text-${status.cor}">${status.label}</span>
+                    <button data-post-id="${p.id}" class="statusBtn status-stamp text-${status.cor}" title="Clique pra avançar o status">${status.label}</button>
                   </div>
                   <p class="text-sm text-ink/60 truncate">${p.texto || '(sem texto)'}</p>
+                  ${p.link_referencia ? `
+                    <a href="${p.link_referencia}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-xs text-petrol hover:text-ink font-medium mt-1.5 transition">
+                      <i data-lucide="link" class="w-3.5 h-3.5"></i> Ver referência
+                    </a>` : ''}
+                </div>
+                <div class="flex items-center gap-1 flex-shrink-0 opacity-60 group-hover:opacity-100 transition">
+                  <button data-post-id="${p.id}" class="editPostBtn w-8 h-8 flex items-center justify-center rounded-md text-ink/40 hover:text-petrol hover:bg-paper transition" aria-label="Editar post" title="Editar">
+                    <i data-lucide="pencil" class="w-4 h-4"></i>
+                  </button>
+                  <button data-post-id="${p.id}" class="deletePostBtn w-8 h-8 flex items-center justify-center rounded-md text-ink/40 hover:text-clay hover:bg-paper transition" aria-label="Excluir post" title="Excluir">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                  </button>
                 </div>
               </div>`;
           }).join('')
         : `<div class="bg-white border border-ink/10 rounded-lg p-8 text-center">
              <i data-lucide="calendar-plus" class="w-8 h-8 text-ink/25 mx-auto mb-2"></i>
-             <p class="text-sm text-ink/40">${statusFiltro ? 'Nenhum post com esse filtro.' : 'Nenhum post cadastrado ainda.'}</p>
+             <p class="text-sm text-ink/40">${(statusFiltro || redeFiltro || diaFiltro) ? 'Nenhum post com esse filtro.' : 'Nenhum post cadastrado ainda.'}</p>
            </div>`;
 
       lucide.createIcons();
+
+      // Clicar no selo avança pro próximo status do fluxo — mesmo padrão
+      // do selo de item no client.html.
+      document.querySelectorAll('.statusBtn').forEach(btn => {
+        btn.onclick = () => {
+          const id = btn.dataset.postId;
+          const post = RotaDB.getPosts().find(p => p.id === id);
+          if (!post) return;
+          const posAtual = ORDEM_STATUS.indexOf(post.status);
+          const proximo = ORDEM_STATUS[(posAtual + 1) % ORDEM_STATUS.length];
+          RotaDB.updatePostStatus(id, proximo);
+          if (vista === 'calendario') renderCalendario();
+          renderPosts();
+        };
+      });
+
+      document.querySelectorAll('.editPostBtn').forEach(btn => {
+        btn.onclick = () => abrirEdicaoPost(btn.dataset.postId);
+      });
+
+      document.querySelectorAll('.deletePostBtn').forEach(btn => {
+        btn.onclick = () => excluirPost(btn.dataset.postId);
+      });
     }
 
     renderFilterChip();
-    renderPosts();
+    renderRedeChips();
+    aplicarVista();
 
-    $('newPostBtn').onclick = () => {
+    // Campos do form de post — reaproveitado tanto no "Novo post" quanto na
+    // edição, mesmo padrão do camposItemHtml() no client.html.
+    function camposPostHtml(post = {}) {
+      // Ao editar, o input datetime-local espera "YYYY-MM-DDTHH:mm" —
+      // corta o ISO guardado (mesma convenção usada nos outros formulários).
+      const dataLocalValue = post.data_agendada ? post.data_agendada.slice(0, 16) : '';
+      return `
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="${ROTA_LABEL_CLASS}">Rede social *</label>
+            <select id="f_rede" class="${ROTA_INPUT_CLASS}">
+              <option value="instagram" ${post.rede_social === 'instagram' || !post.rede_social ? 'selected' : ''}>Instagram</option>
+              <option value="facebook" ${post.rede_social === 'facebook' ? 'selected' : ''}>Facebook</option>
+            </select>
+          </div>
+          <div>
+            <label class="${ROTA_LABEL_CLASS}">Status *</label>
+            <select id="f_status" class="${ROTA_INPUT_CLASS}">
+              ${ORDEM_STATUS.map(v => `<option value="${v}" ${post.status === v ? 'selected' : ''}>${STATUS_INFO[v].label}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="${ROTA_LABEL_CLASS}">Data agendada (opcional)</label>
+          <input type="datetime-local" id="f_data" value="${dataLocalValue}" class="${ROTA_INPUT_CLASS}" />
+        </div>
+        <div>
+          <label class="${ROTA_LABEL_CLASS}">Texto *</label>
+          <textarea id="f_texto" rows="3" required class="${ROTA_INPUT_CLASS}" placeholder="O que vai no post">${post.texto || ''}</textarea>
+        </div>
+        <div>
+          <label class="${ROTA_LABEL_CLASS}">Link de referência</label>
+          <input type="url" id="f_link" value="${post.link_referencia || ''}" class="${ROTA_INPUT_CLASS}" placeholder="Link de imagem, vídeo ou rascunho" />
+        </div>`;
+    }
+
+    function abrirNovoPost() {
       RotaModal.open({
         title: 'Novo post',
         submitLabel: 'Salvar post',
-        bodyHtml: `
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="${ROTA_LABEL_CLASS}">Rede social *</label>
-              <select id="f_rede" class="${ROTA_INPUT_CLASS}">
-                <option value="instagram">Instagram</option>
-                <option value="facebook">Facebook</option>
-              </select>
-            </div>
-            <div>
-              <label class="${ROTA_LABEL_CLASS}">Status *</label>
-              <select id="f_status" class="${ROTA_INPUT_CLASS}">
-                <option value="ideia">Ideia</option>
-                <option value="producao">Produção</option>
-                <option value="agendado">Agendado</option>
-                <option value="publicado">Publicado</option>
-              </select>
-            </div>
-          </div>
-          <div>
-            <label class="${ROTA_LABEL_CLASS}">Data agendada (opcional)</label>
-            <input type="datetime-local" id="f_data" class="${ROTA_INPUT_CLASS}" />
-          </div>
-          <div>
-            <label class="${ROTA_LABEL_CLASS}">Texto *</label>
-            <textarea id="f_texto" rows="3" required class="${ROTA_INPUT_CLASS}" placeholder="O que vai no post"></textarea>
-          </div>
-          <div>
-            <label class="${ROTA_LABEL_CLASS}">Link de referência</label>
-            <input type="url" id="f_link" class="${ROTA_INPUT_CLASS}" placeholder="Link de imagem, vídeo ou rascunho" />
-          </div>
-        `,
+        bodyHtml: camposPostHtml(),
         onSubmit: () => {
           const texto = $('f_texto').value.trim();
           if (!texto) { $('f_texto').focus(); return; }
@@ -243,10 +405,52 @@
           });
 
           RotaModal.close();
+          if (vista === 'calendario') renderCalendario();
           renderPosts();
         },
       });
-    };
+    }
+
+    function abrirEdicaoPost(id) {
+      const post = RotaDB.getPosts().find(p => p.id === id);
+      if (!post) return;
+
+      RotaModal.open({
+        title: 'Editar post',
+        submitLabel: 'Salvar alterações',
+        bodyHtml: camposPostHtml(post),
+        onSubmit: () => {
+          const texto = $('f_texto').value.trim();
+          if (!texto) { $('f_texto').focus(); return; }
+
+          const dataLocal = $('f_data').value;
+          RotaDB.updatePost(id, {
+            rede_social: $('f_rede').value,
+            status: $('f_status').value,
+            data_agendada: dataLocal ? new Date(dataLocal).toISOString() : null,
+            texto,
+            link_referencia: $('f_link').value.trim(),
+          });
+
+          RotaModal.close();
+          if (vista === 'calendario') renderCalendario();
+          renderPosts();
+        },
+      });
+    }
+
+    function excluirPost(id) {
+      const post = RotaDB.getPosts().find(p => p.id === id);
+      if (!post) return;
+      const rotulo = post.texto ? `"${post.texto.slice(0, 40)}${post.texto.length > 40 ? '…' : ''}"` : 'este post';
+      if (!confirm(`Excluir ${rotulo}? Essa ação não pode ser desfeita.`)) return;
+
+      RotaDB.deletePost(id);
+      if (vista === 'calendario') renderCalendario();
+      renderPosts();
+    }
+
+    $('newPostBtn').onclick = abrirNovoPost;
   </script>
 </body>
 </html>
