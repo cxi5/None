@@ -22,6 +22,8 @@
   </script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <link rel="stylesheet" href="style.css">
+  <script src="data.js"></script>
+  <script src="modal.js"></script>
   <style>
     .pb-safe { padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
     @media (min-width: 768px) { .pb-safe { padding-bottom: 2rem; } }
@@ -54,10 +56,10 @@
       <!-- Header -->
       <header class="flex items-center justify-between px-5 md:px-8 py-5 border-b border-ink/10 bg-white md:bg-transparent gap-3">
         <div>
-          <p class="font-mono-ticket text-[11px] text-ink/40 tracking-wider mb-0.5">24 CADASTRADOS</p>
+          <p id="headerCount" class="font-mono-ticket text-[11px] text-ink/40 tracking-wider mb-0.5">—</p>
           <h1 class="font-display text-2xl font-semibold text-ink">Clientes</h1>
         </div>
-        <button class="btn-ticket bg-amber hover:bg-amber/90 text-ink font-semibold text-sm px-4 py-2.5 flex items-center gap-2 flex-shrink-0">
+        <button id="newClientBtn" class="btn-ticket bg-amber hover:bg-amber/90 text-ink font-semibold text-sm px-4 py-2.5 flex items-center gap-2 flex-shrink-0">
           <i data-lucide="plus" class="w-4 h-4"></i>
           <span class="hidden sm:inline">Novo cliente</span>
         </button>
@@ -73,106 +75,7 @@
         </div>
 
         <!-- Lista de clientes -->
-        <div class="space-y-4">
-
-          <!-- Cliente 1 -->
-          <div class="bg-white border border-ink/10 rounded-lg overflow-hidden">
-            <div class="flex items-center justify-between px-5 py-4">
-              <div class="flex items-center gap-3">
-                <div class="w-11 h-11 rounded-full bg-petrol text-paper flex items-center justify-center font-display font-semibold flex-shrink-0">AB</div>
-                <div>
-                  <p class="font-semibold text-ink text-sm">Ana Beatriz Ferreira</p>
-                  <p class="text-xs text-ink/50">+244 923 000 111 · agente: Cxi</p>
-                </div>
-              </div>
-              <button class="text-ink/40 hover:text-ink transition"><i data-lucide="chevron-down" class="w-5 h-5"></i></button>
-            </div>
-
-            <div class="ticket-divider mx-5"></div>
-
-            <div class="px-5 py-4 space-y-3">
-              <p class="text-xs font-mono-ticket text-ink/40 tracking-wider mb-1">ITENS ADQUIRIDOS</p>
-
-              <div class="flex items-center justify-between">
-                <div class="flex items-center gap-2.5">
-                  <i data-lucide="map" class="w-4 h-4 text-petrol flex-shrink-0"></i>
-                  <span class="text-sm text-ink">Roteiro completo — Zanzibar, 6 dias</span>
-                </div>
-                <span class="status-stamp text-petrol">Confirmado</span>
-              </div>
-              <div class="flex items-center justify-between">
-                <div class="flex items-center gap-2.5">
-                  <i data-lucide="plane" class="w-4 h-4 text-ink/50 flex-shrink-0"></i>
-                  <span class="text-sm text-ink">Transfer aeroporto — chegada</span>
-                </div>
-                <span class="status-stamp text-amber">Pendente</span>
-              </div>
-            </div>
-
-            <div class="barcode mx-5 mb-4"></div>
-          </div>
-
-          <!-- Cliente 2 -->
-          <div class="bg-white border border-ink/10 rounded-lg overflow-hidden">
-            <div class="flex items-center justify-between px-5 py-4">
-              <div class="flex items-center gap-3">
-                <div class="w-11 h-11 rounded-full bg-clay text-paper flex items-center justify-center font-display font-semibold flex-shrink-0">JM</div>
-                <div>
-                  <p class="font-semibold text-ink text-sm">João Miguel Santos</p>
-                  <p class="text-xs text-ink/50">+244 912 345 678 · agente: Cxi</p>
-                </div>
-              </div>
-              <button class="text-ink/40 hover:text-ink transition"><i data-lucide="chevron-down" class="w-5 h-5"></i></button>
-            </div>
-
-            <div class="ticket-divider mx-5"></div>
-
-            <div class="px-5 py-4 space-y-3">
-              <p class="text-xs font-mono-ticket text-ink/40 tracking-wider mb-1">ITENS ADQUIRIDOS</p>
-
-              <div class="flex items-center justify-between">
-                <div class="flex items-center gap-2.5">
-                  <i data-lucide="ticket" class="w-4 h-4 text-ink/50 flex-shrink-0"></i>
-                  <span class="text-sm text-ink">Ingresso — Parque Nacional Kissama</span>
-                </div>
-                <span class="status-stamp text-ink">Concluído</span>
-              </div>
-              <div class="flex items-center justify-between">
-                <div class="flex items-center gap-2.5">
-                  <i data-lucide="bed" class="w-4 h-4 text-ink/50 flex-shrink-0"></i>
-                  <span class="text-sm text-ink">Reserva — Hotel Talatona, 3 noites</span>
-                </div>
-                <span class="status-stamp text-clay">Cancelado</span>
-              </div>
-            </div>
-
-            <div class="barcode mx-5 mb-4"></div>
-          </div>
-
-          <!-- Cliente 3 -->
-          <div class="bg-white border border-ink/10 rounded-lg overflow-hidden">
-            <div class="flex items-center justify-between px-5 py-4">
-              <div class="flex items-center gap-3">
-                <div class="w-11 h-11 rounded-full bg-amber text-ink flex items-center justify-center font-display font-semibold flex-shrink-0">HS</div>
-                <div>
-                  <p class="font-semibold text-ink text-sm">Helena Sá</p>
-                  <p class="text-xs text-ink/50">+244 934 567 890 · agente: Cxi</p>
-                </div>
-              </div>
-              <button class="text-ink/40 hover:text-ink transition"><i data-lucide="chevron-down" class="w-5 h-5"></i></button>
-            </div>
-
-            <div class="ticket-divider mx-5"></div>
-
-            <div class="px-5 py-4">
-              <p class="text-xs font-mono-ticket text-ink/40 tracking-wider mb-2">ITENS ADQUIRIDOS</p>
-              <p class="text-sm text-ink/40 italic">Nenhum item registrado ainda.</p>
-            </div>
-
-            <div class="barcode mx-5 mb-4"></div>
-          </div>
-
-        </div>
+        <div id="clientList" class="space-y-4"></div>
       </div>
     </main>
   </div>
@@ -180,6 +83,107 @@
   <script src="shell.js"></script>
   <script>
     renderShell('clients');
+
+    const $ = (id) => document.getElementById(id);
+
+    const CORES_AVATAR = ['petrol', 'clay', 'amber'];
+    const ICONE_TIPO = { roteiro: 'map', ingresso: 'ticket', transfer: 'plane', reserva: 'bed', outro: 'package' };
+    const COR_STATUS = { confirmado: 'petrol', pendente: 'amber', concluido: 'ink', cancelado: 'clay' };
+    const LABEL_STATUS = { confirmado: 'Confirmado', pendente: 'Pendente', concluido: 'Concluído', cancelado: 'Cancelado' };
+
+    function renderClientCard(cliente, index) {
+      const cor = CORES_AVATAR[index % CORES_AVATAR.length];
+      const corTexto = cor === 'amber' ? 'text-ink' : 'text-paper';
+
+      const itensHtml = cliente.itens.length
+        ? cliente.itens.map(item => `
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+              <i data-lucide="${ICONE_TIPO[item.tipo] || 'package'}" class="w-4 h-4 text-ink/50 flex-shrink-0"></i>
+              <span class="text-sm text-ink">${item.descricao || '(sem descrição)'}</span>
+            </div>
+            <span class="status-stamp text-${COR_STATUS[item.status] || 'ink'}">${LABEL_STATUS[item.status] || item.status}</span>
+          </div>`).join('')
+        : `<p class="text-sm text-ink/40 italic">Nenhum item registrado ainda.</p>`;
+
+      return `
+        <div class="bg-white border border-ink/10 rounded-lg overflow-hidden">
+          <div class="flex items-center justify-between px-5 py-4">
+            <div class="flex items-center gap-3">
+              <div class="w-11 h-11 rounded-full bg-${cor} ${corTexto} flex items-center justify-center font-display font-semibold flex-shrink-0">${RotaDB.initials(cliente.nome)}</div>
+              <div>
+                <p class="font-semibold text-ink text-sm">${cliente.nome}</p>
+                <p class="text-xs text-ink/50">${cliente.contato || 'sem contato'} · agente: ${cliente.agente_id}</p>
+              </div>
+            </div>
+            <button class="text-ink/40 hover:text-ink transition"><i data-lucide="chevron-down" class="w-5 h-5"></i></button>
+          </div>
+
+          <div class="ticket-divider mx-5"></div>
+
+          <div class="px-5 py-4 space-y-3">
+            <p class="text-xs font-mono-ticket text-ink/40 tracking-wider mb-1">ITENS ADQUIRIDOS</p>
+            ${itensHtml}
+          </div>
+
+          <div class="barcode mx-5 mb-4"></div>
+        </div>`;
+    }
+
+    function renderClients() {
+      const clientes = RotaDB.getClients();
+      $('headerCount').textContent = `${clientes.length} CADASTRADO${clientes.length === 1 ? '' : 'S'}`;
+
+      $('clientList').innerHTML = clientes.length
+        ? clientes.map(renderClientCard).join('')
+        : `<div class="bg-white border border-ink/10 rounded-lg p-8 text-center">
+             <i data-lucide="user-plus" class="w-8 h-8 text-ink/25 mx-auto mb-2"></i>
+             <p class="text-sm text-ink/40">Nenhum cliente cadastrado ainda.</p>
+           </div>`;
+
+      lucide.createIcons();
+    }
+
+    renderClients();
+
+    $('newClientBtn').onclick = () => {
+      RotaModal.open({
+        title: 'Novo cliente',
+        submitLabel: 'Salvar cliente',
+        bodyHtml: `
+          <div>
+            <label class="${ROTA_LABEL_CLASS}">Nome *</label>
+            <input type="text" id="f_nome" required class="${ROTA_INPUT_CLASS}" placeholder="Nome completo" />
+          </div>
+          <div>
+            <label class="${ROTA_LABEL_CLASS}">Contato</label>
+            <input type="text" id="f_contato" class="${ROTA_INPUT_CLASS}" placeholder="+244 900 000 000" />
+          </div>
+          <div>
+            <label class="${ROTA_LABEL_CLASS}">Origem do lead</label>
+            <input type="text" id="f_origem" class="${ROTA_INPUT_CLASS}" placeholder="Instagram, indicação, etc." />
+          </div>
+          <div>
+            <label class="${ROTA_LABEL_CLASS}">Notas</label>
+            <textarea id="f_notas" rows="3" class="${ROTA_INPUT_CLASS}" placeholder="Observações sobre o cliente"></textarea>
+          </div>
+        `,
+        onSubmit: () => {
+          const nome = $('f_nome').value.trim();
+          if (!nome) { $('f_nome').focus(); return; }
+
+          RotaDB.saveClient({
+            nome,
+            contato: $('f_contato').value.trim(),
+            origem_lead: $('f_origem').value.trim(),
+            notas: $('f_notas').value.trim(),
+          });
+
+          RotaModal.close();
+          renderClients();
+        },
+      });
+    };
   </script>
 </body>
 </html>

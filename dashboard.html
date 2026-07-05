@@ -22,6 +22,7 @@
   </script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <link rel="stylesheet" href="style.css">
+  <script src="data.js"></script>
   <style>
     /* pequeno ajuste local: dá espaço no fim da página pra barra inferior no mobile não cobrir conteúdo */
     .pb-safe { padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
@@ -41,7 +42,7 @@
       <!-- Header -->
       <header class="flex items-center justify-between px-5 md:px-8 py-5 border-b border-ink/10 bg-white md:bg-transparent">
         <div>
-          <p class="font-mono-ticket text-[11px] text-ink/40 tracking-wider mb-0.5">TER, 5 JUL 2026</p>
+          <p id="headerDate" class="font-mono-ticket text-[11px] text-ink/40 tracking-wider mb-0.5"></p>
           <h1 class="font-display text-2xl font-semibold text-ink">Dashboard</h1>
         </div>
         <div class="flex items-center gap-3">
@@ -58,34 +59,29 @@
         <!-- Cards de resumo -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-8">
 
-          <div class="bg-white border border-ink/10 rounded-lg p-4 relative overflow-hidden">
+          <a href="clients.html" class="bg-white border border-ink/10 rounded-lg p-4 relative overflow-hidden hover:border-petrol/30 transition">
             <i data-lucide="users" class="w-4 h-4 text-petrol/50 absolute top-3 right-3"></i>
             <p class="text-xs text-ink/50 font-medium mb-1">Clientes ativos</p>
-            <p class="font-display text-3xl font-semibold text-ink">24</p>
-          </div>
+            <p id="metricClientes" class="font-display text-3xl font-semibold text-ink">—</p>
+          </a>
 
-          <div class="bg-white border border-ink/10 rounded-lg p-4 relative overflow-hidden">
+          <a href="clients.html" class="bg-white border border-ink/10 rounded-lg p-4 relative overflow-hidden hover:border-amber/40 transition">
             <i data-lucide="clock" class="w-4 h-4 text-amber/70 absolute top-3 right-3"></i>
             <p class="text-xs text-ink/50 font-medium mb-1">Itens pendentes</p>
-            <p class="font-display text-3xl font-semibold text-ink">5</p>
-          </div>
+            <p id="metricPendentes" class="font-display text-3xl font-semibold text-ink">—</p>
+          </a>
 
-          <div class="bg-white border border-ink/10 rounded-lg p-4 relative overflow-hidden col-span-2 md:col-span-1">
+          <a href="financeiro.html" class="bg-white border border-ink/10 rounded-lg p-4 relative overflow-hidden col-span-2 md:col-span-1 hover:border-petrol/30 transition">
             <i data-lucide="wallet" class="w-4 h-4 text-petrol/50 absolute top-3 right-3"></i>
             <p class="text-xs text-ink/50 font-medium mb-2">Saldo consolidado</p>
-            <div class="space-y-0.5 font-mono-ticket text-sm text-ink">
-              <p>AOA <span class="float-right">1.240.000</span></p>
-              <p>USD <span class="float-right">3.180</span></p>
-              <p>EUR <span class="float-right">920</span></p>
-            </div>
-          </div>
+            <div id="saldoList" class="space-y-0.5 font-mono-ticket text-sm text-ink"></div>
+          </a>
 
-          <div class="bg-white border border-ink/10 rounded-lg p-4 relative overflow-hidden col-span-2 md:col-span-1">
+          <a href="marketing.html" class="bg-white border border-ink/10 rounded-lg p-4 relative overflow-hidden col-span-2 md:col-span-1 hover:border-clay/30 transition">
             <i data-lucide="megaphone" class="w-4 h-4 text-clay/60 absolute top-3 right-3"></i>
             <p class="text-xs text-ink/50 font-medium mb-1">Próximo post</p>
-            <p class="text-sm font-semibold text-ink">Qui, 09 Jul</p>
-            <p class="text-xs text-ink/50">Instagram · Promo pacote feriado</p>
-          </div>
+            <div id="proximoPostBox"></div>
+          </a>
         </div>
 
         <!-- Atividade recente, estilo talão -->
@@ -93,44 +89,7 @@
           <h2 class="font-display text-lg font-semibold text-ink mb-1">Atividade recente</h2>
           <p class="text-xs text-ink/40 font-mono-ticket mb-4">ÚLTIMOS REGISTROS</p>
 
-          <ul class="divide-y divide-ink/10">
-            <li class="flex items-center justify-between py-3">
-              <div class="flex items-center gap-3">
-                <div class="w-8 h-8 rounded-full bg-petrol/10 flex items-center justify-center flex-shrink-0">
-                  <i data-lucide="ticket" class="w-4 h-4 text-petrol"></i>
-                </div>
-                <div>
-                  <p class="text-sm font-medium text-ink">Roteiro confirmado — Ana Beatriz</p>
-                  <p class="text-xs text-ink/45">há 2 horas</p>
-                </div>
-              </div>
-              <span class="text-xs font-mono-ticket text-ink/40">AOA 145.000</span>
-            </li>
-            <li class="flex items-center justify-between py-3">
-              <div class="flex items-center gap-3">
-                <div class="w-8 h-8 rounded-full bg-amber/15 flex items-center justify-center flex-shrink-0">
-                  <i data-lucide="plane" class="w-4 h-4 text-amber"></i>
-                </div>
-                <div>
-                  <p class="text-sm font-medium text-ink">Transfer agendado — João Miguel</p>
-                  <p class="text-xs text-ink/45">há 5 horas</p>
-                </div>
-              </div>
-              <span class="text-xs font-mono-ticket text-ink/40">USD 60</span>
-            </li>
-            <li class="flex items-center justify-between py-3">
-              <div class="flex items-center gap-3">
-                <div class="w-8 h-8 rounded-full bg-clay/10 flex items-center justify-center flex-shrink-0">
-                  <i data-lucide="user-plus" class="w-4 h-4 text-clay"></i>
-                </div>
-                <div>
-                  <p class="text-sm font-medium text-ink">Novo cliente cadastrado — Helena Sá</p>
-                  <p class="text-xs text-ink/45">ontem</p>
-                </div>
-              </div>
-              <span class="text-xs font-mono-ticket text-ink/40">—</span>
-            </li>
-          </ul>
+          <ul id="activityList" class="divide-y divide-ink/10"></ul>
         </div>
 
       </div>
@@ -140,6 +99,69 @@
   <script src="shell.js"></script>
   <script>
     renderShell('dashboard');
+
+    const $ = (id) => document.getElementById(id);
+
+    // Data do header — dinâmica, no formato "TER, 5 JUL 2026"
+    const hoje = new Date();
+    const dataFormatada = hoje.toLocaleDateString('pt-PT', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
+      .replace('.', '').toUpperCase();
+    $('headerDate').textContent = dataFormatada;
+
+    function renderDashboard() {
+      const m = RotaDB.getDashboardMetrics();
+
+      $('metricClientes').textContent = m.clientesAtivos;
+      $('metricPendentes').textContent = m.itensPendentes;
+
+      // Saldo por moeda — só mostra moedas com transação registrada
+      const moedas = Object.entries(m.saldoPorMoeda).filter(([, valor]) => valor !== 0);
+      $('saldoList').innerHTML = moedas.length
+        ? moedas.map(([moeda, valor]) => `<p>${moeda} <span class="float-right">${valor.toLocaleString('pt-PT')}</span></p>`).join('')
+        : `<p class="text-ink/35 text-xs font-sans italic">Sem lançamentos ainda</p>`;
+
+      // Próximo post agendado
+      $('proximoPostBox').innerHTML = m.proximoPost
+        ? `<p class="text-sm font-semibold text-ink">${RotaDB.formatDate(m.proximoPost.data_agendada, 'short')}</p>
+           <p class="text-xs text-ink/50">${m.proximoPost.rede_social} · ${m.proximoPost.texto}</p>`
+        : `<p class="text-sm text-ink/35 italic">Nenhum post agendado</p>`;
+
+      // Atividade recente — junta clientes cadastrados + lançamentos, ordenado por data
+      const atividades = [
+        ...RotaDB.getClients().map(c => ({
+          tipo: 'cliente', data: c.criado_em,
+          titulo: `Novo cliente cadastrado — ${c.nome}`, valor: null,
+        })),
+        ...RotaDB.getTransactions().map(t => ({
+          tipo: t.tipo, data: t.data,
+          titulo: t.notas || (t.tipo === 'receita' ? 'Receita registrada' : 'Despesa registrada'),
+          valor: `${t.tipo === 'receita' ? '+' : '−'} ${RotaDB.formatCurrency(t.valor, t.moeda)}`,
+        })),
+      ].sort((a, b) => new Date(b.data) - new Date(a.data)).slice(0, 5);
+
+      const iconePorTipo = { cliente: 'user-plus', receita: 'arrow-down-left', despesa: 'arrow-up-right' };
+      const corPorTipo = { cliente: 'clay', receita: 'petrol', despesa: 'clay' };
+
+      $('activityList').innerHTML = atividades.length
+        ? atividades.map(a => `
+          <li class="flex items-center justify-between py-3">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-full bg-${corPorTipo[a.tipo]}/10 flex items-center justify-center flex-shrink-0">
+                <i data-lucide="${iconePorTipo[a.tipo]}" class="w-4 h-4 text-${corPorTipo[a.tipo]}"></i>
+              </div>
+              <div>
+                <p class="text-sm font-medium text-ink">${a.titulo}</p>
+                <p class="text-xs text-ink/45">${RotaDB.formatDate(a.data, 'relative')}</p>
+              </div>
+            </div>
+            <span class="text-xs font-mono-ticket text-ink/40">${a.valor || '—'}</span>
+          </li>`).join('')
+        : `<li class="py-6 text-center text-sm text-ink/35 italic">Nenhuma atividade ainda</li>`;
+
+      lucide.createIcons();
+    }
+
+    renderDashboard();
   </script>
 </body>
 </html>

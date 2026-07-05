@@ -22,6 +22,8 @@
   </script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <link rel="stylesheet" href="style.css">
+  <script src="data.js"></script>
+  <script src="modal.js"></script>
   <style>
     .pb-safe { padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
     @media (min-width: 768px) { .pb-safe { padding-bottom: 2rem; } }
@@ -57,10 +59,10 @@
       <!-- Header -->
       <header class="flex items-center justify-between px-5 md:px-8 py-5 border-b border-ink/10 bg-white md:bg-transparent gap-3">
         <div>
-          <p class="font-mono-ticket text-[11px] text-ink/40 tracking-wider mb-0.5">JUL 2026</p>
+          <p id="headerMonth" class="font-mono-ticket text-[11px] text-ink/40 tracking-wider mb-0.5">—</p>
           <h1 class="font-display text-2xl font-semibold text-ink">Marketing</h1>
         </div>
-        <button class="btn-ticket bg-amber hover:bg-amber/90 text-ink font-semibold text-sm px-4 py-2.5 flex items-center gap-2 flex-shrink-0">
+        <button id="newPostBtn" class="btn-ticket bg-amber hover:bg-amber/90 text-ink font-semibold text-sm px-4 py-2.5 flex items-center gap-2 flex-shrink-0">
           <i data-lucide="plus" class="w-4 h-4"></i>
           <span class="hidden sm:inline">Novo post</span>
         </button>
@@ -102,61 +104,7 @@
         </div>
 
         <!-- Lista de posts -->
-        <div class="space-y-3">
-
-          <div class="bg-white border border-ink/10 rounded-lg p-4 flex items-start gap-3">
-            <div class="w-10 h-10 rounded-full bg-clay/10 flex items-center justify-center flex-shrink-0">
-              <i data-lucide="instagram" class="w-5 h-5 text-clay"></i>
-            </div>
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center justify-between gap-2 mb-1">
-                <p class="text-sm font-semibold text-ink">Qui, 09 Jul · 18:00</p>
-                <span class="status-stamp text-amber">Agendado</span>
-              </div>
-              <p class="text-sm text-ink/60 truncate">Promo pacote feriado — Zanzibar 6 dias com 15% off</p>
-            </div>
-          </div>
-
-          <div class="bg-white border border-ink/10 rounded-lg p-4 flex items-start gap-3">
-            <div class="w-10 h-10 rounded-full bg-petrol/10 flex items-center justify-center flex-shrink-0">
-              <i data-lucide="facebook" class="w-5 h-5 text-petrol"></i>
-            </div>
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center justify-between gap-2 mb-1">
-                <p class="text-sm font-semibold text-ink">Sáb, 11 Jul · 10:00</p>
-                <span class="status-stamp text-ink">Publicado</span>
-              </div>
-              <p class="text-sm text-ink/60 truncate">Depoimento de cliente — viagem ao Kissama</p>
-            </div>
-          </div>
-
-          <div class="bg-white border border-ink/10 rounded-lg p-4 flex items-start gap-3">
-            <div class="w-10 h-10 rounded-full bg-ink/5 flex items-center justify-center flex-shrink-0">
-              <i data-lucide="pencil-line" class="w-5 h-5 text-ink/50"></i>
-            </div>
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center justify-between gap-2 mb-1">
-                <p class="text-sm font-semibold text-ink">Sem data ainda</p>
-                <span class="status-stamp text-ink/40">Produção</span>
-              </div>
-              <p class="text-sm text-ink/60 truncate">Bastidores — preparação de roteiro personalizado</p>
-            </div>
-          </div>
-
-          <div class="bg-white border border-ink/10 rounded-lg p-4 flex items-start gap-3">
-            <div class="w-10 h-10 rounded-full bg-ink/5 flex items-center justify-center flex-shrink-0">
-              <i data-lucide="lightbulb" class="w-5 h-5 text-ink/40"></i>
-            </div>
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center justify-between gap-2 mb-1">
-                <p class="text-sm font-semibold text-ink/50">Sem data ainda</p>
-                <span class="status-stamp text-ink/30">Ideia</span>
-              </div>
-              <p class="text-sm text-ink/45 truncate">Enquete: próximo destino que os seguidores querem ver</p>
-            </div>
-          </div>
-
-        </div>
+        <div id="postList" class="space-y-3"></div>
 
       </div>
     </main>
@@ -165,6 +113,115 @@
   <script src="shell.js"></script>
   <script>
     renderShell('marketing');
+
+    const $ = (id) => document.getElementById(id);
+
+    const hoje = new Date();
+    $('headerMonth').textContent = hoje.toLocaleDateString('pt-PT', { month: 'short', year: 'numeric' }).replace('.', '').toUpperCase();
+
+    const ICONE_REDE = { instagram: 'instagram', facebook: 'facebook' };
+    const COR_REDE = { instagram: 'clay', facebook: 'petrol' };
+    const STATUS_INFO = {
+      ideia:     { label: 'Ideia',     cor: 'ink/30' },
+      producao:  { label: 'Produção',  cor: 'ink/40' },
+      agendado:  { label: 'Agendado',  cor: 'amber' },
+      publicado: { label: 'Publicado', cor: 'ink' },
+    };
+
+    function renderPosts() {
+      const posts = RotaDB.getPosts()
+        .slice()
+        .sort((a, b) => {
+          // sem data primeiro por status (ideia/produção), com data por ordem cronológica
+          if (!a.data_agendada && !b.data_agendada) return 0;
+          if (!a.data_agendada) return 1;
+          if (!b.data_agendada) return -1;
+          return new Date(a.data_agendada) - new Date(b.data_agendada);
+        });
+
+      $('postList').innerHTML = posts.length
+        ? posts.map(p => {
+            const status = STATUS_INFO[p.status] || STATUS_INFO.ideia;
+            const cor = COR_REDE[p.rede_social] || 'ink';
+            const dataLabel = p.data_agendada ? RotaDB.formatDate(p.data_agendada, 'weekday') : 'Sem data ainda';
+            return `
+              <div class="bg-white border border-ink/10 rounded-lg p-4 flex items-start gap-3">
+                <div class="w-10 h-10 rounded-full bg-${cor}/10 flex items-center justify-center flex-shrink-0">
+                  <i data-lucide="${ICONE_REDE[p.rede_social] || 'megaphone'}" class="w-5 h-5 text-${cor}"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center justify-between gap-2 mb-1">
+                    <p class="text-sm font-semibold text-ink">${dataLabel}</p>
+                    <span class="status-stamp text-${status.cor}">${status.label}</span>
+                  </div>
+                  <p class="text-sm text-ink/60 truncate">${p.texto || '(sem texto)'}</p>
+                </div>
+              </div>`;
+          }).join('')
+        : `<div class="bg-white border border-ink/10 rounded-lg p-8 text-center">
+             <i data-lucide="calendar-plus" class="w-8 h-8 text-ink/25 mx-auto mb-2"></i>
+             <p class="text-sm text-ink/40">Nenhum post cadastrado ainda.</p>
+           </div>`;
+
+      lucide.createIcons();
+    }
+
+    renderPosts();
+
+    $('newPostBtn').onclick = () => {
+      RotaModal.open({
+        title: 'Novo post',
+        submitLabel: 'Salvar post',
+        bodyHtml: `
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="${ROTA_LABEL_CLASS}">Rede social *</label>
+              <select id="f_rede" class="${ROTA_INPUT_CLASS}">
+                <option value="instagram">Instagram</option>
+                <option value="facebook">Facebook</option>
+              </select>
+            </div>
+            <div>
+              <label class="${ROTA_LABEL_CLASS}">Status *</label>
+              <select id="f_status" class="${ROTA_INPUT_CLASS}">
+                <option value="ideia">Ideia</option>
+                <option value="producao">Produção</option>
+                <option value="agendado">Agendado</option>
+                <option value="publicado">Publicado</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label class="${ROTA_LABEL_CLASS}">Data agendada (opcional)</label>
+            <input type="datetime-local" id="f_data" class="${ROTA_INPUT_CLASS}" />
+          </div>
+          <div>
+            <label class="${ROTA_LABEL_CLASS}">Texto *</label>
+            <textarea id="f_texto" rows="3" required class="${ROTA_INPUT_CLASS}" placeholder="O que vai no post"></textarea>
+          </div>
+          <div>
+            <label class="${ROTA_LABEL_CLASS}">Link de referência</label>
+            <input type="url" id="f_link" class="${ROTA_INPUT_CLASS}" placeholder="Link de imagem, vídeo ou rascunho" />
+          </div>
+        `,
+        onSubmit: () => {
+          const texto = $('f_texto').value.trim();
+          if (!texto) { $('f_texto').focus(); return; }
+
+          const dataLocal = $('f_data').value; // formato "YYYY-MM-DDTHH:mm", hora local
+          RotaDB.savePost({
+            rede_social: $('f_rede').value,
+            status: $('f_status').value,
+            data_agendada: dataLocal ? new Date(dataLocal).toISOString() : null,
+            texto,
+            link_referencia: $('f_link').value.trim(),
+          });
+
+          RotaModal.close();
+          renderPosts();
+        },
+      });
+    };
   </script>
 </body>
 </html>
