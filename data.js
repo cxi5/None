@@ -27,7 +27,9 @@ const LIMITE_MOEDAS_ATIVAS = 4;
 
 // Catálogo de moedas disponíveis pra escolher — não é a lista de moedas
 // "ativas" (essa fica salva por conta do usuário), é só o cardápio de opções.
-const CATALOGO_MOEDAS = {
+// Existe uma versão por idioma porque o nome da moeda é uma das poucas
+// strings que "vive" nos dados, não num atributo data-i18n do HTML.
+const CATALOGO_MOEDAS_PT = {
   AOA: 'Kwanza angolano',
   USD: 'Dólar americano',
   EUR: 'Euro',
@@ -65,6 +67,49 @@ const CATALOGO_MOEDAS = {
   KRW: 'Won sul-coreano',
   THB: 'Baht tailandês',
 };
+
+const CATALOGO_MOEDAS_EN = {
+  AOA: 'Angolan kwanza',
+  USD: 'US dollar',
+  EUR: 'Euro',
+  BRL: 'Brazilian real',
+  GBP: 'British pound',
+  ZAR: 'South African rand',
+  MZN: 'Mozambican metical',
+  CVE: 'Cape Verdean escudo',
+  XOF: 'CFA franc (BCEAO)',
+  XAF: 'CFA franc (BEAC)',
+  NGN: 'Nigerian naira',
+  GHS: 'Ghanaian cedi',
+  KES: 'Kenyan shilling',
+  EGP: 'Egyptian pound',
+  CNY: 'Chinese yuan',
+  JPY: 'Japanese yen',
+  INR: 'Indian rupee',
+  AED: 'UAE dirham',
+  SAR: 'Saudi riyal',
+  CHF: 'Swiss franc',
+  CAD: 'Canadian dollar',
+  AUD: 'Australian dollar',
+  RUB: 'Russian ruble',
+  TRY: 'Turkish lira',
+  MXN: 'Mexican peso',
+  ARS: 'Argentine peso',
+  CLP: 'Chilean peso',
+  COP: 'Colombian peso',
+  PLN: 'Polish zloty',
+  SEK: 'Swedish krona',
+  NOK: 'Norwegian krone',
+  DKK: 'Danish krone',
+  HKD: 'Hong Kong dollar',
+  SGD: 'Singapore dollar',
+  KRW: 'South Korean won',
+  THB: 'Thai baht',
+};
+
+// Mantém CATALOGO_MOEDAS (português) pra quem já usa a chave direto — a
+// lista de códigos válidos é a mesma nos dois idiomas.
+const CATALOGO_MOEDAS = CATALOGO_MOEDAS_PT;
 
 // Cores que ciclam pelas moedas ativas, na ordem em que foram escolhidas —
 // dá pra ter até LIMITE_MOEDAS_ATIVAS cores distintas do design system.
@@ -285,7 +330,8 @@ function saveMoedasAtivas(listaCodigos) {
 // Nome de exibição de uma moeda — cai pro próprio código se não estiver
 // no catálogo (ex.: moeda antiga digitada manualmente antes do catálogo existir).
 function nomeMoeda(codigo) {
-  return CATALOGO_MOEDAS[codigo] || codigo;
+  const catalogo = (window.RotaI18n && RotaI18n.get() === 'en') ? CATALOGO_MOEDAS_EN : CATALOGO_MOEDAS_PT;
+  return catalogo[codigo] || codigo;
 }
 
 // Cor do design system associada a uma moeda ativa, pela posição dela na
@@ -318,7 +364,7 @@ function savePost(dadosPost) {
   const novo = {
     id: newId('p'),
     data_agendada: null, rede_social: 'instagram', status: 'ideia',
-    texto: '', link_referencia: '', criado_por: 'cxi',
+    texto: '', link_referencia: '', criado_por: getDefaultAgenteId(),
     criado_em: new Date().toISOString(),
     ...dadosPost,
   };
@@ -334,6 +380,15 @@ function updatePostStatus(id, novoStatus) {
   post.status = novoStatus;
   writeAll(DB_KEYS.posts, posts);
   return post;
+}
+
+function updatePost(id, dadosParciais) {
+  const posts = getPosts();
+  const idx = posts.findIndex(p => p.id === id);
+  if (idx === -1) return null;
+  posts[idx] = { ...posts[idx], ...dadosParciais };
+  writeAll(DB_KEYS.posts, posts);
+  return posts[idx];
 }
 
 function deletePost(id) {
@@ -423,44 +478,92 @@ function getDashboardMetrics() {
 // Formatação — usada por todas as páginas, pra não duplicar a lógica
 // ---------------------------------------------------------------------
 
+// Idioma/locale usados pelas funções de formatação abaixo — segue o
+// RotaI18n quando disponível (todas as páginas logadas carregam i18n.js);
+// cai pro português se a página não tiver o motor (não deveria acontecer,
+// mas evita quebrar caso alguma ainda não tenha sido migrada).
+function localeAtivo() {
+  return window.RotaI18n && RotaI18n.get() === 'en' ? 'en-US' : 'pt-PT';
+}
+
+if (window.RotaI18n) {
+  RotaI18n.register({
+    en: {
+      'date.justNow': 'just now',
+      'date.minutesAgo': '{{n}} minute ago',
+      'date.minutesAgo_plural': '{{n}} minutes ago',
+      'date.hoursAgo': '{{n}} hour ago',
+      'date.hoursAgo_plural': '{{n}} hours ago',
+      'date.yesterday': 'yesterday',
+      'date.daysAgo': '{{n}} days ago',
+      'activity.clientCreated': 'Client added: {{nome}}',
+      'activity.transaction': 'Entry: {{sinal}} {{valor}}{{categoria}}',
+      'activity.postCreated': 'Post created: {{texto}}',
+      'activity.postNoText': '(no text)',
+      'activity.teamJoined': '{{nome}} joined the team as {{papel}}',
+      'role.admin': 'Admin',
+      'role.agente': 'Agent',
+    },
+    pt: {
+      'date.justNow': 'agora mesmo',
+      'date.minutesAgo': 'há {{n}} minuto',
+      'date.minutesAgo_plural': 'há {{n}} minutos',
+      'date.hoursAgo': 'há {{n}} hora',
+      'date.hoursAgo_plural': 'há {{n}} horas',
+      'date.yesterday': 'ontem',
+      'date.daysAgo': 'há {{n}} dias',
+      'activity.clientCreated': 'Cliente cadastrado: {{nome}}',
+      'activity.transaction': 'Lançamento: {{sinal}} {{valor}}{{categoria}}',
+      'activity.postCreated': 'Post criado: {{texto}}',
+      'activity.postNoText': '(sem texto)',
+      'activity.teamJoined': '{{nome}} entrou na equipe como {{papel}}',
+      'role.admin': 'Admin',
+      'role.agente': 'Agente',
+    },
+  });
+}
+
 function formatCurrency(valor, moeda) {
   const num = Number(valor) || 0;
-  const formatado = num.toLocaleString('pt-PT', { minimumFractionDigits: num % 1 === 0 ? 0 : 2, maximumFractionDigits: 2 });
+  const formatado = num.toLocaleString(localeAtivo(), { minimumFractionDigits: num % 1 === 0 ? 0 : 2, maximumFractionDigits: 2 });
   return `${moeda} ${formatado}`;
 }
 
 function formatDate(iso, style = 'short') {
   if (!iso) return null;
   const d = new Date(iso);
+  const locale = localeAtivo();
+  const t = window.RotaI18n ? RotaI18n.t : (k) => k;
+
   if (style === 'short') {
     // ex: "03 Jul"
-    return d.toLocaleDateString('pt-PT', { day: '2-digit', month: 'short' }).replace('.', '');
+    return d.toLocaleDateString(locale, { day: '2-digit', month: 'short' }).replace('.', '');
   }
   if (style === 'weekday') {
     // ex: "Qui, 09 Jul · 18:00"
-    const dia = d.toLocaleDateString('pt-PT', { weekday: 'short' }).replace('.', '');
-    const data = d.toLocaleDateString('pt-PT', { day: '2-digit', month: 'short' }).replace('.', '');
-    const hora = d.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
+    const dia = d.toLocaleDateString(locale, { weekday: 'short' }).replace('.', '');
+    const data = d.toLocaleDateString(locale, { day: '2-digit', month: 'short' }).replace('.', '');
+    const hora = d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
     return `${dia.charAt(0).toUpperCase()}${dia.slice(1)}, ${data} · ${hora}`;
   }
   if (style === 'datetime') {
     // ex: "05/07/2026 14:05:32" — usado em check-in/check-out, onde o
     // segundo importa (registro de entrada/saída de um serviço).
-    const data = d.toLocaleDateString('pt-PT');
-    const hora = d.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const data = d.toLocaleDateString(locale);
+    const hora = d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     return `${data} ${hora}`;
   }
   if (style === 'relative') {
     const diffMs = Date.now() - d.getTime();
     const diffMin = Math.floor(diffMs / 60000);
-    if (diffMin < 60) return diffMin <= 1 ? 'agora mesmo' : `há ${diffMin} minutos`;
+    if (diffMin < 60) return diffMin <= 1 ? t('date.justNow') : t('date.minutesAgo_plural', { n: diffMin });
     const diffH = Math.floor(diffMin / 60);
-    if (diffH < 24) return `há ${diffH} hora${diffH > 1 ? 's' : ''}`;
+    if (diffH < 24) return diffH === 1 ? t('date.hoursAgo', { n: diffH }) : t('date.hoursAgo_plural', { n: diffH });
     const diffD = Math.floor(diffH / 24);
-    if (diffD === 1) return 'ontem';
-    return `há ${diffD} dias`;
+    if (diffD === 1) return t('date.yesterday');
+    return t('date.daysAgo', { n: diffD });
   }
-  return d.toLocaleDateString('pt-PT');
+  return d.toLocaleDateString(locale);
 }
 
 function initials(nome) {
@@ -481,31 +584,44 @@ function initials(nome) {
 
 function getActivityLog(limite = 15) {
   const eventos = [];
+  const t = window.RotaI18n ? RotaI18n.t : (k, vars) => k;
 
   getClients().forEach(c => {
     if (c.criado_em) {
-      eventos.push({ tipo: 'cliente', quando: c.criado_em, texto: `Cliente cadastrado: ${c.nome}` });
+      eventos.push({ tipo: 'cliente', quando: c.criado_em, texto: t('activity.clientCreated', { nome: c.nome }) });
     }
   });
 
-  getTransactions().forEach(t => {
-    const quando = t.criado_em || t.data;
+  getTransactions().forEach(tr => {
+    const quando = tr.criado_em || tr.data;
     if (quando) {
-      const sinal = t.tipo === 'receita' ? '+' : '−';
-      eventos.push({ tipo: 'financeiro', quando, texto: `Lançamento: ${sinal} ${formatCurrency(t.valor, t.moeda)}${t.categoria ? ' · ' + t.categoria : ''}` });
+      const sinal = tr.tipo === 'receita' ? '+' : '−';
+      eventos.push({
+        tipo: 'financeiro', quando,
+        texto: t('activity.transaction', {
+          sinal,
+          valor: formatCurrency(tr.valor, tr.moeda),
+          categoria: tr.categoria ? ' · ' + tr.categoria : '',
+        }),
+      });
     }
   });
 
   getPosts().forEach(p => {
     const quando = p.criado_em || p.data_agendada;
     if (quando) {
-      eventos.push({ tipo: 'marketing', quando, texto: `Post criado: ${(p.texto || '(sem texto)').slice(0, 40)}${(p.texto || '').length > 40 ? '…' : ''}` });
+      const bruto = p.texto || t('activity.postNoText');
+      const cortado = `${bruto.slice(0, 40)}${bruto.length > 40 ? '…' : ''}`;
+      eventos.push({ tipo: 'marketing', quando, texto: t('activity.postCreated', { texto: cortado }) });
     }
   });
 
   getTeam().forEach(m => {
     if (m.criado_em) {
-      eventos.push({ tipo: 'equipe', quando: m.criado_em, texto: `${m.nome} entrou na equipe como ${m.papel === 'admin' ? 'Admin' : 'Agente'}` });
+      eventos.push({
+        tipo: 'equipe', quando: m.criado_em,
+        texto: t('activity.teamJoined', { nome: m.nome, papel: t(m.papel === 'admin' ? 'role.admin' : 'role.agente') }),
+      });
     }
   });
 
@@ -556,13 +672,14 @@ window.RotaDB = {
   getClients, getClientById, saveClient, updateClient, deleteClient,
   addItemToClient, updateItemStatus, updateClientItem, deleteClientItem,
   getTransactions, saveTransaction, updateTransaction, deleteTransaction, getSaldoPorMoeda,
-  getPosts, savePost, updatePostStatus, deletePost,
+  getPosts, savePost, updatePost, updatePostStatus, deletePost,
   getTeam, addTeamMember, updateTeamMember, removeTeamMember,
   getDashboardMetrics, getActivityLog, resetAllData,
   formatCurrency, formatDate, initials,
   getCurrentUser, setCurrentUser, logout,
   getMoedasAtivas, saveMoedasAtivas, nomeMoeda, corMoeda, getMoedasForaDaAtiva,
-  CATALOGO_MOEDAS, LIMITE_MOEDAS_ATIVAS,
+  CATALOGO_MOEDAS, CATALOGO_MOEDAS_EN, LIMITE_MOEDAS_ATIVAS,
+  getCatalogoMoedas: () => (window.RotaI18n && RotaI18n.get() === 'en') ? CATALOGO_MOEDAS_EN : CATALOGO_MOEDAS_PT,
 };
 
 // Roda sozinho ao incluir <script src="data.js"> — nenhuma página

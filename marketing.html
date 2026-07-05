@@ -1,6 +1,8 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="en">
 <head>
+  <script src="theme.js"></script>
+  <script src="i18n.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Marketing — ROTA</title>
@@ -64,7 +66,7 @@
         </div>
         <button id="newPostBtn" class="btn-ticket bg-amber hover:bg-amber/90 text-ink font-semibold text-sm px-4 py-2.5 flex items-center gap-2 flex-shrink-0">
           <i data-lucide="plus" class="w-4 h-4"></i>
-          <span class="hidden sm:inline">Novo post</span>
+          <span class="hidden sm:inline" data-i18n="marketing.newPost">New post</span>
         </button>
       </header>
 
@@ -91,25 +93,119 @@
 
   <script src="shell.js"></script>
   <script>
+    RotaI18n.register({
+      en: {
+        'marketing.pageTitle': 'Marketing — ROTA',
+        'marketing.newPost': 'New post',
+        'marketing.tabList': 'List',
+        'marketing.tabCalendar': 'Calendar',
+        'marketing.filterAll': 'All',
+        'marketing.noDateYet': 'No date yet',
+        'marketing.noText': '(no text)',
+        'marketing.viewReference': 'View reference',
+        'marketing.editTitle': 'Edit',
+        'marketing.deleteTitle': 'Delete',
+        'marketing.editAria': 'Edit post',
+        'marketing.deleteAria': 'Delete post',
+        'marketing.statusTitleHint': 'Click to advance status',
+        'marketing.noPostsFilter': 'No post with that filter.',
+        'marketing.noPostsEmpty': 'No post registered yet.',
+        'marketing.clearDayFilter': 'Clear day filter ({{data}})',
+        'marketing.filterPrefix': 'Filter:',
+        'marketing.modalNewPostTitle': 'New post',
+        'marketing.modalSavePost': 'Save post',
+        'marketing.modalEditPostTitle': 'Edit post',
+        'marketing.modalSaveChanges': 'Save changes',
+        'marketing.fieldNetwork': 'Social network *',
+        'marketing.fieldStatus': 'Status *',
+        'marketing.fieldScheduledDate': 'Scheduled date (optional)',
+        'marketing.fieldText': 'Text *',
+        'marketing.fieldTextPlaceholder': "What's in the post",
+        'marketing.fieldReferenceLink': 'Reference link',
+        'marketing.fieldReferenceLinkPlaceholder': 'Image, video, or draft link',
+        'marketing.confirmDeletePost': 'Delete {{rotulo}}? This action cannot be undone.',
+        'marketing.thisPost': 'this post',
+        'network.instagram': 'Instagram',
+        'network.facebook': 'Facebook',
+        'status.ideia': 'Idea',
+        'status.producao': 'Production',
+        'status.agendado': 'Scheduled',
+        'status.publicado': 'Published',
+        'month.0': 'January', 'month.1': 'February', 'month.2': 'March', 'month.3': 'April',
+        'month.4': 'May', 'month.5': 'June', 'month.6': 'July', 'month.7': 'August',
+        'month.8': 'September', 'month.9': 'October', 'month.10': 'November', 'month.11': 'December',
+        'weekday.0': 'SUN', 'weekday.1': 'MON', 'weekday.2': 'TUE', 'weekday.3': 'WED',
+        'weekday.4': 'THU', 'weekday.5': 'FRI', 'weekday.6': 'SAT',
+      },
+      pt: {
+        'marketing.pageTitle': 'Marketing — ROTA',
+        'marketing.newPost': 'Novo post',
+        'marketing.tabList': 'Lista',
+        'marketing.tabCalendar': 'Calendário',
+        'marketing.filterAll': 'Todas',
+        'marketing.noDateYet': 'Sem data ainda',
+        'marketing.noText': '(sem texto)',
+        'marketing.viewReference': 'Ver referência',
+        'marketing.editTitle': 'Editar',
+        'marketing.deleteTitle': 'Excluir',
+        'marketing.editAria': 'Editar post',
+        'marketing.deleteAria': 'Excluir post',
+        'marketing.statusTitleHint': 'Clique pra avançar o status',
+        'marketing.noPostsFilter': 'Nenhum post com esse filtro.',
+        'marketing.noPostsEmpty': 'Nenhum post cadastrado ainda.',
+        'marketing.clearDayFilter': 'Limpar filtro do dia ({{data}})',
+        'marketing.filterPrefix': 'Filtro:',
+        'marketing.modalNewPostTitle': 'Novo post',
+        'marketing.modalSavePost': 'Salvar post',
+        'marketing.modalEditPostTitle': 'Editar post',
+        'marketing.modalSaveChanges': 'Salvar alterações',
+        'marketing.fieldNetwork': 'Rede social *',
+        'marketing.fieldStatus': 'Status *',
+        'marketing.fieldScheduledDate': 'Data agendada (opcional)',
+        'marketing.fieldText': 'Texto *',
+        'marketing.fieldTextPlaceholder': 'O que vai no post',
+        'marketing.fieldReferenceLink': 'Link de referência',
+        'marketing.fieldReferenceLinkPlaceholder': 'Link de imagem, vídeo ou rascunho',
+        'marketing.confirmDeletePost': 'Excluir {{rotulo}}? Essa ação não pode ser desfeita.',
+        'marketing.thisPost': 'este post',
+        'network.instagram': 'Instagram',
+        'network.facebook': 'Facebook',
+        'status.ideia': 'Ideia',
+        'status.producao': 'Produção',
+        'status.agendado': 'Agendado',
+        'status.publicado': 'Publicado',
+        'month.0': 'Janeiro', 'month.1': 'Fevereiro', 'month.2': 'Março', 'month.3': 'Abril',
+        'month.4': 'Maio', 'month.5': 'Junho', 'month.6': 'Julho', 'month.7': 'Agosto',
+        'month.8': 'Setembro', 'month.9': 'Outubro', 'month.10': 'Novembro', 'month.11': 'Dezembro',
+        'weekday.0': 'DOM', 'weekday.1': 'SEG', 'weekday.2': 'TER', 'weekday.3': 'QUA',
+        'weekday.4': 'QUI', 'weekday.5': 'SEX', 'weekday.6': 'SÁB',
+      },
+    });
+
     renderShell('marketing');
 
+    RotaI18n.apply();
     const $ = (id) => document.getElementById(id);
 
     const hoje = new Date();
-    $('headerMonth').textContent = hoje.toLocaleDateString('pt-PT', { month: 'short', year: 'numeric' }).replace('.', '').toUpperCase();
+    function renderHeaderMonth() {
+      const locale = RotaI18n.get() === 'pt' ? 'pt-PT' : 'en-US';
+      $('headerMonth').textContent = hoje.toLocaleDateString(locale, { month: 'short', year: 'numeric' }).replace('.', '').toUpperCase();
+    }
+    renderHeaderMonth();
 
     const ICONE_REDE = { instagram: 'instagram', facebook: 'facebook' };
     const COR_REDE = { instagram: 'clay', facebook: 'petrol' };
-    const LABEL_REDE = { instagram: 'Instagram', facebook: 'Facebook' };
-    const STATUS_INFO = {
-      ideia:     { label: 'Ideia',     cor: 'ink/30' },
-      producao:  { label: 'Produção',  cor: 'ink/40' },
-      agendado:  { label: 'Agendado',  cor: 'amber' },
-      publicado: { label: 'Publicado', cor: 'ink' },
-    };
+    const LABEL_REDE = () => ({ instagram: RotaI18n.t('network.instagram'), facebook: RotaI18n.t('network.facebook') });
+    const STATUS_INFO = () => ({
+      ideia:     { label: RotaI18n.t('status.ideia'),     cor: 'ink/30' },
+      producao:  { label: RotaI18n.t('status.producao'),  cor: 'ink/40' },
+      agendado:  { label: RotaI18n.t('status.agendado'),  cor: 'amber' },
+      publicado: { label: RotaI18n.t('status.publicado'), cor: 'ink' },
+    });
     const ORDEM_STATUS = ['ideia', 'producao', 'agendado', 'publicado'];
-    const NOMES_MES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-    const DIAS_SEMANA = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB'];
+    const NOMES_MES = () => [0,1,2,3,4,5,6,7,8,9,10,11].map(i => RotaI18n.t('month.' + i));
+    const DIAS_SEMANA = () => [0,1,2,3,4,5,6].map(i => RotaI18n.t('weekday.' + i));
 
     // Lista ou Calendário, mês sendo navegado no calendário, e o dia
     // selecionado (funciona como mais um filtro, junto de status/rede).
@@ -134,8 +230,8 @@
       const chipInativo = `${chipBase} bg-white border border-ink/15 text-ink/60 hover:border-ink/30`;
 
       $('redeChips').innerHTML = `
-        <button class="${redeFiltro === null ? chipAtivo : chipInativo}" onclick="selecionarRedeFiltro(null)">Todas</button>
-        ${Object.entries(LABEL_REDE).map(([valor, label]) => `<button class="${redeFiltro === valor ? chipAtivo : chipInativo}" onclick="selecionarRedeFiltro('${valor}')">${label}</button>`).join('')}
+        <button class="${redeFiltro === null ? chipAtivo : chipInativo}" onclick="selecionarRedeFiltro(null)">${RotaI18n.t('marketing.filterAll')}</button>
+        ${Object.entries(LABEL_REDE()).map(([valor, label]) => `<button class="${redeFiltro === valor ? chipAtivo : chipInativo}" onclick="selecionarRedeFiltro('${valor}')">${label}</button>`).join('')}
       `;
     }
 
@@ -154,8 +250,8 @@
       const inativo = `${base} text-ink/60 hover:bg-paper`;
 
       $('viewToggle').innerHTML = `
-        <button id="tabLista" class="${vista === 'lista' ? ativo : inativo}"><i data-lucide="list" class="w-4 h-4"></i> Lista</button>
-        <button id="tabCalendario" class="${vista === 'calendario' ? ativo : inativo}"><i data-lucide="calendar-days" class="w-4 h-4"></i> Calendário</button>`;
+        <button id="tabLista" class="${vista === 'lista' ? ativo : inativo}"><i data-lucide="list" class="w-4 h-4"></i> ${RotaI18n.t('marketing.tabList')}</button>
+        <button id="tabCalendario" class="${vista === 'calendario' ? ativo : inativo}"><i data-lucide="calendar-days" class="w-4 h-4"></i> ${RotaI18n.t('marketing.tabCalendar')}</button>`;
       lucide.createIcons();
 
       $('tabLista').onclick = () => { vista = 'lista'; diaFiltro = null; aplicarVista(); };
@@ -199,7 +295,7 @@
         const chave = `${ano}-${String(mes + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
         const statusesDoDia = [...new Set(mapa[chave] || [])];
         const dots = statusesDoDia.slice(0, 3)
-          .map(s => `<span class="w-1.5 h-1.5 rounded-full bg-${STATUS_INFO[s]?.cor || 'ink'}"></span>`).join('');
+          .map(s => `<span class="w-1.5 h-1.5 rounded-full bg-${STATUS_INFO()[s]?.cor || 'ink'}"></span>`).join('');
 
         const selecionado = diaFiltro === chave;
         const ehHoje = chave === hojeChave;
@@ -217,16 +313,16 @@
       $('calendarWrap').innerHTML = `
         <div class="flex items-center justify-between mb-3">
           <button id="mesAnterior" class="w-8 h-8 flex items-center justify-center rounded-md hover:bg-paper text-ink/60 transition"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
-          <p class="font-display text-sm font-semibold text-ink">${NOMES_MES[mes]} ${ano}</p>
+          <p class="font-display text-sm font-semibold text-ink">${NOMES_MES()[mes]} ${ano}</p>
           <button id="mesProximo" class="w-8 h-8 flex items-center justify-center rounded-md hover:bg-paper text-ink/60 transition"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
         </div>
         <div class="grid grid-cols-7 gap-1 mb-1">
-          ${DIAS_SEMANA.map(d => `<div class="text-center text-[10px] font-mono-ticket text-ink/35">${d}</div>`).join('')}
+          ${DIAS_SEMANA().map(d => `<div class="text-center text-[10px] font-mono-ticket text-ink/35">${d}</div>`).join('')}
         </div>
         <div class="grid grid-cols-7 gap-1">${celulas}</div>
         ${diaFiltro ? `
           <button id="limparDia" class="mt-3 text-xs text-petrol hover:text-ink font-medium transition">
-            Limpar filtro do dia (${diaFiltro.split('-').reverse().join('/')})
+            ${RotaI18n.t('marketing.clearDayFilter', { data: diaFiltro.split('-').reverse().join('/') })}
           </button>` : ''}`;
 
       lucide.createIcons();
@@ -255,7 +351,7 @@
       $('activeFilterChip').classList.remove('hidden');
       $('activeFilterChip').innerHTML = `
         <span class="inline-flex items-center gap-2 bg-amber/15 border border-amber/40 text-ink text-xs font-medium px-3 py-1.5 rounded-full">
-          Filtro: ${STATUS_INFO[statusFiltro]?.label || statusFiltro}
+          ${RotaI18n.t('marketing.filterPrefix')} ${STATUS_INFO()[statusFiltro]?.label || statusFiltro}
           <a href="marketing.html" class="text-ink/50 hover:text-clay transition"><i data-lucide="x" class="w-3.5 h-3.5"></i></a>
         </span>`;
       lucide.createIcons();
@@ -286,9 +382,9 @@
 
       $('postList').innerHTML = posts.length
         ? posts.map(p => {
-            const status = STATUS_INFO[p.status] || STATUS_INFO.ideia;
+            const status = STATUS_INFO()[p.status] || STATUS_INFO().ideia;
             const cor = COR_REDE[p.rede_social] || 'ink';
-            const dataLabel = p.data_agendada ? RotaDB.formatDate(p.data_agendada, 'weekday') : 'Sem data ainda';
+            const dataLabel = p.data_agendada ? RotaDB.formatDate(p.data_agendada, 'weekday') : RotaI18n.t('marketing.noDateYet');
             return `
               <div class="bg-white border border-ink/10 rounded-lg p-4 flex items-start gap-3 group">
                 <div class="w-10 h-10 rounded-full bg-${cor}/10 flex items-center justify-center flex-shrink-0">
@@ -297,19 +393,19 @@
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center justify-between gap-2 mb-1">
                     <p class="text-sm font-semibold text-ink">${dataLabel}</p>
-                    <button data-post-id="${p.id}" class="statusBtn status-stamp text-${status.cor}" title="Clique pra avançar o status">${status.label}</button>
+                    <button data-post-id="${p.id}" class="statusBtn status-stamp text-${status.cor}" title="${RotaI18n.t('marketing.statusTitleHint')}">${status.label}</button>
                   </div>
-                  <p class="text-sm text-ink/60 truncate">${p.texto || '(sem texto)'}</p>
+                  <p class="text-sm text-ink/60 truncate">${p.texto || RotaI18n.t('marketing.noText')}</p>
                   ${p.link_referencia ? `
                     <a href="${p.link_referencia}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-xs text-petrol hover:text-ink font-medium mt-1.5 transition">
-                      <i data-lucide="link" class="w-3.5 h-3.5"></i> Ver referência
+                      <i data-lucide="link" class="w-3.5 h-3.5"></i> ${RotaI18n.t('marketing.viewReference')}
                     </a>` : ''}
                 </div>
                 <div class="flex items-center gap-1 flex-shrink-0 opacity-60 group-hover:opacity-100 transition">
-                  <button data-post-id="${p.id}" class="editPostBtn w-8 h-8 flex items-center justify-center rounded-md text-ink/40 hover:text-petrol hover:bg-paper transition" aria-label="Editar post" title="Editar">
+                  <button data-post-id="${p.id}" class="editPostBtn w-8 h-8 flex items-center justify-center rounded-md text-ink/40 hover:text-petrol hover:bg-paper transition" aria-label="${RotaI18n.t('marketing.editAria')}" title="${RotaI18n.t('marketing.editTitle')}">
                     <i data-lucide="pencil" class="w-4 h-4"></i>
                   </button>
-                  <button data-post-id="${p.id}" class="deletePostBtn w-8 h-8 flex items-center justify-center rounded-md text-ink/40 hover:text-clay hover:bg-paper transition" aria-label="Excluir post" title="Excluir">
+                  <button data-post-id="${p.id}" class="deletePostBtn w-8 h-8 flex items-center justify-center rounded-md text-ink/40 hover:text-clay hover:bg-paper transition" aria-label="${RotaI18n.t('marketing.deleteAria')}" title="${RotaI18n.t('marketing.deleteTitle')}">
                     <i data-lucide="trash-2" class="w-4 h-4"></i>
                   </button>
                 </div>
@@ -317,7 +413,7 @@
           }).join('')
         : `<div class="bg-white border border-ink/10 rounded-lg p-8 text-center">
              <i data-lucide="calendar-plus" class="w-8 h-8 text-ink/25 mx-auto mb-2"></i>
-             <p class="text-sm text-ink/40">${(statusFiltro || redeFiltro || diaFiltro) ? 'Nenhum post com esse filtro.' : 'Nenhum post cadastrado ainda.'}</p>
+             <p class="text-sm text-ink/40">${(statusFiltro || redeFiltro || diaFiltro) ? RotaI18n.t('marketing.noPostsFilter') : RotaI18n.t('marketing.noPostsEmpty')}</p>
            </div>`;
 
       lucide.createIcons();
@@ -359,37 +455,37 @@
       return `
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="${ROTA_LABEL_CLASS}">Rede social *</label>
+            <label class="${ROTA_LABEL_CLASS}">${RotaI18n.t('marketing.fieldNetwork')}</label>
             <select id="f_rede" class="${ROTA_INPUT_CLASS}">
-              <option value="instagram" ${post.rede_social === 'instagram' || !post.rede_social ? 'selected' : ''}>Instagram</option>
-              <option value="facebook" ${post.rede_social === 'facebook' ? 'selected' : ''}>Facebook</option>
+              <option value="instagram" ${post.rede_social === 'instagram' || !post.rede_social ? 'selected' : ''}>${RotaI18n.t('network.instagram')}</option>
+              <option value="facebook" ${post.rede_social === 'facebook' ? 'selected' : ''}>${RotaI18n.t('network.facebook')}</option>
             </select>
           </div>
           <div>
-            <label class="${ROTA_LABEL_CLASS}">Status *</label>
+            <label class="${ROTA_LABEL_CLASS}">${RotaI18n.t('marketing.fieldStatus')}</label>
             <select id="f_status" class="${ROTA_INPUT_CLASS}">
-              ${ORDEM_STATUS.map(v => `<option value="${v}" ${post.status === v ? 'selected' : ''}>${STATUS_INFO[v].label}</option>`).join('')}
+              ${ORDEM_STATUS.map(v => `<option value="${v}" ${post.status === v ? 'selected' : ''}>${STATUS_INFO()[v].label}</option>`).join('')}
             </select>
           </div>
         </div>
         <div>
-          <label class="${ROTA_LABEL_CLASS}">Data agendada (opcional)</label>
+          <label class="${ROTA_LABEL_CLASS}">${RotaI18n.t('marketing.fieldScheduledDate')}</label>
           <input type="datetime-local" id="f_data" value="${dataLocalValue}" class="${ROTA_INPUT_CLASS}" />
         </div>
         <div>
-          <label class="${ROTA_LABEL_CLASS}">Texto *</label>
-          <textarea id="f_texto" rows="3" required class="${ROTA_INPUT_CLASS}" placeholder="O que vai no post">${post.texto || ''}</textarea>
+          <label class="${ROTA_LABEL_CLASS}">${RotaI18n.t('marketing.fieldText')}</label>
+          <textarea id="f_texto" rows="3" required class="${ROTA_INPUT_CLASS}" placeholder="${RotaI18n.t('marketing.fieldTextPlaceholder')}">${post.texto || ''}</textarea>
         </div>
         <div>
-          <label class="${ROTA_LABEL_CLASS}">Link de referência</label>
-          <input type="url" id="f_link" value="${post.link_referencia || ''}" class="${ROTA_INPUT_CLASS}" placeholder="Link de imagem, vídeo ou rascunho" />
+          <label class="${ROTA_LABEL_CLASS}">${RotaI18n.t('marketing.fieldReferenceLink')}</label>
+          <input type="url" id="f_link" value="${post.link_referencia || ''}" class="${ROTA_INPUT_CLASS}" placeholder="${RotaI18n.t('marketing.fieldReferenceLinkPlaceholder')}" />
         </div>`;
     }
 
     function abrirNovoPost() {
       RotaModal.open({
-        title: 'Novo post',
-        submitLabel: 'Salvar post',
+        title: RotaI18n.t('marketing.modalNewPostTitle'),
+        submitLabel: RotaI18n.t('marketing.modalSavePost'),
         bodyHtml: camposPostHtml(),
         onSubmit: () => {
           const texto = $('f_texto').value.trim();
@@ -416,8 +512,8 @@
       if (!post) return;
 
       RotaModal.open({
-        title: 'Editar post',
-        submitLabel: 'Salvar alterações',
+        title: RotaI18n.t('marketing.modalEditPostTitle'),
+        submitLabel: RotaI18n.t('marketing.modalSaveChanges'),
         bodyHtml: camposPostHtml(post),
         onSubmit: () => {
           const texto = $('f_texto').value.trim();
@@ -442,8 +538,8 @@
     function excluirPost(id) {
       const post = RotaDB.getPosts().find(p => p.id === id);
       if (!post) return;
-      const rotulo = post.texto ? `"${post.texto.slice(0, 40)}${post.texto.length > 40 ? '…' : ''}"` : 'este post';
-      if (!confirm(`Excluir ${rotulo}? Essa ação não pode ser desfeita.`)) return;
+      const rotulo = post.texto ? `"${post.texto.slice(0, 40)}${post.texto.length > 40 ? '…' : ''}"` : RotaI18n.t('marketing.thisPost');
+      if (!confirm(RotaI18n.t('marketing.confirmDeletePost', { rotulo }))) return;
 
       RotaDB.deletePost(id);
       if (vista === 'calendario') renderCalendario();
@@ -451,6 +547,17 @@
     }
 
     $('newPostBtn').onclick = abrirNovoPost;
+
+    document.title = RotaI18n.t('marketing.pageTitle');
+    RotaI18n.onChange(() => {
+      RotaI18n.apply();
+      document.title = RotaI18n.t('marketing.pageTitle');
+      renderHeaderMonth();
+      renderFilterChip();
+      renderRedeChips();
+      if (vista === 'calendario') renderCalendario();
+      renderPosts();
+    });
   </script>
 </body>
 </html>

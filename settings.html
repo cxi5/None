@@ -1,9 +1,11 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="en">
 <head>
+  <script src="theme.js"></script>
+  <script src="i18n.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Configurações — ROTA</title>
+  <title>Settings — ROTA</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -42,6 +44,7 @@
     }
 
     .avatarSwatch.selected { box-shadow: 0 0 0 2px #EDEEE7, 0 0 0 4px currentColor; }
+    html.dark .avatarSwatch.selected { box-shadow: 0 0 0 2px #1D2227, 0 0 0 4px currentColor; }
   </style>
 </head>
 <body class="min-h-screen bg-ticket-field">
@@ -54,11 +57,11 @@
 
       <header class="flex items-center justify-between px-5 md:px-8 py-5 border-b border-ink/10 bg-white md:bg-transparent">
         <div>
-          <p id="sectionEyebrow" class="font-mono-ticket text-[11px] text-ink/40 tracking-wider mb-0.5">CONTA</p>
-          <h1 class="font-display text-2xl font-semibold text-ink">Configurações</h1>
+          <p id="sectionEyebrow" class="font-mono-ticket text-[11px] text-ink/40 tracking-wider mb-0.5"></p>
+          <h1 class="font-display text-2xl font-semibold text-ink" data-i18n="settings.title">Settings</h1>
         </div>
         <div class="relative">
-          <button id="settingsMenuBtn" class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-paper transition text-ink/60" aria-label="Abrir menu de seções">
+          <button id="settingsMenuBtn" class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-paper transition text-ink/60" data-i18n-aria-label="settings.openSectionsMenu" aria-label="Open sections menu">
             <i data-lucide="info" class="w-5 h-5"></i>
           </button>
           <div id="settingsMenu" class="hidden absolute right-0 top-11 w-56 bg-white border border-ink/10 rounded-lg shadow-xl z-30 overflow-hidden"></div>
@@ -68,42 +71,60 @@
       <div class="px-5 md:px-8 py-6 max-w-2xl">
 
         <!-- ==================== CONTA ==================== -->
-        <div id="tabConta" class="space-y-6">
+        <div id="secaoConta" class="space-y-6 scroll-mt-6">
+          <p class="text-xs font-mono-ticket text-ink/35 tracking-wider uppercase" data-i18n="settings.sectionAccount">Account</p>
+
           <div class="bg-white border border-ink/10 rounded-lg p-5">
-            <h2 class="font-display text-lg font-semibold text-ink mb-4">Minha conta</h2>
+            <div class="flex items-center gap-1.5 mb-4">
+              <h2 class="font-display text-lg font-semibold text-ink" data-i18n="settings.myAccount">My account</h2>
+              <button data-info="conta" class="infoBtn w-5 h-5 flex items-center justify-center rounded-full text-ink/35 hover:text-ink hover:bg-paper transition" data-i18n-aria-label="settings.moreInfo" aria-label="More information">
+                <i data-lucide="info" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
             <div class="flex items-center gap-4 mb-5">
               <div id="myAvatar" class="w-14 h-14 rounded-full bg-petrol text-paper flex items-center justify-center font-display text-lg font-semibold flex-shrink-0">—</div>
               <div class="flex-1 min-w-0">
                 <p id="myName" class="font-semibold text-ink">—</p>
                 <p id="myRole" class="text-xs text-ink/50"></p>
               </div>
-              <button id="editAccountBtn" class="text-sm text-petrol hover:text-ink font-medium transition flex-shrink-0">Editar</button>
+              <button id="editAccountBtn" class="text-sm text-petrol hover:text-ink font-medium transition flex-shrink-0" data-i18n="settings.edit">Edit</button>
             </div>
 
-            <p class="text-xs font-mono-ticket text-ink/40 tracking-wider mb-2">COR DO AVATAR</p>
+            <p class="text-xs font-mono-ticket text-ink/40 tracking-wider mb-2 uppercase" data-i18n="settings.avatarColor">Avatar color</p>
             <div id="avatarSwatches" class="flex items-center gap-3"></div>
           </div>
 
           <div class="bg-white border border-ink/10 rounded-lg overflow-hidden">
             <div class="px-5 py-4">
-              <h2 class="font-display text-lg font-semibold text-ink">Atividade recente</h2>
-              <p class="text-xs text-ink/40 font-mono-ticket tracking-wider mt-0.5">DA AGÊNCIA, NÃO SÓ SUA</p>
+              <div class="flex items-center gap-1.5">
+                <h2 class="font-display text-lg font-semibold text-ink" data-i18n="settings.recentActivity">Recent activity</h2>
+                <button data-info="atividade" class="infoBtn w-5 h-5 flex items-center justify-center rounded-full text-ink/35 hover:text-ink hover:bg-paper transition" data-i18n-aria-label="settings.moreInfo" aria-label="More information">
+                  <i data-lucide="info" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
             </div>
             <ul id="activityList" class="divide-y divide-ink/10"></ul>
           </div>
         </div>
 
         <!-- ==================== EQUIPE (admin) ==================== -->
-        <div id="tabEquipe" class="space-y-6 hidden">
+        <div id="secaoEquipe" class="space-y-6 scroll-mt-6">
+          <p class="text-xs font-mono-ticket text-ink/35 tracking-wider uppercase" data-i18n="settings.sectionTeam">Team</p>
+
           <div class="bg-white border border-ink/10 rounded-lg overflow-hidden">
             <div class="flex items-center justify-between px-5 py-4">
               <div>
-                <h2 class="font-display text-lg font-semibold text-ink">Equipe</h2>
+                <div class="flex items-center gap-1.5">
+                  <h2 class="font-display text-lg font-semibold text-ink" data-i18n="settings.team">Team</h2>
+                  <button data-info="equipe" class="infoBtn w-5 h-5 flex items-center justify-center rounded-full text-ink/35 hover:text-ink hover:bg-paper transition" data-i18n-aria-label="settings.moreInfo" aria-label="More information">
+                    <i data-lucide="info" class="w-3.5 h-3.5"></i>
+                  </button>
+                </div>
                 <p id="teamCount" class="text-xs text-ink/40 font-mono-ticket tracking-wider mt-0.5">—</p>
               </div>
               <button id="inviteBtn" class="btn-ticket bg-amber hover:bg-amber/90 text-ink font-semibold text-sm px-4 py-2.5 flex items-center gap-2 flex-shrink-0">
                 <i data-lucide="user-plus" class="w-4 h-4"></i>
-                <span class="hidden sm:inline">Convidar</span>
+                <span class="hidden sm:inline" data-i18n="settings.invite">Invite</span>
               </button>
             </div>
             <ul id="teamList" class="divide-y divide-ink/10"></ul>
@@ -112,8 +133,8 @@
           <!-- Matriz de permissões -->
           <div class="bg-white border border-ink/10 rounded-lg p-5">
             <div class="flex items-center gap-1.5 mb-4">
-              <h2 class="font-display text-lg font-semibold text-ink">O que cada papel pode fazer</h2>
-              <button data-info="permissoes" class="infoBtn w-5 h-5 flex items-center justify-center rounded-full text-ink/35 hover:text-ink hover:bg-paper transition" aria-label="Mais informações">
+              <h2 class="font-display text-lg font-semibold text-ink" data-i18n="settings.whatEachRoleCanDo">What each role can do</h2>
+              <button data-info="permissoes" class="infoBtn w-5 h-5 flex items-center justify-center rounded-full text-ink/35 hover:text-ink hover:bg-paper transition" data-i18n-aria-label="settings.moreInfo" aria-label="More information">
                 <i data-lucide="info" class="w-3.5 h-3.5"></i>
               </button>
             </div>
@@ -121,9 +142,9 @@
               <table class="w-full text-sm">
                 <thead>
                   <tr class="text-left text-ink/40 text-xs font-mono-ticket tracking-wider">
-                    <th class="py-2 pr-3">Módulo</th>
-                    <th class="py-2 px-2 text-center">Admin</th>
-                    <th class="py-2 px-2 text-center">Agente</th>
+                    <th class="py-2 pr-3" data-i18n="settings.module">Module</th>
+                    <th class="py-2 px-2 text-center" data-i18n="role.admin">Admin</th>
+                    <th class="py-2 px-2 text-center" data-i18n="role.agente">Agent</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-ink/10" id="permissionMatrix"></tbody>
@@ -133,76 +154,111 @@
         </div>
 
         <!-- ==================== SEGURANÇA ==================== -->
-        <div id="tabSeguranca" class="space-y-6 hidden">
+        <div id="secaoSeguranca" class="space-y-6 scroll-mt-6">
+          <p class="text-xs font-mono-ticket text-ink/35 tracking-wider uppercase" data-i18n="settings.sectionSecurity">Security</p>
+
           <div class="bg-white border border-ink/10 rounded-lg p-5">
             <div class="flex items-center gap-1.5 mb-4">
-              <h2 class="font-display text-lg font-semibold text-ink">Senha</h2>
-              <button data-info="senha" class="infoBtn w-5 h-5 flex items-center justify-center rounded-full text-ink/35 hover:text-ink hover:bg-paper transition" aria-label="Mais informações">
+              <h2 class="font-display text-lg font-semibold text-ink" data-i18n="settings.password">Password</h2>
+              <button data-info="senha" class="infoBtn w-5 h-5 flex items-center justify-center rounded-full text-ink/35 hover:text-ink hover:bg-paper transition" data-i18n-aria-label="settings.moreInfo" aria-label="More information">
                 <i data-lucide="info" class="w-3.5 h-3.5"></i>
               </button>
             </div>
-            <button id="changePasswordBtn" class="text-sm text-petrol hover:text-ink font-medium transition">Trocar senha</button>
+            <button id="changePasswordBtn" class="text-sm text-petrol hover:text-ink font-medium transition" data-i18n="settings.changePassword">Change password</button>
           </div>
 
           <div class="bg-white border border-ink/10 rounded-lg p-5">
             <div class="flex items-center gap-1.5">
-              <h2 class="font-display text-lg font-semibold text-ink">Sessões</h2>
-              <button data-info="sessoes" class="infoBtn w-5 h-5 flex items-center justify-center rounded-full text-ink/35 hover:text-ink hover:bg-paper transition" aria-label="Mais informações">
+              <h2 class="font-display text-lg font-semibold text-ink" data-i18n="settings.sessions">Sessions</h2>
+              <button data-info="sessoes" class="infoBtn w-5 h-5 flex items-center justify-center rounded-full text-ink/35 hover:text-ink hover:bg-paper transition" data-i18n-aria-label="settings.moreInfo" aria-label="More information">
                 <i data-lucide="info" class="w-3.5 h-3.5"></i>
               </button>
             </div>
-            <p class="text-sm text-ink/60 mt-1">Cada navegador guarda sua própria sessão local.</p>
+            <p class="text-sm text-ink/60 mt-1" data-i18n="settings.sessionsDesc">Each browser keeps its own local session.</p>
           </div>
 
-          <!-- Zona de perigo — avisos ficam visíveis de propósito, não atrás de um ícone -->
+          <!-- Zona de perigo -->
           <div class="bg-white border-2 border-clay/30 rounded-lg p-5">
-            <h2 class="font-display text-lg font-semibold text-clay mb-1">Zona de perigo</h2>
-            <p class="text-xs text-ink/45 mb-4">Ações que afetam todo o sistema neste navegador.</p>
-
-            <div class="flex items-center justify-between py-3 border-t border-ink/10">
-              <div>
-                <p class="text-sm font-medium text-ink">Sair de todos os dispositivos</p>
-                <p class="text-xs text-ink/45">Equivalente a "Sair" por enquanto — ganha efeito real por dispositivo com o backend.</p>
-              </div>
-              <button id="logoutAllBtn" class="text-sm text-clay hover:text-ink font-medium transition flex-shrink-0 ml-3">Sair</button>
+            <div class="flex items-center gap-1.5 mb-1">
+              <h2 class="font-display text-lg font-semibold text-clay" data-i18n="settings.dangerZone">Danger zone</h2>
+              <button data-info="zonaPerigo" class="infoBtn w-5 h-5 flex items-center justify-center rounded-full text-clay/50 hover:text-clay hover:bg-clay/5 transition" data-i18n-aria-label="settings.moreInfo" aria-label="More information">
+                <i data-lucide="info" class="w-3.5 h-3.5"></i>
+              </button>
             </div>
 
             <div class="flex items-center justify-between py-3 border-t border-ink/10">
               <div>
-                <p class="text-sm font-medium text-ink">Limpar todos os dados locais</p>
-                <p class="text-xs text-ink/45">Apaga clientes, lançamentos, posts e equipe deste navegador. Útil pra testar do zero.</p>
+                <p class="text-sm font-medium text-ink" data-i18n="settings.logoutAllDevices">Log out of all devices</p>
               </div>
-              <button id="resetDataBtn" class="text-sm text-clay hover:text-ink font-medium transition flex-shrink-0 ml-3">Limpar</button>
+              <button id="logoutAllBtn" class="text-sm text-clay hover:text-ink font-medium transition flex-shrink-0 ml-3" data-i18n="shell.logout">Log out</button>
+            </div>
+
+            <div class="flex items-center justify-between py-3 border-t border-ink/10">
+              <div>
+                <p class="text-sm font-medium text-ink" data-i18n="settings.clearLocalData">Clear all local data</p>
+              </div>
+              <button id="resetDataBtn" class="text-sm text-clay hover:text-ink font-medium transition flex-shrink-0 ml-3" data-i18n="settings.clear">Clear</button>
             </div>
           </div>
         </div>
 
         <!-- ==================== PREFERÊNCIAS ==================== -->
-        <div id="tabPreferencias" class="space-y-6 hidden">
+        <div id="secaoPreferencias" class="space-y-6 scroll-mt-6">
+          <p class="text-xs font-mono-ticket text-ink/35 tracking-wider uppercase" data-i18n="settings.sectionPreferences">Preferences</p>
+
           <div class="bg-white border border-ink/10 rounded-lg p-5">
-            <h2 class="font-display text-lg font-semibold text-ink mb-4">Idioma e região</h2>
+            <div class="flex items-center gap-1.5 mb-4">
+              <h2 class="font-display text-lg font-semibold text-ink" data-i18n="settings.appearance">Appearance</h2>
+              <button data-info="aparencia" class="infoBtn w-5 h-5 flex items-center justify-center rounded-full text-ink/35 hover:text-ink hover:bg-paper transition" data-i18n-aria-label="settings.moreInfo" aria-label="More information">
+                <i data-lucide="info" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-full bg-paper flex items-center justify-center flex-shrink-0">
+                  <i data-lucide="moon" class="w-4 h-4 text-ink/60 appearanceIcon"></i>
+                </div>
+                <div>
+                  <p class="text-sm font-medium text-ink appearanceLabel" data-i18n="shell.darkMode">Dark mode</p>
+                  <p class="text-xs text-ink/45" data-i18n="settings.lightIsDefault">Light is the automatic default.</p>
+                </div>
+              </div>
+              <button id="themeToggleBtn" type="button" role="switch" class="relative w-11 h-6 rounded-full transition flex-shrink-0" data-i18n-aria-label="settings.toggleDarkMode" aria-label="Toggle dark mode">
+                <span class="themeToggleKnob absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform"></span>
+              </button>
+            </div>
+          </div>
+
+          <div class="bg-white border border-ink/10 rounded-lg p-5">
+            <h2 class="font-display text-lg font-semibold text-ink mb-4" data-i18n="settings.languageAndRegion">Language and region</h2>
 
             <div class="mb-4">
               <div class="flex items-center gap-1.5 mb-1.5">
-                <label class="text-xs font-mono-ticket text-ink/40 tracking-wider">IDIOMA</label>
-                <button data-info="idioma" class="infoBtn w-4 h-4 flex items-center justify-center rounded-full text-ink/35 hover:text-ink transition" aria-label="Mais informações">
+                <label class="text-xs font-mono-ticket text-ink/40 tracking-wider uppercase" data-i18n="settings.language">Language</label>
+                <button data-info="idioma" class="infoBtn w-4 h-4 flex items-center justify-center rounded-full text-ink/35 hover:text-ink transition" data-i18n-aria-label="settings.moreInfo" aria-label="More information">
                   <i data-lucide="info" class="w-3 h-3"></i>
                 </button>
               </div>
-              <select disabled class="w-full bg-paper border border-ink/15 rounded-md px-3.5 py-2.5 text-sm text-ink/60">
-                <option>Português (Brasil) — ativo</option>
+              <select id="languageSelect" class="w-full bg-white border border-ink/15 rounded-md px-3.5 py-2.5 text-sm text-ink input-focus focus:outline-none">
+                <option value="en">English</option>
+                <option value="pt">Português (Brasil)</option>
               </select>
             </div>
 
             <div>
-              <label class="text-xs font-mono-ticket text-ink/40 tracking-wider block mb-1.5">FUSO HORÁRIO DETECTADO</label>
+              <label class="text-xs font-mono-ticket text-ink/40 tracking-wider block mb-1.5 uppercase" data-i18n="settings.detectedTimezone">Detected time zone</label>
               <p id="timezoneDisplay" class="text-sm text-ink/70">—</p>
             </div>
           </div>
 
           <div class="bg-white border border-ink/10 rounded-lg p-5">
-            <h2 class="font-display text-lg font-semibold text-ink mb-1">Moedas</h2>
-            <p class="text-sm text-ink/60">As moedas ativas do sistema (as que aparecem nos saldos e filtros) se gerenciam direto em <a href="financeiro.html" class="text-petrol hover:text-ink font-medium transition">Financeiro</a>.</p>
+            <div class="flex items-center gap-1.5 mb-1">
+              <h2 class="font-display text-lg font-semibold text-ink" data-i18n="settings.currencies">Currencies</h2>
+              <button data-info="moedas" class="infoBtn w-5 h-5 flex items-center justify-center rounded-full text-ink/35 hover:text-ink hover:bg-paper transition" data-i18n-aria-label="settings.moreInfo" aria-label="More information">
+                <i data-lucide="info" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+            <p class="text-sm text-ink/60" data-i18n-html="settings.manageCurrencies">Manage directly in <a href="financeiro.html" class="text-petrol hover:text-ink font-medium transition">Finance</a>.</p>
           </div>
         </div>
 
@@ -212,11 +268,188 @@
 
   <script src="shell.js"></script>
   <script>
+    RotaI18n.register({
+      en: {
+        'settings.pageTitle': 'Settings — ROTA',
+        'settings.title': 'Settings',
+        'settings.openSectionsMenu': 'Open sections menu',
+        'settings.moreInfo': 'More information',
+        'settings.sectionAccount': 'Account',
+        'settings.sectionTeam': 'Team',
+        'settings.sectionSecurity': 'Security',
+        'settings.sectionPreferences': 'Preferences',
+        'settings.myAccount': 'My account',
+        'settings.edit': 'Edit',
+        'settings.avatarColor': 'Avatar color',
+        'settings.recentActivity': 'Recent activity',
+        'settings.noActivityYet': 'No activity yet.',
+        'settings.roleAdmin': 'Administrator',
+        'settings.roleAgent': 'Agent',
+        'settings.team': 'Team',
+        'settings.invite': 'Invite',
+        'settings.memberCount': '{{n}} MEMBER',
+        'settings.memberCount_plural': '{{n}} MEMBERS',
+        'settings.whatEachRoleCanDo': 'What each role can do',
+        'settings.module': 'Module',
+        'settings.onlyOwn': 'Only own',
+        'settings.seesAllForNow': 'Sees all (for now)',
+        'settings.seesAllForNowTooltip': 'Still sees everything — filtering by agent is on the roadmap',
+        'settings.you': '(you)',
+        'settings.noEmailRegistered': 'no email registered',
+        'settings.confirmRemoveMember': 'Remove {{nome}} from the team?',
+        'settings.cannotRemoveLastAdmin': 'The only administrator on the team can\u2019t be removed.',
+        'settings.inviteMember': 'Invite member',
+        'settings.nameRequired': 'Name *',
+        'settings.fullNamePlaceholder': 'Full name',
+        'settings.email': 'Email',
+        'settings.emailPlaceholder': 'email@agency.com',
+        'settings.roleRequired': 'Role *',
+        'settings.roleAgentOption': 'Agent — sees only their own clients',
+        'settings.roleAdminOption': 'Admin — sees everything',
+        'settings.password': 'Password',
+        'settings.changePassword': 'Change password',
+        'settings.sessions': 'Sessions',
+        'settings.sessionsDesc': 'Each browser keeps its own local session.',
+        'settings.dangerZone': 'Danger zone',
+        'settings.logoutAllDevices': 'Log out of all devices',
+        'settings.clearLocalData': 'Clear all local data',
+        'settings.clear': 'Clear',
+        'settings.name': 'Name',
+        'settings.editAccount': 'Edit account',
+        'settings.currentPassword': 'Current password',
+        'settings.newPassword': 'New password',
+        'settings.passwordNotSavedYet': 'This isn\u2019t actually saved yet — the interface is ready for when the backend exists.',
+        'settings.passwordSavedAlert': 'Interface ready! This will actually save once the PHP backend is live.',
+        'settings.confirmLogoutBrowser': 'Log out of your session on this browser?',
+        'settings.confirmResetData': 'This deletes ALL clients, entries, posts, and the team from this browser. It can\u2019t be undone. Continue?',
+        'settings.appearance': 'Appearance',
+        'settings.lightIsDefault': 'Light is the automatic default.',
+        'settings.toggleDarkMode': 'Toggle dark mode',
+        'settings.appearanceLightAuto': 'Light mode (automatic)',
+        'settings.languageAndRegion': 'Language and region',
+        'settings.language': 'Language',
+        'settings.detectedTimezone': 'Detected time zone',
+        'settings.timezoneNotDetected': 'not detected',
+        'settings.currencies': 'Currencies',
+        'settings.manageCurrencies': 'Manage directly in <a href="financeiro.html" class="text-petrol hover:text-ink font-medium transition">Finance</a>.',
+        'settings.infoAccount': 'Your name, role, and avatar color show up across the whole system — not just here, it\u2019s how the rest of the team recognizes you.',
+        'settings.infoActivity': 'Shows what\u2019s happening across the whole agency, not just what you did — everyone with access sees the same history.',
+        'settings.infoTeam': 'Who has access to the system right now and with which role. "Invite" doesn\u2019t send a real email yet — that arrives together with the backend.',
+        'settings.infoPassword': 'The change isn\u2019t actually saved yet — this starts working once the backend is live.',
+        'settings.infoSessions': 'Today each browser keeps its own local session. Per-device session management arrives together with the backend.',
+        'settings.infoDangerZone': 'These actions only apply to this browser. "Log out" is the same as ending the local session (becomes per-device with the backend). "Clear" deletes clients, entries, posts, and the team from here — no undo, but it only affects this browser.',
+        'settings.infoPermissions': 'Reflects what\u2019s actually implemented today — not a future promise.',
+        'settings.infoAppearance': 'Light is ROTA\u2019s automatic default. Dark is a choice you make, and it\u2019s only remembered on this browser — if you open another device or browser, it goes back to light until you switch it there too.',
+        'settings.infoLanguage': 'ROTA is available in English and Portuguese. English is the automatic default — Portuguese is a choice you make, remembered only on this browser.',
+        'settings.infoCurrencies': 'Choosing and switching active currencies lives in Finance, because that\u2019s where they actually matter — this just points the way.',
+      },
+      pt: {
+        'settings.pageTitle': 'Configurações — ROTA',
+        'settings.title': 'Configurações',
+        'settings.openSectionsMenu': 'Abrir menu de seções',
+        'settings.moreInfo': 'Mais informações',
+        'settings.sectionAccount': 'Conta',
+        'settings.sectionTeam': 'Equipe',
+        'settings.sectionSecurity': 'Segurança',
+        'settings.sectionPreferences': 'Preferências',
+        'settings.myAccount': 'Minha conta',
+        'settings.edit': 'Editar',
+        'settings.avatarColor': 'Cor do avatar',
+        'settings.recentActivity': 'Atividade recente',
+        'settings.noActivityYet': 'Nenhuma atividade ainda.',
+        'settings.roleAdmin': 'Administrador',
+        'settings.roleAgent': 'Agente',
+        'settings.team': 'Equipe',
+        'settings.invite': 'Convidar',
+        'settings.memberCount': '{{n}} MEMBRO',
+        'settings.memberCount_plural': '{{n}} MEMBROS',
+        'settings.whatEachRoleCanDo': 'O que cada papel pode fazer',
+        'settings.module': 'Módulo',
+        'settings.onlyOwn': 'Só os próprios',
+        'settings.seesAllForNow': 'Vê tudo (por ora)',
+        'settings.seesAllForNowTooltip': 'Ainda vê tudo — filtro por agente é uma pendência do roadmap',
+        'settings.you': '(você)',
+        'settings.noEmailRegistered': 'sem email cadastrado',
+        'settings.confirmRemoveMember': 'Remover {{nome}} da equipe?',
+        'settings.cannotRemoveLastAdmin': 'Não é possível remover o único administrador da equipe.',
+        'settings.inviteMember': 'Convidar membro',
+        'settings.nameRequired': 'Nome *',
+        'settings.fullNamePlaceholder': 'Nome completo',
+        'settings.email': 'Email',
+        'settings.emailPlaceholder': 'email@agencia.com',
+        'settings.roleRequired': 'Papel *',
+        'settings.roleAgentOption': 'Agente — vê só os próprios clientes',
+        'settings.roleAdminOption': 'Admin — vê tudo',
+        'settings.password': 'Senha',
+        'settings.changePassword': 'Trocar senha',
+        'settings.sessions': 'Sessões',
+        'settings.sessionsDesc': 'Cada navegador guarda sua própria sessão local.',
+        'settings.dangerZone': 'Zona de perigo',
+        'settings.logoutAllDevices': 'Sair de todos os dispositivos',
+        'settings.clearLocalData': 'Limpar todos os dados locais',
+        'settings.clear': 'Limpar',
+        'settings.name': 'Nome',
+        'settings.editAccount': 'Editar conta',
+        'settings.currentPassword': 'Senha atual',
+        'settings.newPassword': 'Nova senha',
+        'settings.passwordNotSavedYet': 'Isso ainda não é salvo de verdade — a interface já está pronta pra quando o backend existir.',
+        'settings.passwordSavedAlert': 'Interface pronta! Isso vai salvar de verdade quando o backend PHP estiver no ar.',
+        'settings.confirmLogoutBrowser': 'Sair da sua sessão neste navegador?',
+        'settings.confirmResetData': 'Isso apaga TODOS os clientes, lançamentos, posts e a equipe deste navegador. Não pode ser desfeito. Continuar?',
+        'settings.appearance': 'Aparência',
+        'settings.lightIsDefault': 'Claro é o padrão automático.',
+        'settings.toggleDarkMode': 'Alternar modo escuro',
+        'settings.appearanceLightAuto': 'Modo claro (automático)',
+        'settings.languageAndRegion': 'Idioma e região',
+        'settings.language': 'Idioma',
+        'settings.detectedTimezone': 'Fuso horário detectado',
+        'settings.timezoneNotDetected': 'não detectado',
+        'settings.currencies': 'Moedas',
+        'settings.manageCurrencies': 'Gerenciar direto em <a href="financeiro.html" class="text-petrol hover:text-ink font-medium transition">Financeiro</a>.',
+        'settings.infoAccount': 'Seu nome, papel e cor de avatar aparecem em todo o sistema — não só aqui, é como o resto da equipe te reconhece.',
+        'settings.infoActivity': 'Mostra o que está acontecendo na agência inteira, não só o que você fez — todo mundo com acesso vê o mesmo histórico.',
+        'settings.infoTeam': 'Quem tem acesso ao sistema agora e com qual papel. "Convidar" ainda não dispara email de verdade — isso chega junto com o backend.',
+        'settings.infoPassword': 'A troca ainda não é salva de verdade — isso passa a funcionar quando o backend estiver no ar.',
+        'settings.infoSessions': 'Hoje cada navegador guarda sua própria sessão local. Gestão de sessões por dispositivo chega junto com o backend.',
+        'settings.infoDangerZone': 'Essas ações valem só pra este navegador. "Sair" equivale a sair da sessão local (ganha efeito por dispositivo com o backend). "Limpar" apaga clientes, lançamentos, posts e equipe daqui — sem volta, mas só afeta este navegador.',
+        'settings.infoPermissions': 'Reflete o que já está implementado hoje — não uma promessa futura.',
+        'settings.infoAppearance': 'Claro é o padrão automático do ROTA. Escuro é uma escolha sua, e fica lembrada só neste navegador — se abrir noutro aparelho ou navegador, volta pro claro até você ligar de novo lá.',
+        'settings.infoLanguage': 'O ROTA está disponível em português e inglês. Inglês é o padrão automático — português é uma escolha sua, lembrada só neste navegador.',
+        'settings.infoCurrencies': 'Escolher e trocar as moedas ativas mora no Financeiro, porque é lá que elas realmente importam — aqui só aponta o caminho.',
+      },
+    });
+
     renderShell('settings');
 
     const $ = (id) => document.getElementById(id);
 
-    const LABEL_PAPEL = { admin: 'Admin', agente: 'Agente' };
+    // --- Aparência --------------------------------------------------
+
+    function renderTheme() {
+      const escuro = RotaTheme.get() === 'dark';
+      $('themeToggleBtn').className = `relative w-11 h-6 rounded-full transition flex-shrink-0 ${escuro ? 'bg-petrol' : 'bg-ink/15'}`;
+      $('themeToggleBtn').setAttribute('aria-checked', escuro);
+      document.querySelector('.themeToggleKnob').style.transform = escuro ? 'translateX(20px)' : 'translateX(0)';
+      document.querySelector('.appearanceLabel').textContent = escuro ? RotaI18n.t('shell.darkMode') : RotaI18n.t('settings.appearanceLightAuto');
+      document.querySelector('.appearanceIcon').setAttribute('data-lucide', escuro ? 'sun' : 'moon');
+      lucide.createIcons();
+    }
+
+    $('themeToggleBtn').onclick = () => {
+      RotaTheme.toggle();
+      renderTheme();
+    };
+
+    renderTheme();
+
+    // --- Idioma -------------------------------------------------------
+
+    function renderLanguageSelect() {
+      $('languageSelect').value = RotaI18n.get();
+    }
+    $('languageSelect').onchange = (e) => RotaI18n.set(e.target.value);
+    renderLanguageSelect();
+
     const COR_PAPEL = { admin: 'petrol', agente: 'amber' };
     const CORES_AVATAR = ['petrol', 'amber', 'clay', 'ink'];
     const ICONE_ATIVIDADE = { cliente: 'user-plus', financeiro: 'wallet', marketing: 'megaphone', equipe: 'users' };
@@ -224,38 +457,49 @@
     const usuarioAtual = RotaDB.getCurrentUser();
     const souAdmin = usuarioAtual.papel === 'admin';
 
-    // --- Menu de seções, dentro do botão "i" (substitui a barra de abas) ---
+    // --- Menu do cabeçalho: agora é "ir para", não "mostrar só esta" —
+    // todas as seções ficam sempre na página, uma rolagem contínua. ---
 
-    const SECOES = [
-      { id: 'conta', label: 'Conta', icone: 'user' },
-      ...(souAdmin ? [{ id: 'equipe', label: 'Equipe', icone: 'users' }] : []),
-      { id: 'seguranca', label: 'Segurança', icone: 'shield' },
-      { id: 'preferencias', label: 'Preferências', icone: 'sliders-horizontal' },
+    const SECOES_DEF = [
+      { id: 'conta', chave: 'settings.sectionAccount', icone: 'user' },
+      ...(souAdmin ? [{ id: 'equipe', chave: 'settings.sectionTeam', icone: 'users' }] : []),
+      { id: 'seguranca', chave: 'settings.sectionSecurity', icone: 'shield' },
+      { id: 'preferencias', chave: 'settings.sectionPreferences', icone: 'sliders-horizontal' },
     ];
-    let secaoAtiva = 'conta';
-
-    function aplicarSecao() {
-      ['conta', 'equipe', 'seguranca', 'preferencias'].forEach(id => {
-        $(`tab${id.charAt(0).toUpperCase()}${id.slice(1)}`).classList.toggle('hidden', secaoAtiva !== id);
-      });
-      $('sectionEyebrow').textContent = SECOES.find(s => s.id === secaoAtiva)?.label.toUpperCase() || '';
+    // label é resolvido no momento do uso (não guardado), pra sempre refletir o idioma atual
+    function SECOES() {
+      return SECOES_DEF.map(s => ({ ...s, label: RotaI18n.t(s.chave) }));
     }
 
+    // Some pra quem não é admin — não é mais "aba escondida", é seção que
+    // nem existe pra esse papel.
+    if (!souAdmin) $('secaoEquipe').classList.add('hidden');
+
+    // Qual seção está visível no momento, conforme o scroll — só pra
+    // destacar no menu e no rótulo do cabeçalho, puramente cosmético.
+    let secaoVisivel = 'conta';
+
     function renderSettingsMenu() {
-      $('settingsMenu').innerHTML = SECOES.map(s => `
-        <button data-secao="${s.id}" class="secaoMenuItem w-full flex items-center gap-2.5 px-4 py-3 text-sm text-left transition ${secaoAtiva === s.id ? 'bg-petrol text-paper' : 'text-ink/70 hover:bg-paper'}">
+      $('settingsMenu').innerHTML = SECOES().map(s => `
+        <button data-secao="${s.id}" class="secaoMenuItem w-full flex items-center gap-2.5 px-4 py-3 text-sm text-left transition ${secaoVisivel === s.id ? 'bg-petrol text-paper' : 'text-ink/70 hover:bg-paper'}">
           <i data-lucide="${s.icone}" class="w-4 h-4"></i> ${s.label}
         </button>`).join('');
       lucide.createIcons();
 
       document.querySelectorAll('.secaoMenuItem').forEach(btn => {
         btn.onclick = () => {
-          secaoAtiva = btn.dataset.secao;
-          aplicarSecao();
-          renderSettingsMenu();
+          $(`secao${btn.dataset.secao.charAt(0).toUpperCase()}${btn.dataset.secao.slice(1)}`)
+            .scrollIntoView({ behavior: 'smooth', block: 'start' });
           $('settingsMenu').classList.add('hidden');
         };
       });
+    }
+
+    // Atualiza o rótulo do cabeçalho pra seção informada (ou pra atualmente
+    // visível, quando chamado sem argumento — útil na carga inicial e ao trocar de idioma).
+    function renderSectionEyebrow(id) {
+      const alvo = id || secaoVisivel;
+      $('sectionEyebrow').textContent = SECOES().find(s => s.id === alvo)?.label.toUpperCase() || '';
     }
 
     $('settingsMenuBtn').onclick = (e) => {
@@ -268,19 +512,50 @@
       }
     });
 
+    // Observa qual seção está mais visível na tela pra manter o rótulo do
+    // cabeçalho e o destaque do menu certos enquanto o usuário rola a página.
+    const observadorSecoes = new IntersectionObserver((entries) => {
+      const maisVisivel = entries
+        .filter(e => e.isIntersecting)
+        .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+      if (!maisVisivel) return;
+
+      const id = maisVisivel.target.id.replace('secao', '').toLowerCase();
+      if (id === secaoVisivel) return;
+      secaoVisivel = id;
+      renderSectionEyebrow(id);
+      renderSettingsMenu();
+    }, { threshold: [0.3, 0.6] });
+
+    SECOES_DEF.forEach(s => {
+      const el = document.getElementById(`secao${s.id.charAt(0).toUpperCase()}${s.id.slice(1)}`);
+      if (el) observadorSecoes.observe(el);
+    });
+
     // --- Ícones "i" — texto explicativo que antes ficava sempre visível ---
 
-    const TEXTOS_INFO = {
-      senha: 'A troca ainda não é salva de verdade — isso passa a funcionar quando o backend estiver no ar.',
-      sessoes: 'Hoje cada navegador guarda sua própria sessão local. Gestão de sessões por dispositivo chega junto com o backend.',
-      permissoes: 'Reflete o que já está implementado hoje — não uma promessa futura.',
-      idioma: 'Mais idiomas em breve.',
-    };
+    // Função (não objeto fixo) pra sempre pegar o texto no idioma atual —
+    // lida no clique, não guardada de antemão.
+    function textoInfo(chave) {
+      const MAPA = {
+        conta: 'settings.infoAccount',
+        atividade: 'settings.infoActivity',
+        equipe: 'settings.infoTeam',
+        senha: 'settings.infoPassword',
+        sessoes: 'settings.infoSessions',
+        zonaPerigo: 'settings.infoDangerZone',
+        permissoes: 'settings.infoPermissions',
+        aparencia: 'settings.infoAppearance',
+        idioma: 'settings.infoLanguage',
+        moedas: 'settings.infoCurrencies',
+      };
+      return MAPA[chave] ? RotaI18n.t(MAPA[chave]) : '';
+    }
 
     document.querySelectorAll('.infoBtn').forEach(btn => {
       btn.onclick = () => {
-        const texto = TEXTOS_INFO[btn.dataset.info] || '';
-        RotaModal.info('Mais informações', `<p class="text-sm text-ink/70 leading-relaxed">${texto}</p>`);
+        const texto = textoInfo(btn.dataset.info);
+        RotaModal.info(RotaI18n.t('settings.moreInfo'), `<p class="text-sm text-ink/70 leading-relaxed">${texto}</p>`);
       };
     });
 
@@ -291,7 +566,7 @@
       $('myAvatar').className = `w-14 h-14 rounded-full bg-${user.avatarColor || 'petrol'} ${user.avatarColor === 'amber' ? 'text-ink' : 'text-paper'} flex items-center justify-center font-display text-lg font-semibold flex-shrink-0`;
       $('myAvatar').textContent = RotaDB.initials(user.nome) || '—';
       $('myName').textContent = user.nome;
-      $('myRole').textContent = user.papel === 'admin' ? 'Administrador' : 'Agente';
+      $('myRole').textContent = RotaI18n.t(user.papel === 'admin' ? 'settings.roleAdmin' : 'settings.roleAgent');
     }
 
     function renderAvatarSwatches() {
@@ -321,7 +596,7 @@
               <p class="text-xs text-ink/40">${RotaDB.formatDate(ev.quando, 'relative')}</p>
             </div>
           </li>`).join('')
-        : `<li class="py-8 text-center text-sm text-ink/35 italic">Nenhuma atividade ainda.</li>`;
+        : `<li class="py-8 text-center text-sm text-ink/35 italic">${RotaI18n.t('settings.noActivityYet')}</li>`;
       lucide.createIcons();
     }
 
@@ -337,12 +612,12 @@
               ${RotaDB.initials(membro.nome) || '?'}
             </div>
             <div class="min-w-0">
-              <p class="text-sm font-medium text-ink truncate">${membro.nome}${souEu ? ' <span class="text-ink/40">(você)</span>' : ''}</p>
-              <p class="text-xs text-ink/45 truncate">${membro.email || 'sem email cadastrado'}</p>
+              <p class="text-sm font-medium text-ink truncate">${membro.nome}${souEu ? ` <span class="text-ink/40">${RotaI18n.t('settings.you')}</span>` : ''}</p>
+              <p class="text-xs text-ink/45 truncate">${membro.email || RotaI18n.t('settings.noEmailRegistered')}</p>
             </div>
           </div>
           <div class="flex items-center gap-2 flex-shrink-0">
-            <span class="status-stamp text-${COR_PAPEL[membro.papel]}">${LABEL_PAPEL[membro.papel]}</span>
+            <span class="status-stamp text-${COR_PAPEL[membro.papel]}">${RotaI18n.t(membro.papel === 'admin' ? 'role.admin' : 'role.agente')}</span>
             <button data-id="${membro.id}" class="removeMemberBtn text-ink/30 hover:text-clay transition p-1">
               <i data-lucide="trash-2" class="w-4 h-4"></i>
             </button>
@@ -352,7 +627,7 @@
 
     function renderTeam() {
       const team = RotaDB.getTeam();
-      $('teamCount').textContent = `${team.length} MEMBRO${team.length === 1 ? '' : 'S'}`;
+      $('teamCount').textContent = RotaI18n.t(team.length === 1 ? 'settings.memberCount' : 'settings.memberCount_plural', { n: team.length });
       $('teamList').innerHTML = team.map(renderTeamRow).join('');
       lucide.createIcons();
 
@@ -360,11 +635,11 @@
         btn.onclick = () => {
           const id = btn.dataset.id;
           const membro = team.find(m => m.id === id);
-          if (!confirm(`Remover ${membro.nome} da equipe?`)) return;
+          if (!confirm(RotaI18n.t('settings.confirmRemoveMember', { nome: membro.nome }))) return;
 
           const resultado = RotaDB.removeTeamMember(id);
           if (resultado?.erro === 'ultimo_admin') {
-            alert('Não é possível remover o único administrador da equipe.');
+            alert(RotaI18n.t('settings.cannotRemoveLastAdmin'));
             return;
           }
           renderTeam();
@@ -373,26 +648,29 @@
     }
 
     // Só o que já está implementado de fato — ver pendências no roadmap
-    // pros módulos que ainda não distinguem Admin de Agente.
-    const MATRIZ_PERMISSOES = [
-      { modulo: 'Clientes',   admin: true, agente: 'proprio' },
-      { modulo: 'Financeiro', admin: true, agente: 'aviso' },
-      { modulo: 'Marketing',  admin: true, agente: true },
-      { modulo: 'Equipe',     admin: true, agente: false },
-    ];
+    // pros módulos que ainda não distinguem Admin de Agente. moduloChave
+    // aponta pra chave de tradução do nome do módulo.
+    function matrizPermissoes() {
+      return [
+        { moduloChave: 'shell.clients',    admin: true, agente: 'proprio' },
+        { moduloChave: 'shell.financeiro', admin: true, agente: 'aviso' },
+        { moduloChave: 'shell.marketing',  admin: true, agente: true },
+        { moduloChave: 'settings.team',    admin: true, agente: false },
+      ];
+    }
 
     function celulaPermissao(valor) {
       if (valor === true) return `<i data-lucide="check" class="w-4 h-4 text-petrol mx-auto"></i>`;
       if (valor === false) return `<i data-lucide="x" class="w-4 h-4 text-ink/25 mx-auto"></i>`;
-      if (valor === 'proprio') return `<span class="text-xs text-amber font-medium">Só os próprios</span>`;
-      if (valor === 'aviso') return `<span class="text-xs text-ink/40" title="Ainda vê tudo — filtro por agente é uma pendência do roadmap">Vê tudo (por ora)</span>`;
+      if (valor === 'proprio') return `<span class="text-xs text-amber font-medium">${RotaI18n.t('settings.onlyOwn')}</span>`;
+      if (valor === 'aviso') return `<span class="text-xs text-ink/40" title="${RotaI18n.t('settings.seesAllForNowTooltip')}">${RotaI18n.t('settings.seesAllForNow')}</span>`;
       return '—';
     }
 
     function renderPermissionMatrix() {
-      $('permissionMatrix').innerHTML = MATRIZ_PERMISSOES.map(linha => `
+      $('permissionMatrix').innerHTML = matrizPermissoes().map(linha => `
         <tr>
-          <td class="py-2.5 pr-3 text-ink/80">${linha.modulo}</td>
+          <td class="py-2.5 pr-3 text-ink/80">${RotaI18n.t(linha.moduloChave)}</td>
           <td class="py-2.5 px-2 text-center">${celulaPermissao(linha.admin)}</td>
           <td class="py-2.5 px-2 text-center">${celulaPermissao(linha.agente)}</td>
         </tr>`).join('');
@@ -405,13 +683,13 @@
       try {
         $('timezoneDisplay').textContent = Intl.DateTimeFormat().resolvedOptions().timeZone;
       } catch {
-        $('timezoneDisplay').textContent = 'não detectado';
+        $('timezoneDisplay').textContent = RotaI18n.t('settings.timezoneNotDetected');
       }
     }
 
     // --- Inicialização -----------------------------------------------
 
-    aplicarSecao();
+    renderSectionEyebrow();
     renderSettingsMenu();
     renderMyAccount();
     renderAvatarSwatches();
@@ -422,15 +700,15 @@
     $('editAccountBtn').onclick = () => {
       const user = RotaDB.getCurrentUser();
       RotaModal.open({
-        title: 'Editar conta',
-        submitLabel: 'Salvar',
+        title: RotaI18n.t('settings.editAccount'),
+        submitLabel: RotaI18n.t('common.save'),
         bodyHtml: `
           <div>
-            <label class="${ROTA_LABEL_CLASS}">Nome</label>
+            <label class="${ROTA_LABEL_CLASS}">${RotaI18n.t('settings.name')}</label>
             <input type="text" id="f_nome" class="${ROTA_INPUT_CLASS}" value="${user.nome}" />
           </div>
           <div>
-            <label class="${ROTA_LABEL_CLASS}">Email</label>
+            <label class="${ROTA_LABEL_CLASS}">${RotaI18n.t('settings.email')}</label>
             <input type="email" id="f_email" class="${ROTA_INPUT_CLASS}" value="${user.email || ''}" />
           </div>
         `,
@@ -446,22 +724,22 @@
     if (souAdmin) {
       $('inviteBtn').onclick = () => {
         RotaModal.open({
-          title: 'Convidar membro',
-          submitLabel: 'Convidar',
+          title: RotaI18n.t('settings.inviteMember'),
+          submitLabel: RotaI18n.t('settings.invite'),
           bodyHtml: `
             <div>
-              <label class="${ROTA_LABEL_CLASS}">Nome *</label>
-              <input type="text" id="f_nome" required class="${ROTA_INPUT_CLASS}" placeholder="Nome completo" />
+              <label class="${ROTA_LABEL_CLASS}">${RotaI18n.t('settings.nameRequired')}</label>
+              <input type="text" id="f_nome" required class="${ROTA_INPUT_CLASS}" placeholder="${RotaI18n.t('settings.fullNamePlaceholder')}" />
             </div>
             <div>
-              <label class="${ROTA_LABEL_CLASS}">Email</label>
-              <input type="email" id="f_email" class="${ROTA_INPUT_CLASS}" placeholder="email@agencia.com" />
+              <label class="${ROTA_LABEL_CLASS}">${RotaI18n.t('settings.email')}</label>
+              <input type="email" id="f_email" class="${ROTA_INPUT_CLASS}" placeholder="${RotaI18n.t('settings.emailPlaceholder')}" />
             </div>
             <div>
-              <label class="${ROTA_LABEL_CLASS}">Papel *</label>
+              <label class="${ROTA_LABEL_CLASS}">${RotaI18n.t('settings.roleRequired')}</label>
               <select id="f_papel" class="${ROTA_INPUT_CLASS}">
-                <option value="agente">Agente — vê só os próprios clientes</option>
-                <option value="admin">Admin — vê tudo</option>
+                <option value="agente">${RotaI18n.t('settings.roleAgentOption')}</option>
+                <option value="admin">${RotaI18n.t('settings.roleAdminOption')}</option>
               </select>
             </div>
           `,
@@ -484,37 +762,53 @@
 
     $('changePasswordBtn').onclick = () => {
       RotaModal.open({
-        title: 'Trocar senha',
-        submitLabel: 'Salvar',
+        title: RotaI18n.t('settings.changePassword'),
+        submitLabel: RotaI18n.t('common.save'),
         bodyHtml: `
           <div>
-            <label class="${ROTA_LABEL_CLASS}">Senha atual</label>
+            <label class="${ROTA_LABEL_CLASS}">${RotaI18n.t('settings.currentPassword')}</label>
             <input type="password" id="f_atual" class="${ROTA_INPUT_CLASS}" />
           </div>
           <div>
-            <label class="${ROTA_LABEL_CLASS}">Nova senha</label>
+            <label class="${ROTA_LABEL_CLASS}">${RotaI18n.t('settings.newPassword')}</label>
             <input type="password" id="f_nova" class="${ROTA_INPUT_CLASS}" />
           </div>
-          <p class="text-xs text-ink/40">Isso ainda não é salvo de verdade — a interface já está pronta pra quando o backend existir.</p>
+          <p class="text-xs text-ink/40">${RotaI18n.t('settings.passwordNotSavedYet')}</p>
         `,
         onSubmit: () => {
           RotaModal.close();
-          alert('Interface pronta! Isso vai salvar de verdade quando o backend PHP estiver no ar.');
+          alert(RotaI18n.t('settings.passwordSavedAlert'));
         },
       });
     };
 
     $('logoutAllBtn').onclick = () => {
-      if (!confirm('Sair da sua sessão neste navegador?')) return;
+      if (!confirm(RotaI18n.t('settings.confirmLogoutBrowser'))) return;
       RotaDB.logout();
       window.location.href = 'index.html';
     };
 
     $('resetDataBtn').onclick = () => {
-      if (!confirm('Isso apaga TODOS os clientes, lançamentos, posts e a equipe deste navegador. Não pode ser desfeito. Continuar?')) return;
+      if (!confirm(RotaI18n.t('settings.confirmResetData'))) return;
       RotaDB.resetAllData();
       window.location.href = 'index.html';
     };
+
+    // --- Idioma: re-renderiza tudo que tem texto gerado por JS ----------
+
+    document.title = RotaI18n.t('settings.pageTitle');
+    RotaI18n.onChange(() => {
+      RotaI18n.apply();
+      document.title = RotaI18n.t('settings.pageTitle');
+      renderLanguageSelect();
+      renderTheme();
+      renderSectionEyebrow();
+      renderSettingsMenu();
+      renderMyAccount();
+      renderActivity();
+      if (souAdmin) { renderTeam(); renderPermissionMatrix(); }
+      renderPreferencias();
+    });
   </script>
 </body>
 </html>

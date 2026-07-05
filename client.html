@@ -1,9 +1,11 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="en">
 <head>
+  <script src="theme.js"></script>
+  <script src="i18n.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Cliente — ROTA</title>
+  <title>Client — ROTA</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -57,7 +59,7 @@
           <i data-lucide="arrow-left" class="w-5 h-5"></i>
         </a>
         <div class="min-w-0">
-          <p class="font-mono-ticket text-[11px] text-ink/40 tracking-wider mb-0.5">CLIENTES / PERFIL</p>
+          <p class="font-mono-ticket text-[11px] text-ink/40 tracking-wider mb-0.5" data-i18n="client.breadcrumb">CLIENTS / PROFILE</p>
           <h1 id="pageTitle" class="font-display text-2xl font-semibold text-ink truncate">—</h1>
         </div>
       </header>
@@ -65,8 +67,8 @@
       <!-- Estado: cliente não encontrado -->
       <div id="notFoundState" class="hidden px-5 md:px-8 py-12 text-center">
         <i data-lucide="user-x" class="w-10 h-10 text-ink/25 mx-auto mb-3"></i>
-        <p class="text-ink/50 mb-4">Cliente não encontrado.</p>
-        <a href="clients.html" class="text-petrol hover:text-ink font-medium text-sm transition">Voltar pra lista de clientes</a>
+        <p class="text-ink/50 mb-4" data-i18n="client.notFoundMessage">Client not found.</p>
+        <a href="clients.html" class="text-petrol hover:text-ink font-medium text-sm transition" data-i18n="client.backToList">Back to client list</a>
       </div>
 
       <div id="profileContent" class="px-5 md:px-8 py-6 space-y-5 max-w-2xl">
@@ -74,10 +76,10 @@
         <!-- Cartão de identificação -->
         <div class="bg-white border border-ink/10 rounded-lg p-5 relative overflow-hidden">
           <div class="absolute top-4 right-4 flex items-center gap-1.5">
-            <button id="editClientBtn" class="w-8 h-8 flex items-center justify-center rounded-md text-ink/40 hover:text-petrol hover:bg-paper transition" aria-label="Editar cliente">
+            <button id="editClientBtn" class="w-8 h-8 flex items-center justify-center rounded-md text-ink/40 hover:text-petrol hover:bg-paper transition" data-i18n-aria-label="client.editAria" aria-label="Edit client">
               <i data-lucide="pencil" class="w-4 h-4"></i>
             </button>
-            <button id="deleteClientBtn" class="w-8 h-8 flex items-center justify-center rounded-md text-ink/40 hover:text-clay hover:bg-paper transition" aria-label="Excluir cliente">
+            <button id="deleteClientBtn" class="w-8 h-8 flex items-center justify-center rounded-md text-ink/40 hover:text-clay hover:bg-paper transition" data-i18n-aria-label="client.deleteAria" aria-label="Delete client">
               <i data-lucide="trash-2" class="w-4 h-4"></i>
             </button>
           </div>
@@ -95,20 +97,20 @@
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
             <div class="flex items-center gap-2.5 text-ink/70">
               <i data-lucide="phone" class="w-4 h-4 text-ink/35 flex-shrink-0"></i>
-              <span id="clientContato">sem contato</span>
+              <span id="clientContato" data-i18n="client.noContact">no contact</span>
             </div>
             <div class="flex items-center gap-2.5 text-ink/70">
               <i data-lucide="id-card" class="w-4 h-4 text-ink/35 flex-shrink-0"></i>
-              <span id="clientDocumento">sem documento</span>
+              <span id="clientDocumento" data-i18n="client.noDocument">no document</span>
             </div>
             <div class="flex items-center gap-2.5 text-ink/70 sm:col-span-2">
               <i data-lucide="megaphone" class="w-4 h-4 text-ink/35 flex-shrink-0"></i>
-              <span>Origem: <span id="clientOrigem">não informada</span></span>
+              <span><span data-i18n="client.originPrefix">Origin:</span> <span id="clientOrigem" data-i18n="client.originNotInformed">not informed</span></span>
             </div>
           </div>
 
           <div id="clientNotasWrap" class="mt-4 pt-4 border-t border-ink/10">
-            <p class="text-xs font-mono-ticket text-ink/40 tracking-wider mb-1.5">NOTAS</p>
+            <p class="text-xs font-mono-ticket text-ink/40 tracking-wider mb-1.5" data-i18n="client.notesLabel">NOTES</p>
             <p id="clientNotas" class="text-sm text-ink/70 leading-relaxed whitespace-pre-line"></p>
           </div>
         </div>
@@ -117,12 +119,12 @@
         <div class="bg-white border border-ink/10 rounded-lg overflow-hidden">
           <div class="flex items-center justify-between px-5 py-4">
             <div>
-              <h2 class="font-display text-lg font-semibold text-ink">Itens adquiridos</h2>
+              <h2 class="font-display text-lg font-semibold text-ink" data-i18n="client.itemsPurchased">Items purchased</h2>
               <p id="itemCount" class="text-xs text-ink/40 font-mono-ticket tracking-wider mt-0.5">—</p>
             </div>
             <button id="addItemBtn" class="btn-ticket bg-amber hover:bg-amber/90 text-ink font-semibold text-sm px-4 py-2.5 flex items-center gap-2 flex-shrink-0">
               <i data-lucide="plus" class="w-4 h-4"></i>
-              <span class="hidden sm:inline">Novo item</span>
+              <span class="hidden sm:inline" data-i18n="client.newItem">New item</span>
             </button>
           </div>
 
@@ -137,15 +139,131 @@
 
   <script src="shell.js"></script>
   <script>
+    RotaI18n.register({
+      en: {
+        'client.pageTitle': 'Client — ROTA',
+        'client.pageTitleNotFound': 'Client not found — ROTA',
+        'client.breadcrumb': 'CLIENTS / PROFILE',
+        'client.notFoundMessage': 'Client not found.',
+        'client.notFoundTitle': 'Client not found',
+        'client.backToList': 'Back to client list',
+        'client.editAria': 'Edit client',
+        'client.deleteAria': 'Delete client',
+        'client.noContact': 'no contact',
+        'client.noDocument': 'no document',
+        'client.originPrefix': 'Origin:',
+        'client.originNotInformed': 'not informed',
+        'client.notesLabel': 'NOTES',
+        'client.itemsPurchased': 'Items purchased',
+        'client.newItem': 'New item',
+        'client.itemCount': '{{n}} ITEM',
+        'client.itemCount_plural': '{{n}} ITEMS',
+        'client.noItemsYet': 'No item purchased yet.',
+        'client.noValue': 'no value',
+        'client.statusTitleHint': 'Click to advance status',
+        'client.noDescription': '(no description)',
+        'client.agentPrefix': 'Agent: {{nome}}',
+        'client.alertNoCurrency': 'Configure at least one currency in Finance before adding an item.',
+        'client.confirmRemoveItem': 'Remove "{{desc}}"?',
+        'client.thisItem': 'this item',
+        'client.confirmDeleteClient': 'Delete {{nome}}? This removes the client and all purchased items. This action cannot be undone.',
+        'client.modalNewItemTitle': 'New item purchased',
+        'client.modalSaveItem': 'Save item',
+        'client.modalEditItemTitle': 'Edit item',
+        'client.modalSaveChanges': 'Save changes',
+        'client.modalEditClientTitle': 'Edit client',
+        'client.fieldType': 'Type *',
+        'client.fieldStatus': 'Status *',
+        'client.fieldDescription': 'Description *',
+        'client.fieldDescriptionPlaceholder': 'E.g: Zanzibar itinerary, 6 days',
+        'client.fieldValue': 'Value',
+        'client.fieldCurrency': 'Currency',
+        'client.fieldServiceDate': 'Service date',
+        'client.fieldSupplier': 'Supplier',
+        'client.fieldName': 'Name *',
+        'client.fieldContact': 'Contact',
+        'client.fieldDocument': 'Document',
+        'client.fieldLeadOrigin': 'Lead origin',
+        'client.fieldResponsibleAgent': 'Responsible agent',
+        'client.fieldNotes': 'Notes',
+        'itemType.roteiro': 'Complete itinerary',
+        'itemType.ingresso': 'Ticket',
+        'itemType.transfer': 'Transfer',
+        'itemType.reserva': 'Reservation',
+        'itemType.outro': 'Other',
+        'status.confirmado': 'Confirmed',
+        'status.pendente': 'Pending',
+        'status.concluido': 'Completed',
+        'status.cancelado': 'Cancelled',
+      },
+      pt: {
+        'client.pageTitle': 'Cliente — ROTA',
+        'client.pageTitleNotFound': 'Cliente não encontrado — ROTA',
+        'client.breadcrumb': 'CLIENTES / PERFIL',
+        'client.notFoundMessage': 'Cliente não encontrado.',
+        'client.notFoundTitle': 'Cliente não encontrado',
+        'client.backToList': 'Voltar pra lista de clientes',
+        'client.editAria': 'Editar cliente',
+        'client.deleteAria': 'Excluir cliente',
+        'client.noContact': 'sem contato',
+        'client.noDocument': 'sem documento',
+        'client.originPrefix': 'Origem:',
+        'client.originNotInformed': 'não informada',
+        'client.notesLabel': 'NOTAS',
+        'client.itemsPurchased': 'Itens adquiridos',
+        'client.newItem': 'Novo item',
+        'client.itemCount': '{{n}} ITEM',
+        'client.itemCount_plural': '{{n}} ITENS',
+        'client.noItemsYet': 'Nenhum item adquirido ainda.',
+        'client.noValue': 'sem valor',
+        'client.statusTitleHint': 'Clique pra avançar o status',
+        'client.noDescription': '(sem descrição)',
+        'client.agentPrefix': 'Agente: {{nome}}',
+        'client.alertNoCurrency': 'Configure ao menos uma moeda no Financeiro antes de adicionar um item.',
+        'client.confirmRemoveItem': 'Remover "{{desc}}"?',
+        'client.thisItem': 'este item',
+        'client.confirmDeleteClient': 'Excluir {{nome}}? Isso remove o cliente e todos os itens adquiridos. Essa ação não pode ser desfeita.',
+        'client.modalNewItemTitle': 'Novo item adquirido',
+        'client.modalSaveItem': 'Salvar item',
+        'client.modalEditItemTitle': 'Editar item',
+        'client.modalSaveChanges': 'Salvar alterações',
+        'client.modalEditClientTitle': 'Editar cliente',
+        'client.fieldType': 'Tipo *',
+        'client.fieldStatus': 'Status *',
+        'client.fieldDescription': 'Descrição *',
+        'client.fieldDescriptionPlaceholder': 'Ex: Roteiro Zanzibar, 6 dias',
+        'client.fieldValue': 'Valor',
+        'client.fieldCurrency': 'Moeda',
+        'client.fieldServiceDate': 'Data do serviço',
+        'client.fieldSupplier': 'Fornecedor',
+        'client.fieldName': 'Nome *',
+        'client.fieldContact': 'Contato',
+        'client.fieldDocument': 'Documento',
+        'client.fieldLeadOrigin': 'Origem do lead',
+        'client.fieldResponsibleAgent': 'Agente responsável',
+        'client.fieldNotes': 'Notas',
+        'itemType.roteiro': 'Roteiro completo',
+        'itemType.ingresso': 'Ingresso',
+        'itemType.transfer': 'Transfer',
+        'itemType.reserva': 'Reserva',
+        'itemType.outro': 'Outro',
+        'status.confirmado': 'Confirmado',
+        'status.pendente': 'Pendente',
+        'status.concluido': 'Concluído',
+        'status.cancelado': 'Cancelado',
+      },
+    });
+
     renderShell('clients');
 
+    RotaI18n.apply();
     const $ = (id) => document.getElementById(id);
 
     const ICONE_TIPO = { roteiro: 'map', ingresso: 'ticket', transfer: 'plane', reserva: 'bed', outro: 'package' };
-    const LABEL_TIPO = { roteiro: 'Roteiro completo', ingresso: 'Ingresso', transfer: 'Transfer', reserva: 'Reserva', outro: 'Outro' };
     const COR_STATUS = { confirmado: 'petrol', pendente: 'amber', concluido: 'ink', cancelado: 'clay' };
-    const LABEL_STATUS = { confirmado: 'Confirmado', pendente: 'Pendente', concluido: 'Concluído', cancelado: 'Cancelado' };
     const ORDEM_STATUS = ['pendente', 'confirmado', 'concluido', 'cancelado'];
+    const LABEL_TIPO = () => ({ roteiro: RotaI18n.t('itemType.roteiro'), ingresso: RotaI18n.t('itemType.ingresso'), transfer: RotaI18n.t('itemType.transfer'), reserva: RotaI18n.t('itemType.reserva'), outro: RotaI18n.t('itemType.outro') });
+    const LABEL_STATUS = () => ({ confirmado: RotaI18n.t('status.confirmado'), pendente: RotaI18n.t('status.pendente'), concluido: RotaI18n.t('status.concluido'), cancelado: RotaI18n.t('status.cancelado') });
 
     const clientId = new URLSearchParams(window.location.search).get('id');
     let cliente = clientId ? RotaDB.getClientById(clientId) : null;
@@ -153,7 +271,7 @@
     if (!cliente) {
       $('notFoundState').classList.remove('hidden');
       $('profileContent').remove();
-      $('pageTitle').textContent = 'Cliente não encontrado';
+      $('pageTitle').textContent = RotaI18n.t('client.notFoundTitle');
     } else {
       iniciar();
     }
@@ -173,11 +291,11 @@
       $('clientName').textContent = cliente.nome;
 
       const membro = RotaDB.getTeam().find(m => m.id === cliente.agente_id);
-      $('clientAgente').textContent = `Agente: ${membro ? membro.nome : cliente.agente_id}`;
+      $('clientAgente').textContent = RotaI18n.t('client.agentPrefix', { nome: membro ? membro.nome : cliente.agente_id });
 
-      $('clientContato').textContent = cliente.contato || 'sem contato';
-      $('clientDocumento').textContent = cliente.documento || 'sem documento';
-      $('clientOrigem').textContent = cliente.origem_lead || 'não informada';
+      $('clientContato').textContent = cliente.contato || RotaI18n.t('client.noContact');
+      $('clientDocumento').textContent = cliente.documento || RotaI18n.t('client.noDocument');
+      $('clientOrigem').textContent = cliente.origem_lead || RotaI18n.t('client.originNotInformed');
 
       if (cliente.notas) {
         $('clientNotasWrap').classList.remove('hidden');
@@ -189,7 +307,7 @@
 
     function renderItens() {
       const itens = cliente.itens || [];
-      $('itemCount').textContent = `${itens.length} ITEM${itens.length === 1 ? '' : 'S'}`;
+      $('itemCount').textContent = RotaI18n.t(itens.length === 1 ? 'client.itemCount' : 'client.itemCount_plural', { n: itens.length });
 
       $('itemList').innerHTML = itens.length
         ? itens.map(item => `
@@ -199,21 +317,21 @@
                 <i data-lucide="${ICONE_TIPO[item.tipo] || 'package'}" class="w-4 h-4 text-ink/50"></i>
               </div>
               <div class="min-w-0">
-                <p class="text-sm font-medium text-ink truncate">${item.descricao || LABEL_TIPO[item.tipo] || '(sem descrição)'}</p>
+                <p class="text-sm font-medium text-ink truncate">${item.descricao || LABEL_TIPO()[item.tipo] || RotaI18n.t('client.noDescription')}</p>
                 <p class="text-xs text-ink/45">
-                  ${item.valor ? RotaDB.formatCurrency(item.valor, item.moeda) : 'sem valor'}
+                  ${item.valor ? RotaDB.formatCurrency(item.valor, item.moeda) : RotaI18n.t('client.noValue')}
                   ${item.data_servico ? ' · ' + RotaDB.formatDate(item.data_servico, 'short') : ''}
                   ${item.fornecedor ? ' · ' + item.fornecedor : ''}
                 </p>
               </div>
             </div>
             <div class="flex items-center gap-2 flex-shrink-0">
-              <span data-item-id="${item.id}" class="statusBtn status-stamp text-${COR_STATUS[item.status] || 'ink'}" title="Clique pra avançar o status">${LABEL_STATUS[item.status] || item.status}</span>
+              <span data-item-id="${item.id}" class="statusBtn status-stamp text-${COR_STATUS[item.status] || 'ink'}" title="${RotaI18n.t('client.statusTitleHint')}">${LABEL_STATUS()[item.status] || item.status}</span>
               <button data-item-id="${item.id}" class="editItemBtn text-ink/30 hover:text-petrol transition p-1"><i data-lucide="pencil" class="w-4 h-4"></i></button>
               <button data-item-id="${item.id}" class="deleteItemBtn text-ink/30 hover:text-clay transition p-1"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
             </div>
           </li>`).join('')
-        : `<li class="py-8 text-center text-sm text-ink/35 italic">Nenhum item adquirido ainda.</li>`;
+        : `<li class="py-8 text-center text-sm text-ink/35 italic">${RotaI18n.t('client.noItemsYet')}</li>`;
 
       lucide.createIcons();
 
@@ -238,7 +356,7 @@
       document.querySelectorAll('.deleteItemBtn').forEach(btn => {
         btn.onclick = () => {
           const item = cliente.itens.find(i => i.id === btn.dataset.itemId);
-          if (!confirm(`Remover "${item.descricao || 'este item'}"?`)) return;
+          if (!confirm(RotaI18n.t('client.confirmRemoveItem', { desc: item.descricao || RotaI18n.t('client.thisItem') }))) return;
           RotaDB.deleteClientItem(cliente.id, btn.dataset.itemId);
           cliente = RotaDB.getClientById(cliente.id);
           renderItens();
@@ -260,29 +378,29 @@
       return `
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="${ROTA_LABEL_CLASS}">Tipo *</label>
+            <label class="${ROTA_LABEL_CLASS}">${RotaI18n.t('client.fieldType')}</label>
             <select id="f_tipo" class="${ROTA_INPUT_CLASS}">
-              ${Object.entries(LABEL_TIPO).map(([v, l]) => `<option value="${v}" ${item.tipo === v ? 'selected' : ''}>${l}</option>`).join('')}
+              ${Object.entries(LABEL_TIPO()).map(([v, l]) => `<option value="${v}" ${item.tipo === v ? 'selected' : ''}>${l}</option>`).join('')}
             </select>
           </div>
           <div>
-            <label class="${ROTA_LABEL_CLASS}">Status *</label>
+            <label class="${ROTA_LABEL_CLASS}">${RotaI18n.t('client.fieldStatus')}</label>
             <select id="f_status" class="${ROTA_INPUT_CLASS}">
-              ${ORDEM_STATUS.map(v => `<option value="${v}" ${item.status === v ? 'selected' : ''}>${LABEL_STATUS[v]}</option>`).join('')}
+              ${ORDEM_STATUS.map(v => `<option value="${v}" ${item.status === v ? 'selected' : ''}>${LABEL_STATUS()[v]}</option>`).join('')}
             </select>
           </div>
         </div>
         <div>
-          <label class="${ROTA_LABEL_CLASS}">Descrição *</label>
-          <input type="text" id="f_descricao" required class="${ROTA_INPUT_CLASS}" placeholder="Ex: Roteiro Zanzibar, 6 dias" value="${item.descricao || ''}" />
+          <label class="${ROTA_LABEL_CLASS}">${RotaI18n.t('client.fieldDescription')}</label>
+          <input type="text" id="f_descricao" required class="${ROTA_INPUT_CLASS}" placeholder="${RotaI18n.t('client.fieldDescriptionPlaceholder')}" value="${item.descricao || ''}" />
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="${ROTA_LABEL_CLASS}">Valor</label>
+            <label class="${ROTA_LABEL_CLASS}">${RotaI18n.t('client.fieldValue')}</label>
             <input type="number" id="f_valor" min="0" step="0.01" class="${ROTA_INPUT_CLASS}" value="${item.valor || ''}" />
           </div>
           <div>
-            <label class="${ROTA_LABEL_CLASS}">Moeda</label>
+            <label class="${ROTA_LABEL_CLASS}">${RotaI18n.t('client.fieldCurrency')}</label>
             <select id="f_moeda" class="${ROTA_INPUT_CLASS}">
               ${moedasParaSelectItem(item.moeda).map(m => `<option value="${m}" ${item.moeda === m ? 'selected' : ''}>${m} — ${RotaDB.nomeMoeda(m)}</option>`).join('')}
             </select>
@@ -290,11 +408,11 @@
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="${ROTA_LABEL_CLASS}">Data do serviço</label>
+            <label class="${ROTA_LABEL_CLASS}">${RotaI18n.t('client.fieldServiceDate')}</label>
             <input type="date" id="f_data" class="${ROTA_INPUT_CLASS}" value="${item.data_servico ? item.data_servico.slice(0, 10) : ''}" />
           </div>
           <div>
-            <label class="${ROTA_LABEL_CLASS}">Fornecedor</label>
+            <label class="${ROTA_LABEL_CLASS}">${RotaI18n.t('client.fieldSupplier')}</label>
             <input type="text" id="f_fornecedor" class="${ROTA_INPUT_CLASS}" value="${item.fornecedor || ''}" />
           </div>
         </div>`;
@@ -304,13 +422,13 @@
       // Sem moeda ativa configurada ainda, não dá pra montar o select de moeda —
       // manda configurar no Financeiro em vez de abrir um formulário quebrado.
       if (!RotaDB.getMoedasAtivas().length) {
-        alert('Configure ao menos uma moeda no Financeiro antes de adicionar um item.');
+        alert(RotaI18n.t('client.alertNoCurrency'));
         return;
       }
 
       RotaModal.open({
-        title: 'Novo item adquirido',
-        submitLabel: 'Salvar item',
+        title: RotaI18n.t('client.modalNewItemTitle'),
+        submitLabel: RotaI18n.t('client.modalSaveItem'),
         bodyHtml: camposItemHtml(),
         onSubmit: () => {
           const descricao = $('f_descricao').value.trim();
@@ -336,8 +454,8 @@
     function abrirEdicaoItem(itemId) {
       const item = cliente.itens.find(i => i.id === itemId);
       RotaModal.open({
-        title: 'Editar item',
-        submitLabel: 'Salvar alterações',
+        title: RotaI18n.t('client.modalEditItemTitle'),
+        submitLabel: RotaI18n.t('client.modalSaveChanges'),
         bodyHtml: camposItemHtml(item),
         onSubmit: () => {
           const descricao = $('f_descricao').value.trim();
@@ -365,31 +483,31 @@
         .map(m => `<option value="${m.id}" ${cliente.agente_id === m.id ? 'selected' : ''}>${m.nome}</option>`).join('');
 
       RotaModal.open({
-        title: 'Editar cliente',
-        submitLabel: 'Salvar alterações',
+        title: RotaI18n.t('client.modalEditClientTitle'),
+        submitLabel: RotaI18n.t('client.modalSaveChanges'),
         bodyHtml: `
           <div>
-            <label class="${ROTA_LABEL_CLASS}">Nome *</label>
+            <label class="${ROTA_LABEL_CLASS}">${RotaI18n.t('client.fieldName')}</label>
             <input type="text" id="f_nome" required class="${ROTA_INPUT_CLASS}" value="${cliente.nome}" />
           </div>
           <div>
-            <label class="${ROTA_LABEL_CLASS}">Contato</label>
+            <label class="${ROTA_LABEL_CLASS}">${RotaI18n.t('client.fieldContact')}</label>
             <input type="text" id="f_contato" class="${ROTA_INPUT_CLASS}" value="${cliente.contato || ''}" />
           </div>
           <div>
-            <label class="${ROTA_LABEL_CLASS}">Documento</label>
+            <label class="${ROTA_LABEL_CLASS}">${RotaI18n.t('client.fieldDocument')}</label>
             <input type="text" id="f_documento" class="${ROTA_INPUT_CLASS}" value="${cliente.documento || ''}" />
           </div>
           <div>
-            <label class="${ROTA_LABEL_CLASS}">Origem do lead</label>
+            <label class="${ROTA_LABEL_CLASS}">${RotaI18n.t('client.fieldLeadOrigin')}</label>
             <input type="text" id="f_origem" class="${ROTA_INPUT_CLASS}" value="${cliente.origem_lead || ''}" />
           </div>
           <div>
-            <label class="${ROTA_LABEL_CLASS}">Agente responsável</label>
+            <label class="${ROTA_LABEL_CLASS}">${RotaI18n.t('client.fieldResponsibleAgent')}</label>
             <select id="f_agente" class="${ROTA_INPUT_CLASS}">${opcoesAgente}</select>
           </div>
           <div>
-            <label class="${ROTA_LABEL_CLASS}">Notas</label>
+            <label class="${ROTA_LABEL_CLASS}">${RotaI18n.t('client.fieldNotes')}</label>
             <textarea id="f_notas" rows="3" class="${ROTA_INPUT_CLASS}">${cliente.notas || ''}</textarea>
           </div>
         `,
@@ -414,10 +532,22 @@
     }
 
     function excluirCliente() {
-      if (!confirm(`Excluir ${cliente.nome}? Isso remove o cliente e todos os itens adquiridos. Essa ação não pode ser desfeita.`)) return;
+      if (!confirm(RotaI18n.t('client.confirmDeleteClient', { nome: cliente.nome }))) return;
       RotaDB.deleteClient(cliente.id);
       window.location.href = 'clients.html';
     }
+
+    document.title = cliente ? RotaI18n.t('client.pageTitle') : RotaI18n.t('client.pageTitleNotFound');
+    RotaI18n.onChange(() => {
+      RotaI18n.apply();
+      document.title = cliente ? RotaI18n.t('client.pageTitle') : RotaI18n.t('client.pageTitleNotFound');
+      if (cliente) {
+        renderPerfil();
+        renderItens();
+      } else {
+        $('pageTitle').textContent = RotaI18n.t('client.notFoundTitle');
+      }
+    });
   </script>
 </body>
 </html>

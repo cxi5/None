@@ -99,3 +99,71 @@ input:-webkit-autofill {
 @media (prefers-reduced-motion: reduce) {
   .shake, .stamp-pop.show { animation: none !important; }
 }
+
+/* ===================================================================
+   Modo escuro
+   Claro é o automático (padrão, nada pra fazer). Escuro é ligado pela
+   classe .dark na <html> (ver theme.js) e funciona por sobrescrita das
+   MESMAS classes Tailwind que o app já usa — nenhuma página precisa
+   trocar uma classe sequer. Por isso as regras usam seletor de atributo
+   ([class*="..."]) em vez de ".classe\/valor": pega a classe onde quer
+   que ela esteja no atributo, sem dor de cabeça de escapar "/".
+
+   Motivo das cores: no claro é fundo=papel, texto=tinta. No escuro só
+   inverte — fundo=tinta, texto=papel — então reaproveita a mesma
+   paleta em vez de inventar cor nova.
+   =================================================================== */
+
+html.dark {
+  --surface-dark:   #1D2227;   /* cartões/inputs, no lugar do bg-white */
+  --surface-dark-2: rgba(237, 238, 231, 0.06); /* bg-paper / hover:bg-paper */
+  --text-dark-rgb:  237, 238, 231; /* --paper em rgb, base do texto e das bordas */
+}
+
+html.dark body { background-color: var(--ink); }
+
+html.dark .bg-ticket-field {
+  background-image: repeating-linear-gradient(135deg, rgba(237,238,231,0.025) 0px, rgba(237,238,231,0.025) 1px, transparent 1px, transparent 14px);
+}
+
+/* --- Superfícies (cartões, modais, inputs, dropdowns) --- */
+html.dark [class*="bg-white"] { background-color: var(--surface-dark); }
+
+/* --- Fundo sutil (hover, select desabilitado, ícone-círculo) --- */
+html.dark [class*="bg-paper"],
+html.dark [class*="hover:bg-paper"]:hover {
+  background-color: var(--surface-dark-2);
+}
+html.dark [class*="bg-ink/5"] { background-color: rgba(237, 238, 231, 0.07); }
+
+/* --- Texto (todas as opacidades usadas no app) --- */
+html.dark [class*="text-ink"]     { color: rgb(var(--text-dark-rgb)); }
+html.dark [class*="text-ink/25"]  { color: rgba(var(--text-dark-rgb), 0.25); }
+html.dark [class*="text-ink/30"]  { color: rgba(var(--text-dark-rgb), 0.30); }
+html.dark [class*="text-ink/35"]  { color: rgba(var(--text-dark-rgb), 0.35); }
+html.dark [class*="text-ink/40"]  { color: rgba(var(--text-dark-rgb), 0.40); }
+html.dark [class*="text-ink/45"]  { color: rgba(var(--text-dark-rgb), 0.45); }
+html.dark [class*="text-ink/50"]  { color: rgba(var(--text-dark-rgb), 0.50); }
+html.dark [class*="text-ink/60"]  { color: rgba(var(--text-dark-rgb), 0.60); }
+html.dark [class*="text-ink/70"]  { color: rgba(var(--text-dark-rgb), 0.70); }
+html.dark [class*="text-ink/80"]  { color: rgba(var(--text-dark-rgb), 0.80); }
+
+/* --- Bordas (todas as opacidades usadas no app) --- */
+html.dark [class*="border-ink/10"] { border-color: rgba(var(--text-dark-rgb), 0.10); }
+html.dark [class*="border-ink/15"] { border-color: rgba(var(--text-dark-rgb), 0.15); }
+html.dark [class*="border-ink/20"] { border-color: rgba(var(--text-dark-rgb), 0.20); }
+html.dark [class*="border-ink/25"] { border-color: rgba(var(--text-dark-rgb), 0.25); }
+html.dark [class*="border-ink/30"] { border-color: rgba(var(--text-dark-rgb), 0.30); }
+
+/* --- Divisores de lista (divide-y/divide-x) --- */
+html.dark [class*="divide-ink/5"]  > :not([hidden]) ~ :not([hidden]) { border-color: rgba(var(--text-dark-rgb), 0.05); }
+html.dark [class*="divide-ink/10"] > :not([hidden]) ~ :not([hidden]) { border-color: rgba(var(--text-dark-rgb), 0.10); }
+
+/* --- Placeholder dos inputs --- */
+html.dark [class*="placeholder-ink/35"]::placeholder { color: rgba(var(--text-dark-rgb), 0.35); }
+
+/* --- Autofill do Chrome (login/cadastro) --- */
+html.dark input:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 1000px var(--surface-dark) inset !important;
+  -webkit-text-fill-color: rgb(var(--text-dark-rgb)) !important;
+}

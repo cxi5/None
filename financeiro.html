@@ -1,6 +1,8 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="en">
 <head>
+  <script src="theme.js"></script>
+  <script src="i18n.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Financeiro — ROTA</title>
@@ -49,12 +51,12 @@
       <header class="flex items-center justify-between px-5 md:px-8 py-5 border-b border-ink/10 bg-white md:bg-transparent gap-3">
         <div>
           <p id="headerMonth" class="font-mono-ticket text-[11px] text-ink/40 tracking-wider mb-0.5">—</p>
-          <h1 class="font-display text-2xl font-semibold text-ink">Financeiro</h1>
+          <h1 class="font-display text-2xl font-semibold text-ink" data-i18n="financeiro.title">Finance</h1>
         </div>
         <div class="flex items-center gap-2 flex-shrink-0">
           <button id="newTransactionBtn" class="btn-ticket bg-amber hover:bg-amber/90 text-ink font-semibold text-sm px-4 py-2.5 flex items-center gap-2 flex-shrink-0">
             <i data-lucide="plus" class="w-4 h-4"></i>
-            <span class="hidden sm:inline">Novo lançamento</span>
+            <span class="hidden sm:inline" data-i18n="financeiro.newTransaction">New transaction</span>
           </button>
         </div>
       </header>
@@ -72,31 +74,31 @@
 
         <!-- Filtro por período -->
         <div class="flex flex-wrap items-center gap-2 mb-4">
-          <label for="dataInicio" class="text-xs text-ink/45 font-medium">De</label>
+          <label for="dataInicio" class="text-xs text-ink/45 font-medium" data-i18n="financeiro.from">From</label>
           <input type="date" id="dataInicio" class="bg-white border border-ink/15 rounded-md px-3 py-2 text-sm text-ink focus:outline-none input-focus" />
-          <label for="dataFim" class="text-xs text-ink/45 font-medium">até</label>
+          <label for="dataFim" class="text-xs text-ink/45 font-medium" data-i18n="financeiro.to">to</label>
           <input type="date" id="dataFim" class="bg-white border border-ink/15 rounded-md px-3 py-2 text-sm text-ink focus:outline-none input-focus" />
-          <button id="limparPeriodo" class="hidden text-xs text-petrol hover:text-ink font-medium underline underline-offset-2">Limpar período</button>
+          <button id="limparPeriodo" class="hidden text-xs text-petrol hover:text-ink font-medium underline underline-offset-2" data-i18n="financeiro.clearPeriod">Clear period</button>
         </div>
 
         <!-- Filtro por cliente / agente -->
         <div class="flex flex-col sm:flex-row gap-3 mb-4">
           <select id="clienteFiltro" class="bg-white border border-ink/15 rounded-md px-3.5 py-2.5 text-sm text-ink focus:outline-none input-focus sm:max-w-[240px]">
-            <option value="">Todos os clientes</option>
+            <option value="" data-i18n="financeiro.allClients">All clients</option>
           </select>
           <!-- só aparece pra admin — agente só vê os próprios lançamentos, sem precisar filtrar -->
           <select id="agenteFiltro" class="hidden bg-white border border-ink/15 rounded-md px-3.5 py-2.5 text-sm text-ink focus:outline-none input-focus sm:max-w-[220px]">
-            <option value="">Todos os agentes</option>
+            <option value="" data-i18n="financeiro.allAgents">All agents</option>
           </select>
         </div>
 
         <!-- Evolução financeira -->
         <div class="bg-white border border-ink/10 rounded-lg p-5 mb-6">
           <div class="flex items-center justify-between gap-3 mb-0.5 flex-wrap">
-            <p class="text-xs font-mono-ticket text-ink/40 tracking-wider">EVOLUÇÃO FINANCEIRA</p>
+            <p class="text-xs font-mono-ticket text-ink/40 tracking-wider" data-i18n="financeiro.evolution">FINANCIAL EVOLUTION</p>
             <div id="granularidadeChips" class="flex items-center gap-1.5 flex-shrink-0"></div>
           </div>
-          <p class="text-[11px] text-ink/35 mb-3">Saldo acumulado por moeda, dentro dos filtros aplicados acima.</p>
+          <p class="text-[11px] text-ink/35 mb-3" data-i18n="financeiro.evolutionHint">Accumulated balance per currency, within the filters applied above.</p>
           <div id="chartEmptyState" class="hidden text-sm text-ink/35 italic text-center py-10"></div>
           <div class="relative" style="height: 240px;">
             <canvas id="evolucaoChart"></canvas>
@@ -106,12 +108,12 @@
         <!-- Lançamentos -->
         <div class="bg-white border border-ink/10 rounded-lg overflow-hidden">
           <div class="px-5 py-4 flex items-center justify-between gap-3">
-            <p class="text-xs font-mono-ticket text-ink/40 tracking-wider">LANÇAMENTOS RECENTES</p>
+            <p class="text-xs font-mono-ticket text-ink/40 tracking-wider" data-i18n="financeiro.recentTransactions">RECENT TRANSACTIONS</p>
             <div class="flex items-center gap-1 flex-shrink-0">
-              <button id="exportCsvBtn" class="flex items-center gap-1.5 text-xs font-medium text-ink/50 hover:text-petrol px-2.5 py-1.5 rounded-md hover:bg-paper transition" title="Exportar lista filtrada em CSV">
+              <button id="exportCsvBtn" class="flex items-center gap-1.5 text-xs font-medium text-ink/50 hover:text-petrol px-2.5 py-1.5 rounded-md hover:bg-paper transition" data-i18n-title="financeiro.exportCsvTitle" title="Export filtered list as CSV">
                 <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5"></i> <span class="hidden sm:inline">CSV</span>
               </button>
-              <button id="exportPdfBtn" class="flex items-center gap-1.5 text-xs font-medium text-ink/50 hover:text-clay px-2.5 py-1.5 rounded-md hover:bg-paper transition" title="Exportar lista filtrada em PDF">
+              <button id="exportPdfBtn" class="flex items-center gap-1.5 text-xs font-medium text-ink/50 hover:text-clay px-2.5 py-1.5 rounded-md hover:bg-paper transition" data-i18n-title="financeiro.exportPdfTitle" title="Export filtered list as PDF">
                 <i data-lucide="file-text" class="w-3.5 h-3.5"></i> <span class="hidden sm:inline">PDF</span>
               </button>
             </div>
@@ -131,9 +133,170 @@
 
   <script src="shell.js"></script>
   <script>
+    if (window.RotaI18n) {
+      RotaI18n.register({
+        en: {
+          'financeiro.title': 'Finance',
+          'financeiro.newTransaction': 'New transaction',
+          'financeiro.from': 'From',
+          'financeiro.to': 'to',
+          'financeiro.clearPeriod': 'Clear period',
+          'financeiro.allClients': 'All clients',
+          'financeiro.allAgents': 'All agents',
+          'financeiro.evolution': 'FINANCIAL EVOLUTION',
+          'financeiro.evolutionHint': 'Accumulated balance per currency, within the filters applied above.',
+          'financeiro.recentTransactions': 'RECENT TRANSACTIONS',
+          'financeiro.exportCsvTitle': 'Export filtered list as CSV',
+          'financeiro.exportPdfTitle': 'Export filtered list as PDF',
+          'financeiro.pageTitle': 'Finance — ROTA',
+          'financeiro.balanceOf': 'Balance · {{moeda}}',
+          'financeiro.noCurrencyConfigured': 'No currency configured yet.',
+          'financeiro.configureCurrencies': 'Configure currencies',
+          'financeiro.alsoHasTransactionsIn': 'There are also transactions in {{lista}},',
+          'financeiro.outsideActiveCurrencies': 'outside the currently active currencies. Balance: {{saldo}}.',
+          'financeiro.day': 'Day',
+          'financeiro.month': 'Month',
+          'financeiro.year': 'Year',
+          'financeiro.all': 'All',
+          'financeiro.configureCurrenciesTitle': 'Configure currencies',
+          'financeiro.saveCurrencies': 'Save currencies',
+          'financeiro.chooseUpTo': 'Choose up to {{limite}} currencies to use in Finance.',
+          'financeiro.maxCurrencies': 'Choose at most {{limite}} currencies.',
+          'financeiro.noTransactionsForChart': 'Not enough transactions to show evolution with these filters.',
+          'financeiro.income': 'Income',
+          'financeiro.expense': 'Expense',
+          'financeiro.noCategory': 'No category',
+          'financeiro.checkInPrefix': 'check-in',
+          'financeiro.checkOutPrefix': 'check-out',
+          'financeiro.exchangeRate': 'rate',
+          'financeiro.editTransaction': 'Edit transaction',
+          'financeiro.deleteTransaction': 'Delete transaction',
+          'financeiro.edit': 'Edit',
+          'financeiro.delete': 'Delete',
+          'financeiro.noResultsFilter': 'No transaction found with these filters.',
+          'financeiro.noResultsEmpty': 'No transaction registered yet.',
+          'financeiro.previous': 'Previous',
+          'financeiro.next': 'Next',
+          'financeiro.pageOf': 'PAGE {{atual}} OF {{total}}',
+          'financeiro.modalTitleEdit': 'Edit transaction',
+          'financeiro.modalTitleNew': 'New transaction',
+          'financeiro.modalSubmitEdit': 'Save changes',
+          'financeiro.modalSubmitNew': 'Save transaction',
+          'financeiro.fieldType': 'Type *',
+          'financeiro.fieldCurrency': 'Currency *',
+          'financeiro.fieldValue': 'Value *',
+          'financeiro.fieldExchangeRate': 'Exchange rate at the time',
+          'financeiro.fieldCategory': 'Category',
+          'financeiro.fieldCategoryPlaceholder': 'Client payment, supplier, marketing...',
+          'financeiro.fieldClient': 'Linked client',
+          'financeiro.fieldClientNone': '— None —',
+          'financeiro.fieldCheckIn': 'Check-in',
+          'financeiro.fieldCheckOut': 'Check-out',
+          'financeiro.optional': '(optional)',
+          'financeiro.fieldNotes': 'Notes',
+          'financeiro.fieldNotesPlaceholder': 'Transaction description',
+          'financeiro.checkoutBeforeCheckin': 'Check-out cannot be before check-in.',
+          'financeiro.deleteConfirm': 'Delete "{{rotulo}}"? This action cannot be undone.',
+          'financeiro.thisIncome': 'this income',
+          'financeiro.thisExpense': 'this expense',
+          'financeiro.filterCurrency': 'Currency: {{moeda}}',
+          'financeiro.filterPeriod': 'Period: {{inicio}} to {{fim}}',
+          'financeiro.filterClient': 'Client: {{nome}}',
+          'financeiro.filterAgent': 'Agent: {{nome}}',
+          'financeiro.noFilters': 'All transactions, no filter',
+          'financeiro.noTransactionsToExport': 'No transactions to export with these filters.',
+          'financeiro.csvHeaders': 'Date,Type,Currency,Value,Exchange rate,Category,Client,Agent,Check-in,Check-out,Notes',
+          'financeiro.pdfHeaders': 'Date,Type,Value,Category,Client,Notes',
+          'financeiro.generatedOn': 'Generated on {{data}}',
+          'financeiro.noneDash': '—',
+        },
+        pt: {
+          'financeiro.title': 'Financeiro',
+          'financeiro.newTransaction': 'Novo lançamento',
+          'financeiro.from': 'De',
+          'financeiro.to': 'até',
+          'financeiro.clearPeriod': 'Limpar período',
+          'financeiro.allClients': 'Todos os clientes',
+          'financeiro.allAgents': 'Todos os agentes',
+          'financeiro.evolution': 'EVOLUÇÃO FINANCEIRA',
+          'financeiro.evolutionHint': 'Saldo acumulado por moeda, dentro dos filtros aplicados acima.',
+          'financeiro.recentTransactions': 'LANÇAMENTOS RECENTES',
+          'financeiro.exportCsvTitle': 'Exportar lista filtrada em CSV',
+          'financeiro.exportPdfTitle': 'Exportar lista filtrada em PDF',
+          'financeiro.pageTitle': 'Financeiro — ROTA',
+          'financeiro.balanceOf': 'Saldo · {{moeda}}',
+          'financeiro.noCurrencyConfigured': 'Nenhuma moeda configurada ainda.',
+          'financeiro.configureCurrencies': 'Configurar moedas',
+          'financeiro.alsoHasTransactionsIn': 'Também há lançamentos em {{lista}},',
+          'financeiro.outsideActiveCurrencies': 'fora das moedas ativas no momento. Saldo: {{saldo}}.',
+          'financeiro.day': 'Dia',
+          'financeiro.month': 'Mês',
+          'financeiro.year': 'Ano',
+          'financeiro.all': 'Todas',
+          'financeiro.configureCurrenciesTitle': 'Configurar moedas',
+          'financeiro.saveCurrencies': 'Salvar moedas',
+          'financeiro.chooseUpTo': 'Escolha até {{limite}} moedas pra usar no Financeiro.',
+          'financeiro.maxCurrencies': 'Escolha no máximo {{limite}} moedas.',
+          'financeiro.noTransactionsForChart': 'Sem lançamentos suficientes pra mostrar evolução com esses filtros.',
+          'financeiro.income': 'Receita',
+          'financeiro.expense': 'Despesa',
+          'financeiro.noCategory': 'Sem categoria',
+          'financeiro.checkInPrefix': 'entrada',
+          'financeiro.checkOutPrefix': 'saída',
+          'financeiro.exchangeRate': 'câmbio',
+          'financeiro.editTransaction': 'Editar lançamento',
+          'financeiro.deleteTransaction': 'Excluir lançamento',
+          'financeiro.edit': 'Editar',
+          'financeiro.delete': 'Excluir',
+          'financeiro.noResultsFilter': 'Nenhum lançamento encontrado com esses filtros.',
+          'financeiro.noResultsEmpty': 'Nenhum lançamento registrado ainda.',
+          'financeiro.previous': 'Anterior',
+          'financeiro.next': 'Próxima',
+          'financeiro.pageOf': 'PÁGINA {{atual}} DE {{total}}',
+          'financeiro.modalTitleEdit': 'Editar lançamento',
+          'financeiro.modalTitleNew': 'Novo lançamento',
+          'financeiro.modalSubmitEdit': 'Salvar alterações',
+          'financeiro.modalSubmitNew': 'Salvar lançamento',
+          'financeiro.fieldType': 'Tipo *',
+          'financeiro.fieldCurrency': 'Moeda *',
+          'financeiro.fieldValue': 'Valor *',
+          'financeiro.fieldExchangeRate': 'Câmbio no momento',
+          'financeiro.fieldCategory': 'Categoria',
+          'financeiro.fieldCategoryPlaceholder': 'Pagamento cliente, fornecedor, marketing...',
+          'financeiro.fieldClient': 'Cliente vinculado',
+          'financeiro.fieldClientNone': '— Nenhum —',
+          'financeiro.fieldCheckIn': 'Check-in',
+          'financeiro.fieldCheckOut': 'Check-out',
+          'financeiro.optional': '(opcional)',
+          'financeiro.fieldNotes': 'Notas',
+          'financeiro.fieldNotesPlaceholder': 'Descrição do lançamento',
+          'financeiro.checkoutBeforeCheckin': 'O check-out não pode ser antes do check-in.',
+          'financeiro.deleteConfirm': 'Excluir "{{rotulo}}"? Essa ação não pode ser desfeita.',
+          'financeiro.thisIncome': 'esta receita',
+          'financeiro.thisExpense': 'esta despesa',
+          'financeiro.filterCurrency': 'Moeda: {{moeda}}',
+          'financeiro.filterPeriod': 'Período: {{inicio}} a {{fim}}',
+          'financeiro.filterClient': 'Cliente: {{nome}}',
+          'financeiro.filterAgent': 'Agente: {{nome}}',
+          'financeiro.noFilters': 'Todos os lançamentos, sem filtro',
+          'financeiro.noTransactionsToExport': 'Nenhum lançamento pra exportar com esses filtros.',
+          'financeiro.csvHeaders': 'Data,Tipo,Moeda,Valor,Câmbio,Categoria,Cliente,Agente,Check-in,Check-out,Notas',
+          'financeiro.pdfHeaders': 'Data,Tipo,Valor,Categoria,Cliente,Notas',
+          'financeiro.generatedOn': 'Gerado em {{data}}',
+          'financeiro.noneDash': '—',
+        },
+      });
+    }
+
     renderShell('financeiro');
+    RotaI18n.apply();
+    document.title = RotaI18n.t('financeiro.pageTitle');
 
     const $ = (id) => document.getElementById(id);
+
+    // Redesenha o gráfico quando o tema muda (cor de texto/grade do Chart.js
+    // não é CSS, então precisa disso além da troca de classe .dark).
+    RotaTheme.onChange(() => { if (evolucaoChartInstance) renderEvolucaoChart(); });
 
     // Quem está "logado" agora e se é admin — mesmo padrão de clients.html:
     // agente só vê os próprios lançamentos, admin vê tudo (ou filtra por agente).
@@ -141,9 +304,10 @@
     const meuMembro = RotaDB.getTeam().find(m => m.nome === usuarioAtual.nome);
     const souAdmin = usuarioAtual.papel === 'admin';
 
-    // Cabeçalho do mês — dinâmico, no formato "JUL 2026"
+    // Cabeçalho do mês — dinâmico, no formato "JUL 2026" / "JUL 2026"
     const hoje = new Date();
-    $('headerMonth').textContent = hoje.toLocaleDateString('pt-PT', { month: 'short', year: 'numeric' }).replace('.', '').toUpperCase();
+    const localeFinanceiro = () => (RotaI18n.get() === 'en' ? 'en-US' : 'pt-PT');
+    $('headerMonth').textContent = hoje.toLocaleDateString(localeFinanceiro(), { month: 'short', year: 'numeric' }).replace('.', '').toUpperCase();
 
     // Renderiza os cards de saldo com base nas moedas que o usuário ativou —
     // nada de moeda fixa. Se não houver nenhuma ativa, mostra um estado
@@ -155,13 +319,13 @@
       $('saldoCards').innerHTML = ativas.length
         ? ativas.map(moeda => `
             <div class="currency-card border-${RotaDB.corMoeda(moeda)} bg-white rounded-lg p-4">
-              <p class="text-xs text-ink/50 font-medium mb-1">Saldo · ${RotaDB.nomeMoeda(moeda)}</p>
+              <p class="text-xs text-ink/50 font-medium mb-1">${RotaI18n.t('financeiro.balanceOf', { moeda: RotaDB.nomeMoeda(moeda) })}</p>
               <p class="font-mono-ticket text-2xl font-medium text-ink">${RotaDB.formatCurrency(saldo[moeda] || 0, moeda)}</p>
             </div>`).join('')
         : `<div class="sm:col-span-2 lg:col-span-4 bg-white border border-dashed border-ink/20 rounded-lg p-6 text-center">
              <i data-lucide="coins" class="w-7 h-7 text-ink/25 mx-auto mb-2"></i>
-             <p class="text-sm text-ink/50 mb-3">Nenhuma moeda configurada ainda.</p>
-             <button id="configMoedasBtnVazio" class="text-sm text-petrol hover:text-ink font-semibold transition">Configurar moedas</button>
+             <p class="text-sm text-ink/50 mb-3">${RotaI18n.t('financeiro.noCurrencyConfigured')}</p>
+             <button id="configMoedasBtnVazio" class="text-sm text-petrol hover:text-ink font-semibold transition">${RotaI18n.t('financeiro.configureCurrencies')}</button>
            </div>`;
 
       if (!ativas.length) {
@@ -175,9 +339,9 @@
         $('saldoForaAtiva').classList.remove('hidden');
         $('saldoForaAtiva').innerHTML = `
           <p class="text-xs text-ink/40 leading-relaxed">
-            Também há lançamentos em ${fora.map(m => `<strong class="text-ink/60">${RotaDB.nomeMoeda(m)} (${m})</strong>`).join(', ')},
-            fora das moedas ativas no momento. Saldo: ${fora.map(m => RotaDB.formatCurrency(saldo[m] || 0, m)).join(' · ')}.
-            <button id="reativarMoedaLink" class="text-petrol hover:text-ink font-medium underline underline-offset-2">Configurar moedas</button>
+            ${RotaI18n.t('financeiro.alsoHasTransactionsIn', { lista: fora.map(m => `<strong class="text-ink/60">${RotaDB.nomeMoeda(m)} (${m})</strong>`).join(', ') })}
+            ${RotaI18n.t('financeiro.outsideActiveCurrencies', { saldo: fora.map(m => RotaDB.formatCurrency(saldo[m] || 0, m)).join(' · ') })}
+            <button id="reativarMoedaLink" class="text-petrol hover:text-ink font-medium underline underline-offset-2">${RotaI18n.t('financeiro.configureCurrencies')}</button>
           </p>`;
         $('reativarMoedaLink').onclick = abrirConfigMoedas;
       } else {
@@ -200,18 +364,28 @@
     const CORES_HEX_MOEDA = { petrol: '#1F4B4C', amber: '#E8A33D', clay: '#C1573A', ink: '#14181C' };
     let evolucaoChartInstance = null;
 
+    // Chart.js desenha em <canvas> — CSS não alcança texto/grade dele, então
+    // o tema entra aqui manualmente. Reaproveita a cor do texto do app (tinta
+    // no claro, papel no escuro) em vez de inventar uma paleta só do gráfico.
+    function corTextoChart() {
+      return RotaTheme.get() === 'dark' ? 'rgba(237,238,231,0.7)' : 'rgba(20,24,28,0.7)';
+    }
+    function corGradeChart() {
+      return RotaTheme.get() === 'dark' ? 'rgba(237,238,231,0.08)' : 'rgba(20,24,28,0.08)';
+    }
+
     // Granularidade do eixo de tempo do gráfico — dia, mês ou ano.
     // Fica em memória (não precisa persistir), começa em "mês" porque é
     // a visão mais útil quando ainda não tem filtro de período aplicado.
     let granularidadeChart = 'mes';
-    const LABEL_GRANULARIDADE = { dia: 'Dia', mes: 'Mês', ano: 'Ano' };
+    const LABEL_GRANULARIDADE = () => ({ dia: RotaI18n.t('financeiro.day'), mes: RotaI18n.t('financeiro.month'), ano: RotaI18n.t('financeiro.year') });
 
     function renderGranularidadeChips() {
       const chipBase = 'px-3 py-1 rounded-full text-[11px] font-medium flex-shrink-0 transition';
       const chipAtivo = `${chipBase} bg-petrol text-paper`;
       const chipInativo = `${chipBase} bg-white border border-ink/15 text-ink/50 hover:border-ink/30`;
 
-      $('granularidadeChips').innerHTML = Object.entries(LABEL_GRANULARIDADE)
+      $('granularidadeChips').innerHTML = Object.entries(LABEL_GRANULARIDADE())
         .map(([valor, label]) => `<button class="${granularidadeChart === valor ? chipAtivo : chipInativo}" onclick="selecionarGranularidade('${valor}')">${label}</button>`)
         .join('');
     }
@@ -231,7 +405,7 @@
       const chipInativo = `${chipBase} bg-white border border-ink/15 text-ink/60 hover:border-ink/30`;
 
       $('moedaChips').innerHTML = `
-        <button class="${moedaFiltro === null ? chipAtivo : chipInativo}" onclick="selecionarMoedaFiltro(null)">Todas</button>
+        <button class="${moedaFiltro === null ? chipAtivo : chipInativo}" onclick="selecionarMoedaFiltro(null)">${RotaI18n.t('financeiro.all')}</button>
         ${ativas.map(m => `<button class="${moedaFiltro === m ? chipAtivo : chipInativo}" onclick="selecionarMoedaFiltro('${m}')">${m}</button>`).join('')}
       `;
     }
@@ -253,10 +427,10 @@
           </label>`).join('');
 
       RotaModal.open({
-        title: 'Configurar moedas',
-        submitLabel: 'Salvar moedas',
+        title: RotaI18n.t('financeiro.configureCurrenciesTitle'),
+        submitLabel: RotaI18n.t('financeiro.saveCurrencies'),
         bodyHtml: `
-          <p class="text-xs text-ink/45 mb-1">Escolha até ${RotaDB.LIMITE_MOEDAS_ATIVAS} moedas pra usar no Financeiro.</p>
+          <p class="text-xs text-ink/45 mb-1">${RotaI18n.t('financeiro.chooseUpTo', { limite: RotaDB.LIMITE_MOEDAS_ATIVAS })}</p>
           <p id="limiteAviso" class="hidden text-clay text-xs -mt-1"></p>
           <div class="max-h-72 overflow-y-auto divide-y divide-ink/5 -mx-1 px-1">${opcoesHtml}</div>
         `,
@@ -265,7 +439,7 @@
           const resultado = RotaDB.saveMoedasAtivas(escolhidas);
 
           if (resultado.erro === 'limite_excedido') {
-            $('limiteAviso').textContent = `Escolha no máximo ${resultado.limite} moedas.`;
+            $('limiteAviso').textContent = RotaI18n.t('financeiro.maxCurrencies', { limite: resultado.limite });
             $('limiteAviso').classList.remove('hidden');
             return;
           }
@@ -344,12 +518,12 @@
             const receita = t.tipo === 'receita';
             const cor = receita ? 'petrol' : 'clay';
             const icone = receita ? 'arrow-down-left' : 'arrow-up-right';
-            const subtitulo = cliente ? cliente.nome : (t.categoria || 'Sem categoria');
+            const subtitulo = cliente ? cliente.nome : (t.categoria || RotaI18n.t('financeiro.noCategory'));
             // Quando o lançamento tem check-in/check-out, mostra o horário de
             // entrada (e saída, se houver) em vez da data genérica — é a
             // informação mais precisa disponível pra esse lançamento.
             const infoHorario = t.check_in
-              ? `entrada ${RotaDB.formatDate(t.check_in, 'datetime')}${t.check_out ? ` · saída ${RotaDB.formatDate(t.check_out, 'datetime')}` : ''}`
+              ? `${RotaI18n.t('financeiro.checkInPrefix')} ${RotaDB.formatDate(t.check_in, 'datetime')}${t.check_out ? ` · ${RotaI18n.t('financeiro.checkOutPrefix')} ${RotaDB.formatDate(t.check_out, 'datetime')}` : ''}`
               : RotaDB.formatDate(t.data, 'short');
             return `
               <li class="flex items-center justify-between px-5 py-4 group">
@@ -358,20 +532,20 @@
                     <i data-lucide="${icone}" class="w-4 h-4 text-${cor}"></i>
                   </div>
                   <div class="min-w-0">
-                    <p class="text-sm font-medium text-ink truncate">${t.notas || (receita ? 'Receita' : 'Despesa')}</p>
+                    <p class="text-sm font-medium text-ink truncate">${t.notas || (receita ? RotaI18n.t('financeiro.income') : RotaI18n.t('financeiro.expense'))}</p>
                     <p class="text-xs text-ink/45 truncate">${subtitulo} · ${infoHorario}</p>
                   </div>
                 </div>
                 <div class="flex items-center gap-3 flex-shrink-0">
                   <div class="text-right">
                     <p class="font-mono-ticket text-sm font-medium text-${cor}">${receita ? '+' : '−'} ${RotaDB.formatCurrency(t.valor, t.moeda)}</p>
-                    <p class="text-[11px] text-ink/35 font-mono-ticket">câmbio ${Number(t.taxa_cambio_no_momento).toFixed(2)}</p>
+                    <p class="text-[11px] text-ink/35 font-mono-ticket">${RotaI18n.t('financeiro.exchangeRate')} ${Number(t.taxa_cambio_no_momento).toFixed(2)}</p>
                   </div>
                   <div class="flex items-center gap-1 opacity-60 group-hover:opacity-100 transition">
-                    <button onclick="editarTransacao('${t.id}')" class="w-8 h-8 flex items-center justify-center rounded-md text-ink/40 hover:text-petrol hover:bg-paper transition" aria-label="Editar lançamento" title="Editar">
+                    <button onclick="editarTransacao('${t.id}')" class="w-8 h-8 flex items-center justify-center rounded-md text-ink/40 hover:text-petrol hover:bg-paper transition" aria-label="${RotaI18n.t('financeiro.editTransaction')}" title="${RotaI18n.t('financeiro.edit')}">
                       <i data-lucide="pencil" class="w-4 h-4"></i>
                     </button>
-                    <button onclick="excluirTransacao('${t.id}')" class="w-8 h-8 flex items-center justify-center rounded-md text-ink/40 hover:text-clay hover:bg-paper transition" aria-label="Excluir lançamento" title="Excluir">
+                    <button onclick="excluirTransacao('${t.id}')" class="w-8 h-8 flex items-center justify-center rounded-md text-ink/40 hover:text-clay hover:bg-paper transition" aria-label="${RotaI18n.t('financeiro.deleteTransaction')}" title="${RotaI18n.t('financeiro.delete')}">
                       <i data-lucide="trash-2" class="w-4 h-4"></i>
                     </button>
                   </div>
@@ -380,8 +554,8 @@
           }).join('')
         : `<li class="py-8 text-center text-sm text-ink/35 italic">${
             moedaFiltro || !semPeriodo || $('clienteFiltro').value || $('agenteFiltro').value
-              ? 'Nenhum lançamento encontrado com esses filtros.'
-              : 'Nenhum lançamento registrado ainda.'
+              ? RotaI18n.t('financeiro.noResultsFilter')
+              : RotaI18n.t('financeiro.noResultsEmpty')
           }</li>`;
 
       renderPagination(totalPaginas);
@@ -401,12 +575,12 @@
       $('pagination').innerHTML = `
         <button id="pagAnterior" ${paginaAtual === 1 ? 'disabled' : ''}
           class="flex items-center gap-1.5 px-3.5 py-2 rounded-md border border-ink/15 text-sm font-medium text-ink/70 hover:bg-white transition disabled:opacity-40 disabled:cursor-not-allowed">
-          <i data-lucide="chevron-left" class="w-4 h-4"></i> Anterior
+          <i data-lucide="chevron-left" class="w-4 h-4"></i> ${RotaI18n.t('financeiro.previous')}
         </button>
-        <span class="text-xs font-mono-ticket text-ink/40">PÁGINA ${paginaAtual} DE ${totalPaginas}</span>
+        <span class="text-xs font-mono-ticket text-ink/40">${RotaI18n.t('financeiro.pageOf', { atual: paginaAtual, total: totalPaginas })}</span>
         <button id="pagProxima" ${paginaAtual === totalPaginas ? 'disabled' : ''}
           class="flex items-center gap-1.5 px-3.5 py-2 rounded-md border border-ink/15 text-sm font-medium text-ink/70 hover:bg-white transition disabled:opacity-40 disabled:cursor-not-allowed">
-          Próxima <i data-lucide="chevron-right" class="w-4 h-4"></i>
+          ${RotaI18n.t('financeiro.next')} <i data-lucide="chevron-right" class="w-4 h-4"></i>
         </button>`;
 
       $('pagAnterior').onclick = () => { paginaAtual--; renderTransactions(); };
@@ -425,14 +599,15 @@
     // Rótulo legível de uma chave de período pro eixo X do gráfico.
     function labelPeriodo(chave) {
       if (granularidadeChart === 'ano') return chave;
+      const locale = localeFinanceiro();
       if (granularidadeChart === 'dia') {
         const [ano, mes, dia] = chave.split('-');
         return new Date(Number(ano), Number(mes) - 1, Number(dia))
-          .toLocaleDateString('pt-PT', { day: '2-digit', month: 'short' }).replace('.', '');
+          .toLocaleDateString(locale, { day: '2-digit', month: 'short' }).replace('.', '');
       }
       const [ano, mes] = chave.split('-');
       return new Date(Number(ano), Number(mes) - 1, 1)
-        .toLocaleDateString('pt-PT', { month: 'short', year: '2-digit' }).replace('.', '');
+        .toLocaleDateString(locale, { month: 'short', year: '2-digit' }).replace('.', '');
     }
 
     // Saldo acumulado por moeda, agrupado conforme a granularidade escolhida
@@ -446,7 +621,7 @@
       if (!transacoes.length) {
         $('evolucaoChart').classList.add('hidden');
         $('chartEmptyState').classList.remove('hidden');
-        $('chartEmptyState').textContent = 'Sem lançamentos suficientes pra mostrar evolução com esses filtros.';
+        $('chartEmptyState').textContent = RotaI18n.t('financeiro.noTransactionsForChart');
         if (evolucaoChartInstance) { evolucaoChartInstance.destroy(); evolucaoChartInstance = null; }
         return;
       }
@@ -492,7 +667,7 @@
           maintainAspectRatio: false,
           interaction: { mode: 'index', intersect: false },
           plugins: {
-            legend: { display: datasets.length > 1, position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } },
+            legend: { display: datasets.length > 1, position: 'bottom', labels: { boxWidth: 12, font: { size: 11 }, color: corTextoChart() } },
             tooltip: {
               callbacks: {
                 label: (ctx) => `${ctx.dataset.label}: ${RotaDB.formatCurrency(ctx.parsed.y, ctx.dataset.label)}`,
@@ -500,8 +675,8 @@
             },
           },
           scales: {
-            y: { ticks: { font: { size: 11 } } },
-            x: { ticks: { font: { size: 11 } } },
+            y: { ticks: { font: { size: 11 }, color: corTextoChart() }, grid: { color: corGradeChart() } },
+            x: { ticks: { font: { size: 11 }, color: corTextoChart() }, grid: { color: corGradeChart() } },
           },
         },
       });
@@ -532,56 +707,56 @@
         .map(m => `<option value="${m}" ${t.moeda === m ? 'selected' : ''}>${m} — ${RotaDB.nomeMoeda(m)}</option>`).join('');
 
       RotaModal.open({
-        title: editando ? 'Editar lançamento' : 'Novo lançamento',
-        submitLabel: editando ? 'Salvar alterações' : 'Salvar lançamento',
+        title: editando ? RotaI18n.t('financeiro.modalTitleEdit') : RotaI18n.t('financeiro.modalTitleNew'),
+        submitLabel: editando ? RotaI18n.t('financeiro.modalSubmitEdit') : RotaI18n.t('financeiro.modalSubmitNew'),
         bodyHtml: `
           <div class="grid grid-cols-2 gap-3">
             <div>
-              <label class="${ROTA_LABEL_CLASS}">Tipo *</label>
+              <label class="${ROTA_LABEL_CLASS}">${RotaI18n.t('financeiro.fieldType')}</label>
               <select id="f_tipo" class="${ROTA_INPUT_CLASS}">
-                <option value="receita" ${t.tipo === 'receita' || !editando ? 'selected' : ''}>Receita</option>
-                <option value="despesa" ${t.tipo === 'despesa' ? 'selected' : ''}>Despesa</option>
+                <option value="receita" ${t.tipo === 'receita' || !editando ? 'selected' : ''}>${RotaI18n.t('financeiro.income')}</option>
+                <option value="despesa" ${t.tipo === 'despesa' ? 'selected' : ''}>${RotaI18n.t('financeiro.expense')}</option>
               </select>
             </div>
             <div>
-              <label class="${ROTA_LABEL_CLASS}">Moeda *</label>
+              <label class="${ROTA_LABEL_CLASS}">${RotaI18n.t('financeiro.fieldCurrency')}</label>
               <select id="f_moeda" class="${ROTA_INPUT_CLASS}">${opcoesMoeda}</select>
             </div>
           </div>
           <div class="grid grid-cols-2 gap-3">
             <div>
-              <label class="${ROTA_LABEL_CLASS}">Valor *</label>
-              <input type="number" id="f_valor" min="0" step="0.01" required value="${t.valor ?? ''}" class="${ROTA_INPUT_CLASS}" placeholder="0,00" />
+              <label class="${ROTA_LABEL_CLASS}">${RotaI18n.t('financeiro.fieldValue')}</label>
+              <input type="number" id="f_valor" min="0" step="0.01" required value="${t.valor ?? ''}" class="${ROTA_INPUT_CLASS}" placeholder="0.00" />
             </div>
             <div>
-              <label class="${ROTA_LABEL_CLASS}">Câmbio no momento</label>
+              <label class="${ROTA_LABEL_CLASS}">${RotaI18n.t('financeiro.fieldExchangeRate')}</label>
               <input type="number" id="f_cambio" min="0" step="0.01" value="${t.taxa_cambio_no_momento ?? 1}" class="${ROTA_INPUT_CLASS}" />
             </div>
           </div>
           <div>
-            <label class="${ROTA_LABEL_CLASS}">Categoria</label>
-            <input type="text" id="f_categoria" value="${t.categoria || ''}" class="${ROTA_INPUT_CLASS}" placeholder="Pagamento cliente, fornecedor, marketing..." />
+            <label class="${ROTA_LABEL_CLASS}">${RotaI18n.t('financeiro.fieldCategory')}</label>
+            <input type="text" id="f_categoria" value="${t.categoria || ''}" class="${ROTA_INPUT_CLASS}" placeholder="${RotaI18n.t('financeiro.fieldCategoryPlaceholder')}" />
           </div>
           <div>
-            <label class="${ROTA_LABEL_CLASS}">Cliente vinculado</label>
+            <label class="${ROTA_LABEL_CLASS}">${RotaI18n.t('financeiro.fieldClient')}</label>
             <select id="f_cliente" class="${ROTA_INPUT_CLASS}">
-              <option value="">— Nenhum —</option>
+              <option value="">${RotaI18n.t('financeiro.fieldClientNone')}</option>
               ${opcoesClientes}
             </select>
           </div>
           <div class="grid grid-cols-2 gap-3">
             <div>
-              <label class="${ROTA_LABEL_CLASS}">Check-in <span class="text-ink/35 font-normal">(opcional)</span></label>
+              <label class="${ROTA_LABEL_CLASS}">${RotaI18n.t('financeiro.fieldCheckIn')} <span class="text-ink/35 font-normal">${RotaI18n.t('financeiro.optional')}</span></label>
               <input type="datetime-local" id="f_checkin" step="1" value="${t.check_in ? t.check_in.slice(0, 19) : ''}" class="${ROTA_INPUT_CLASS}" />
             </div>
             <div>
-              <label class="${ROTA_LABEL_CLASS}">Check-out <span class="text-ink/35 font-normal">(opcional)</span></label>
+              <label class="${ROTA_LABEL_CLASS}">${RotaI18n.t('financeiro.fieldCheckOut')} <span class="text-ink/35 font-normal">${RotaI18n.t('financeiro.optional')}</span></label>
               <input type="datetime-local" id="f_checkout" step="1" value="${t.check_out ? t.check_out.slice(0, 19) : ''}" class="${ROTA_INPUT_CLASS}" />
             </div>
           </div>
           <div>
-            <label class="${ROTA_LABEL_CLASS}">Notas</label>
-            <input type="text" id="f_notas" value="${t.notas || ''}" class="${ROTA_INPUT_CLASS}" placeholder="Descrição do lançamento" />
+            <label class="${ROTA_LABEL_CLASS}">${RotaI18n.t('financeiro.fieldNotes')}</label>
+            <input type="text" id="f_notas" value="${t.notas || ''}" class="${ROTA_INPUT_CLASS}" placeholder="${RotaI18n.t('financeiro.fieldNotesPlaceholder')}" />
           </div>
         `,
         onSubmit: () => {
@@ -593,7 +768,7 @@
           const checkinValor = $('f_checkin').value;
           const checkoutValor = $('f_checkout').value;
           if (checkinValor && checkoutValor && checkoutValor < checkinValor) {
-            alert('O check-out não pode ser antes do check-in.');
+            alert(RotaI18n.t('financeiro.checkoutBeforeCheckin'));
             return;
           }
 
@@ -631,8 +806,8 @@
     function excluirTransacao(id) {
       const transacao = RotaDB.getTransactions().find(t => t.id === id);
       if (!transacao) return;
-      const rotulo = transacao.notas || (transacao.tipo === 'receita' ? 'esta receita' : 'esta despesa');
-      if (!confirm(`Excluir "${rotulo}"? Essa ação não pode ser desfeita.`)) return;
+      const rotulo = transacao.notas || (transacao.tipo === 'receita' ? RotaI18n.t('financeiro.thisIncome') : RotaI18n.t('financeiro.thisExpense'));
+      if (!confirm(RotaI18n.t('financeiro.deleteConfirm', { rotulo }))) return;
 
       RotaDB.deleteTransaction(id);
       renderSaldoCards();
@@ -643,19 +818,19 @@
     // pra quem abrir o arquivo depois saber exatamente o que está vendo.
     function descreverFiltrosAtivos() {
       const partes = [];
-      if (moedaFiltro) partes.push(`Moeda: ${moedaFiltro}`);
+      if (moedaFiltro) partes.push(RotaI18n.t('financeiro.filterCurrency', { moeda: moedaFiltro }));
       if ($('dataInicio').value || $('dataFim').value) {
-        partes.push(`Período: ${$('dataInicio').value || '—'} a ${$('dataFim').value || '—'}`);
+        partes.push(RotaI18n.t('financeiro.filterPeriod', { inicio: $('dataInicio').value || RotaI18n.t('financeiro.noneDash'), fim: $('dataFim').value || RotaI18n.t('financeiro.noneDash') }));
       }
       if ($('clienteFiltro').value) {
         const cliente = RotaDB.getClientById($('clienteFiltro').value);
-        if (cliente) partes.push(`Cliente: ${cliente.nome}`);
+        if (cliente) partes.push(RotaI18n.t('financeiro.filterClient', { nome: cliente.nome }));
       }
       if (souAdmin && $('agenteFiltro').value) {
         const agente = RotaDB.getTeam().find(m => m.id === $('agenteFiltro').value);
-        if (agente) partes.push(`Agente: ${agente.nome}`);
+        if (agente) partes.push(RotaI18n.t('financeiro.filterAgent', { nome: agente.nome }));
       }
-      return partes.length ? partes.join(' · ') : 'Todos os lançamentos, sem filtro';
+      return partes.length ? partes.join(' · ') : RotaI18n.t('financeiro.noFilters');
     }
 
     function baixarBlob(blob, nomeArquivo) {
@@ -673,15 +848,15 @@
     // ignorando a paginação — quem exporta quer os dados completos do recorte, não só a página visível.
     function exportarCSV() {
       const transacoes = getTransacoesFiltradas().slice().sort((a, b) => new Date(b.data) - new Date(a.data));
-      if (!transacoes.length) { alert('Nenhum lançamento pra exportar com esses filtros.'); return; }
+      if (!transacoes.length) { alert(RotaI18n.t('financeiro.noTransactionsToExport')); return; }
 
-      const cabecalho = ['Data', 'Tipo', 'Moeda', 'Valor', 'Câmbio', 'Categoria', 'Cliente', 'Agente', 'Check-in', 'Check-out', 'Notas'];
+      const cabecalho = RotaI18n.t('financeiro.csvHeaders').split(',');
       const linhas = transacoes.map(t => {
         const cliente = t.client_id ? RotaDB.getClientById(t.client_id) : null;
         const agente = RotaDB.getTeam().find(m => m.id === t.agente_id);
         return [
           t.data.slice(0, 10),
-          t.tipo === 'receita' ? 'Receita' : 'Despesa',
+          t.tipo === 'receita' ? RotaI18n.t('financeiro.income') : RotaI18n.t('financeiro.expense'),
           t.moeda,
           t.valor,
           t.taxa_cambio_no_momento,
@@ -694,10 +869,11 @@
         ];
       });
 
-      // ; como separador (não ,) pra abrir certo no Excel em pt-BR/pt-PT,
-      // onde a vírgula já é usada como separador decimal regional.
+      // Separador varia por idioma: ";" pra pt-BR/pt-PT (a vírgula já é o
+      // separador decimal regional lá), "," pro padrão internacional em inglês.
+      const separador = RotaI18n.get() === 'en' ? ',' : ';';
       const csv = [cabecalho, ...linhas]
-        .map(linha => linha.map(campo => `"${String(campo).replace(/"/g, '""')}"`).join(';'))
+        .map(linha => linha.map(campo => `"${String(campo).replace(/"/g, '""')}"`).join(separador))
         .join('\r\n');
 
       // BOM no início garante que acentos abram certo no Excel
@@ -707,35 +883,35 @@
 
     function exportarPDF() {
       const transacoes = getTransacoesFiltradas().slice().sort((a, b) => new Date(b.data) - new Date(a.data));
-      if (!transacoes.length) { alert('Nenhum lançamento pra exportar com esses filtros.'); return; }
+      if (!transacoes.length) { alert(RotaI18n.t('financeiro.noTransactionsToExport')); return; }
 
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
 
       doc.setFontSize(14);
       doc.setTextColor(20, 24, 28);
-      doc.text('Financeiro — ROTA', 14, 16);
+      doc.text(`${RotaI18n.t('financeiro.title')} — ROTA`, 14, 16);
 
       doc.setFontSize(9);
       doc.setTextColor(120, 120, 120);
       doc.text(descreverFiltrosAtivos(), 14, 22);
-      doc.text(`Gerado em ${new Date().toLocaleDateString('pt-PT')}`, 14, 27);
+      doc.text(RotaI18n.t('financeiro.generatedOn', { data: new Date().toLocaleDateString(localeFinanceiro()) }), 14, 27);
 
       const linhas = transacoes.map(t => {
         const cliente = t.client_id ? RotaDB.getClientById(t.client_id) : null;
         return [
           t.data.slice(0, 10),
-          t.tipo === 'receita' ? 'Receita' : 'Despesa',
+          t.tipo === 'receita' ? RotaI18n.t('financeiro.income') : RotaI18n.t('financeiro.expense'),
           RotaDB.formatCurrency(t.valor, t.moeda),
-          t.categoria || '—',
-          cliente ? cliente.nome : '—',
-          t.notas || '—',
+          t.categoria || RotaI18n.t('financeiro.noneDash'),
+          cliente ? cliente.nome : RotaI18n.t('financeiro.noneDash'),
+          t.notas || RotaI18n.t('financeiro.noneDash'),
         ];
       });
 
       doc.autoTable({
         startY: 32,
-        head: [['Data', 'Tipo', 'Valor', 'Categoria', 'Cliente', 'Notas']],
+        head: [RotaI18n.t('financeiro.pdfHeaders').split(',')],
         body: linhas,
         styles: { fontSize: 8, textColor: [20, 24, 28] },
         headStyles: { fillColor: [31, 75, 76], textColor: [237, 238, 231] },

@@ -13,6 +13,13 @@
      });
    =================================================================== */
 
+if (window.RotaI18n) {
+  RotaI18n.register({
+    en: { 'common.cancel': 'Cancel', 'common.save': 'Save', 'common.understood': 'Got it' },
+    pt: { 'common.cancel': 'Cancelar', 'common.save': 'Salvar', 'common.understood': 'Entendi' },
+  });
+}
+
 function ensureModalRoot() {
   if (document.getElementById('rotaModalRoot')) return;
 
@@ -56,16 +63,20 @@ function openModal({ title, bodyHtml, onSubmit, submitLabel, info }) {
 
   // Modo "info": só uma explicação com botão "Entendi" — sem Cancelar/Salvar,
   // porque não há nada pra confirmar ou descartar.
+  const DEFAULTS = { cancel: 'Cancelar', understood: 'Entendi', save: 'Salvar' };
+  const t = (chave, fallback) => window.RotaI18n ? RotaI18n.t(chave) : fallback;
+  cancelBtn.textContent = t('common.cancel', DEFAULTS.cancel);
+
   if (info) {
     cancelBtn.classList.add('hidden');
     submitBtn.classList.remove('flex-1');
     submitBtn.classList.add('w-full');
-    submitBtn.textContent = submitLabel || 'Entendi';
+    submitBtn.textContent = submitLabel || t('common.understood', DEFAULTS.understood);
   } else {
     cancelBtn.classList.remove('hidden');
     submitBtn.classList.remove('w-full');
     submitBtn.classList.add('flex-1');
-    submitBtn.textContent = submitLabel || 'Salvar';
+    submitBtn.textContent = submitLabel || t('common.save', DEFAULTS.save);
   }
 
   // .onsubmit substitui o handler anterior sozinho — não precisa

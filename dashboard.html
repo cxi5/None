@@ -1,6 +1,8 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="en">
 <head>
+  <script src="theme.js"></script>
+  <script src="i18n.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Dashboard — ROTA</title>
@@ -44,22 +46,22 @@
       <header class="flex items-center justify-between px-5 md:px-8 py-5 border-b border-ink/10 bg-white md:bg-transparent">
         <div>
           <p id="headerDate" class="font-mono-ticket text-[11px] text-ink/40 tracking-wider mb-0.5"></p>
-          <h1 class="font-display text-2xl font-semibold text-ink">Dashboard</h1>
+          <h1 class="font-display text-2xl font-semibold text-ink" data-i18n="dashboard.title">Dashboard</h1>
         </div>
         <div class="flex items-center gap-3">
           <div class="relative">
-            <button id="notifBtn" class="relative w-9 h-9 flex items-center justify-center rounded-full hover:bg-paper transition" aria-label="Notificações">
+            <button id="notifBtn" class="relative w-9 h-9 flex items-center justify-center rounded-full hover:bg-paper transition" data-i18n-aria-label="dashboard.notifications" aria-label="Notifications">
               <i data-lucide="bell" class="w-5 h-5 text-ink/60"></i>
               <span id="notifDot" class="hidden absolute top-1.5 right-1.5 w-2 h-2 bg-clay rounded-full"></span>
             </button>
             <div id="notifPanel" class="hidden absolute right-0 top-11 w-72 bg-white border border-ink/10 rounded-lg shadow-xl z-30 overflow-hidden">
               <div class="px-4 py-3 border-b border-ink/10">
-                <p class="text-xs font-mono-ticket text-ink/40 tracking-wider">NOTIFICAÇÕES</p>
+                <p class="text-xs font-mono-ticket text-ink/40 tracking-wider" data-i18n="dashboard.notifications">Notifications</p>
               </div>
               <ul id="notifList" class="max-h-72 overflow-y-auto divide-y divide-ink/10"></ul>
             </div>
           </div>
-          <button id="profileBtn" class="w-9 h-9 rounded-full bg-petrol text-paper flex items-center justify-center font-display text-sm font-semibold hover:opacity-90 transition" aria-label="Perfil">—</button>
+          <button id="profileBtn" class="w-9 h-9 rounded-full bg-petrol text-paper flex items-center justify-center font-display text-sm font-semibold hover:opacity-90 transition" data-i18n-aria-label="dashboard.profile" aria-label="Profile">—</button>
         </div>
       </header>
 
@@ -70,33 +72,33 @@
 
           <a href="clients.html" class="bg-white border border-ink/10 rounded-lg p-4 relative overflow-hidden hover:border-petrol/30 transition">
             <i data-lucide="users" class="w-4 h-4 text-petrol/50 absolute top-3 right-3"></i>
-            <p class="text-xs text-ink/50 font-medium mb-1">Clientes ativos</p>
+            <p class="text-xs text-ink/50 font-medium mb-1" data-i18n="dashboard.activeClients">Active clients</p>
             <p id="metricClientes" class="font-display text-3xl font-semibold text-ink">—</p>
           </a>
 
           <a href="clients.html?status=pendente" class="bg-white border border-ink/10 rounded-lg p-4 relative overflow-hidden hover:border-amber/40 transition">
             <i data-lucide="clock" class="w-4 h-4 text-amber/70 absolute top-3 right-3"></i>
-            <p class="text-xs text-ink/50 font-medium mb-1">Itens pendentes</p>
+            <p class="text-xs text-ink/50 font-medium mb-1" data-i18n="dashboard.pendingItems">Pending items</p>
             <p id="metricPendentes" class="font-display text-3xl font-semibold text-ink">—</p>
           </a>
 
           <a href="financeiro.html" class="bg-white border border-ink/10 rounded-lg p-4 relative overflow-hidden col-span-2 md:col-span-1 hover:border-petrol/30 transition">
             <i data-lucide="wallet" class="w-4 h-4 text-petrol/50 absolute top-3 right-3"></i>
-            <p class="text-xs text-ink/50 font-medium mb-2">Saldo consolidado</p>
+            <p class="text-xs text-ink/50 font-medium mb-2" data-i18n="dashboard.consolidatedBalance">Consolidated balance</p>
             <div id="saldoList" class="space-y-0.5 font-mono-ticket text-sm text-ink"></div>
           </a>
 
           <a href="marketing.html?status=agendado" class="bg-white border border-ink/10 rounded-lg p-4 relative overflow-hidden col-span-2 md:col-span-1 hover:border-clay/30 transition">
             <i data-lucide="megaphone" class="w-4 h-4 text-clay/60 absolute top-3 right-3"></i>
-            <p class="text-xs text-ink/50 font-medium mb-1">Próximo post</p>
+            <p class="text-xs text-ink/50 font-medium mb-1" data-i18n="dashboard.nextPost">Next post</p>
             <div id="proximoPostBox"></div>
           </a>
         </div>
 
         <!-- Atividade recente, estilo talão -->
         <div class="bg-white border border-ink/10 rounded-lg p-5 relative overflow-hidden">
-          <h2 class="font-display text-lg font-semibold text-ink mb-1">Atividade recente</h2>
-          <p class="text-xs text-ink/40 font-mono-ticket mb-4">ÚLTIMOS REGISTROS</p>
+          <h2 class="font-display text-lg font-semibold text-ink mb-1" data-i18n="dashboard.recentActivity">Recent activity</h2>
+          <p class="text-xs text-ink/40 font-mono-ticket mb-4" data-i18n="dashboard.latestEntries">LATEST ENTRIES</p>
 
           <ul id="activityList" class="divide-y divide-ink/10"></ul>
         </div>
@@ -107,15 +109,77 @@
 
   <script src="shell.js"></script>
   <script>
+    RotaI18n.register({
+      en: {
+        'dashboard.title': 'Dashboard',
+        'dashboard.notifications': 'NOTIFICATIONS',
+        'dashboard.profile': 'Profile',
+        'dashboard.activeClients': 'Active clients',
+        'dashboard.pendingItems': 'Pending items',
+        'dashboard.consolidatedBalance': 'Consolidated balance',
+        'dashboard.nextPost': 'Next post',
+        'dashboard.recentActivity': 'Recent activity',
+        'dashboard.latestEntries': 'LATEST ENTRIES',
+        'dashboard.pageTitle': 'Dashboard — ROTA',
+        'dashboard.noEntries': 'No entries yet',
+        'dashboard.noPostScheduled': 'No post scheduled',
+        'dashboard.noActivity': 'No activity yet',
+        'dashboard.noNotifications': 'No notifications for now',
+        'dashboard.newClientRegistered': 'New client added — {{nome}}',
+        'dashboard.incomeRegistered': 'Income recorded',
+        'dashboard.expenseRegistered': 'Expense recorded',
+        'dashboard.pendingItemsNotif': '{{n}} item pending confirmation',
+        'dashboard.pendingItemsNotif_plural': '{{n}} items pending confirmation',
+        'dashboard.postScheduledNotif': 'Post scheduled — {{data}}',
+        'dashboard.newClientTodayNotif': 'New client added today — {{nome}}',
+        'dashboard.profileModalTitle': 'Profile',
+        'dashboard.name': 'Name',
+        'dashboard.role': 'Role',
+        'dashboard.logoutAccount': 'Log out',
+      },
+      pt: {
+        'dashboard.title': 'Dashboard',
+        'dashboard.notifications': 'NOTIFICAÇÕES',
+        'dashboard.profile': 'Perfil',
+        'dashboard.activeClients': 'Clientes ativos',
+        'dashboard.pendingItems': 'Itens pendentes',
+        'dashboard.consolidatedBalance': 'Saldo consolidado',
+        'dashboard.nextPost': 'Próximo post',
+        'dashboard.recentActivity': 'Atividade recente',
+        'dashboard.latestEntries': 'ÚLTIMOS REGISTROS',
+        'dashboard.pageTitle': 'Dashboard — ROTA',
+        'dashboard.noEntries': 'Sem lançamentos ainda',
+        'dashboard.noPostScheduled': 'Nenhum post agendado',
+        'dashboard.noActivity': 'Nenhuma atividade ainda',
+        'dashboard.noNotifications': 'Sem notificações por agora',
+        'dashboard.newClientRegistered': 'Novo cliente cadastrado — {{nome}}',
+        'dashboard.incomeRegistered': 'Receita registrada',
+        'dashboard.expenseRegistered': 'Despesa registrada',
+        'dashboard.pendingItemsNotif': '{{n}} item pendente de confirmação',
+        'dashboard.pendingItemsNotif_plural': '{{n}} itens pendentes de confirmação',
+        'dashboard.postScheduledNotif': 'Post agendado — {{data}}',
+        'dashboard.newClientTodayNotif': 'Novo cliente cadastrado hoje — {{nome}}',
+        'dashboard.profileModalTitle': 'Perfil',
+        'dashboard.name': 'Nome',
+        'dashboard.role': 'Papel',
+        'dashboard.logoutAccount': 'Sair da conta',
+      },
+    });
+
     renderShell('dashboard');
 
+    RotaI18n.apply();
     const $ = (id) => document.getElementById(id);
 
     // Data do header — dinâmica, no formato "TER, 5 JUL 2026"
-    const hoje = new Date();
-    const dataFormatada = hoje.toLocaleDateString('pt-PT', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
-      .replace('.', '').toUpperCase();
-    $('headerDate').textContent = dataFormatada;
+    function renderHeaderDate() {
+      const hoje = new Date();
+      const locale = RotaI18n.get() === 'en' ? 'en-US' : 'pt-PT';
+      const dataFormatada = hoje.toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
+        .replace('.', '').toUpperCase();
+      $('headerDate').textContent = dataFormatada;
+    }
+    renderHeaderDate();
 
     function renderDashboard() {
       const m = RotaDB.getDashboardMetrics();
@@ -124,26 +188,27 @@
       $('metricPendentes').textContent = m.itensPendentes;
 
       // Saldo por moeda — só mostra moedas com transação registrada
+      const locale = RotaI18n.get() === 'en' ? 'en-US' : 'pt-PT';
       const moedas = Object.entries(m.saldoPorMoeda).filter(([, valor]) => valor !== 0);
       $('saldoList').innerHTML = moedas.length
-        ? moedas.map(([moeda, valor]) => `<p>${moeda} <span class="float-right">${valor.toLocaleString('pt-PT')}</span></p>`).join('')
-        : `<p class="text-ink/35 text-xs font-sans italic">Sem lançamentos ainda</p>`;
+        ? moedas.map(([moeda, valor]) => `<p>${moeda} <span class="float-right">${valor.toLocaleString(locale)}</span></p>`).join('')
+        : `<p class="text-ink/35 text-xs font-sans italic">${RotaI18n.t('dashboard.noEntries')}</p>`;
 
       // Próximo post agendado
       $('proximoPostBox').innerHTML = m.proximoPost
         ? `<p class="text-sm font-semibold text-ink">${RotaDB.formatDate(m.proximoPost.data_agendada, 'short')}</p>
            <p class="text-xs text-ink/50">${m.proximoPost.rede_social} · ${m.proximoPost.texto}</p>`
-        : `<p class="text-sm text-ink/35 italic">Nenhum post agendado</p>`;
+        : `<p class="text-sm text-ink/35 italic">${RotaI18n.t('dashboard.noPostScheduled')}</p>`;
 
       // Atividade recente — junta clientes cadastrados + lançamentos, ordenado por data
       const atividades = [
         ...RotaDB.getClients().map(c => ({
           tipo: 'cliente', data: c.criado_em,
-          titulo: `Novo cliente cadastrado — ${c.nome}`, valor: null,
+          titulo: RotaI18n.t('dashboard.newClientRegistered', { nome: c.nome }), valor: null,
         })),
         ...RotaDB.getTransactions().map(t => ({
           tipo: t.tipo, data: t.data,
-          titulo: t.notas || (t.tipo === 'receita' ? 'Receita registrada' : 'Despesa registrada'),
+          titulo: t.notas || RotaI18n.t(t.tipo === 'receita' ? 'dashboard.incomeRegistered' : 'dashboard.expenseRegistered'),
           valor: `${t.tipo === 'receita' ? '+' : '−'} ${RotaDB.formatCurrency(t.valor, t.moeda)}`,
         })),
       ].sort((a, b) => new Date(b.data) - new Date(a.data)).slice(0, 5);
@@ -165,7 +230,7 @@
             </div>
             <span class="text-xs font-mono-ticket text-ink/40">${a.valor || '—'}</span>
           </li>`).join('')
-        : `<li class="py-6 text-center text-sm text-ink/35 italic">Nenhuma atividade ainda</li>`;
+        : `<li class="py-6 text-center text-sm text-ink/35 italic">${RotaI18n.t('dashboard.noActivity')}</li>`;
 
       lucide.createIcons();
     }
@@ -189,7 +254,7 @@
       if (pendentes.length) {
         notifs.push({
           icone: 'clock', cor: 'amber',
-          texto: `${pendentes.length} item${pendentes.length > 1 ? 'ns' : ''} pendente${pendentes.length > 1 ? 's' : ''} de confirmação`,
+          texto: RotaI18n.t(pendentes.length > 1 ? 'dashboard.pendingItemsNotif_plural' : 'dashboard.pendingItemsNotif', { n: pendentes.length }),
           href: 'clients.html?status=pendente',
         });
       }
@@ -198,7 +263,7 @@
         .filter(p => p.data_agendada && new Date(p.data_agendada) >= agora && new Date(p.data_agendada) <= em48h)
         .forEach(p => notifs.push({
           icone: 'megaphone', cor: 'clay',
-          texto: `Post agendado — ${RotaDB.formatDate(p.data_agendada, 'weekday')}`,
+          texto: RotaI18n.t('dashboard.postScheduledNotif', { data: RotaDB.formatDate(p.data_agendada, 'weekday') }),
           href: 'marketing.html?status=agendado',
         }));
 
@@ -206,7 +271,7 @@
         .filter(c => new Date(c.criado_em).toDateString() === agora.toDateString())
         .forEach(c => notifs.push({
           icone: 'user-plus', cor: 'petrol',
-          texto: `Novo cliente cadastrado hoje — ${c.nome}`,
+          texto: RotaI18n.t('dashboard.newClientTodayNotif', { nome: c.nome }),
           href: 'clients.html',
         }));
 
@@ -227,7 +292,7 @@
               <span class="text-sm text-ink">${n.texto}</span>
             </a>
           </li>`).join('')
-        : `<li class="px-4 py-6 text-center text-sm text-ink/35 italic">Sem notificações por agora</li>`;
+        : `<li class="px-4 py-6 text-center text-sm text-ink/35 italic">${RotaI18n.t('dashboard.noNotifications')}</li>`;
 
       lucide.createIcons();
     }
@@ -246,19 +311,19 @@
     $('profileBtn').onclick = () => {
       const user = RotaDB.getCurrentUser();
       RotaModal.open({
-        title: 'Perfil',
-        submitLabel: 'Salvar',
+        title: RotaI18n.t('dashboard.profileModalTitle'),
+        submitLabel: RotaI18n.t('common.save'),
         bodyHtml: `
           <div>
-            <label class="${ROTA_LABEL_CLASS}">Nome</label>
+            <label class="${ROTA_LABEL_CLASS}">${RotaI18n.t('dashboard.name')}</label>
             <input type="text" id="f_perfil_nome" class="${ROTA_INPUT_CLASS}" value="${user.nome}" />
           </div>
           <div>
-            <label class="${ROTA_LABEL_CLASS}">Papel</label>
-            <input type="text" class="${ROTA_INPUT_CLASS} bg-paper text-ink/60" value="${user.papel === 'admin' ? 'Administrador' : 'Agente'}" disabled />
+            <label class="${ROTA_LABEL_CLASS}">${RotaI18n.t('dashboard.role')}</label>
+            <input type="text" class="${ROTA_INPUT_CLASS} bg-paper text-ink/60" value="${RotaI18n.t(user.papel === 'admin' ? 'role.admin' : 'role.agente')}" disabled />
           </div>
           <button type="button" id="logoutBtn" class="text-clay text-sm font-medium hover:text-clay/80 transition flex items-center gap-1.5 pt-1">
-            <i data-lucide="log-out" class="w-4 h-4"></i> Sair da conta
+            <i data-lucide="log-out" class="w-4 h-4"></i> ${RotaI18n.t('dashboard.logoutAccount')}
           </button>
         `,
         onSubmit: () => {
@@ -274,6 +339,15 @@
         window.location.href = 'index.html';
       };
     };
+
+    document.title = RotaI18n.t('dashboard.pageTitle');
+    RotaI18n.onChange(() => {
+      RotaI18n.apply();
+      document.title = RotaI18n.t('dashboard.pageTitle');
+      renderHeaderDate();
+      renderDashboard();
+      renderNotifPanel();
+    });
   </script>
 </body>
 </html>

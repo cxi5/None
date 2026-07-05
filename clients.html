@@ -1,6 +1,8 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="en">
 <head>
+  <script src="theme.js"></script>
+  <script src="i18n.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Clientes — ROTA</title>
@@ -57,11 +59,11 @@
       <header class="flex items-center justify-between px-5 md:px-8 py-5 border-b border-ink/10 bg-white md:bg-transparent gap-3">
         <div>
           <p id="headerCount" class="font-mono-ticket text-[11px] text-ink/40 tracking-wider mb-0.5">—</p>
-          <h1 class="font-display text-2xl font-semibold text-ink">Clientes</h1>
+          <h1 class="font-display text-2xl font-semibold text-ink" data-i18n="clients.title">Clients</h1>
         </div>
         <button id="newClientBtn" class="btn-ticket bg-amber hover:bg-amber/90 text-ink font-semibold text-sm px-4 py-2.5 flex items-center gap-2 flex-shrink-0">
           <i data-lucide="plus" class="w-4 h-4"></i>
-          <span class="hidden sm:inline">Novo cliente</span>
+          <span class="hidden sm:inline" data-i18n="clients.newClient">New client</span>
         </button>
       </header>
 
@@ -71,13 +73,13 @@
         <div class="flex flex-col sm:flex-row gap-3 mb-3">
           <div class="relative flex-1 max-w-md">
             <i data-lucide="search" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-ink/35 pointer-events-none"></i>
-            <input type="text" id="searchInput" placeholder="Buscar cliente por nome ou contato..."
+            <input type="text" id="searchInput" data-i18n-placeholder="clients.searchPlaceholder" placeholder="Search client by name or contact..."
               class="w-full bg-white border border-ink/15 rounded-md pl-11 pr-4 py-3 text-sm text-ink placeholder-ink/35 focus:outline-none input-focus" />
           </div>
 
           <!-- só aparece pra admin — agente só vê os próprios clientes, sem precisar filtrar -->
           <select id="agenteFilter" class="hidden bg-white border border-ink/15 rounded-md px-3.5 py-3 text-sm text-ink focus:outline-none input-focus sm:max-w-[220px]">
-            <option value="">Todos os agentes</option>
+            <option value="" data-i18n="clients.allAgents">All agents</option>
           </select>
         </div>
 
@@ -95,8 +97,100 @@
 
   <script src="shell.js"></script>
   <script>
+    RotaI18n.register({
+      en: {
+        'clients.title': 'Clients',
+        'clients.newClient': 'New client',
+        'clients.searchPlaceholder': 'Search client by name or contact...',
+        'clients.allAgents': 'All agents',
+        'clients.pageTitle': 'Clients — ROTA',
+        'clients.noAgent': 'no agent',
+        'clients.agentPrefix': 'agent:',
+        'clients.noContact': 'no contact',
+        'clients.itemsPurchased': 'ITEMS PURCHASED',
+        'clients.noItemsYet': 'No items registered yet.',
+        'clients.noDescription': '(no description)',
+        'clients.itemCount': '{{n}} item',
+        'clients.itemCount_plural': '{{n}} items',
+        'clients.noItems': 'no items',
+        'clients.filterPrefix': 'Filter:',
+        'clients.previous': 'Previous',
+        'clients.next': 'Next',
+        'clients.pageOf': 'PAGE {{atual}} OF {{total}}',
+        'clients.headerWithItem': '{{n}} WITH {{status}} ITEM',
+        'clients.headerRegistered': '{{n}} REGISTERED',
+        'clients.noResultsSearch': 'No client found for "{{termo}}".',
+        'clients.noResultsFilter': 'No client with that filter.',
+        'clients.noResultsEmpty': 'No client registered yet.',
+        'clients.modalTitle': 'New client',
+        'clients.modalSubmit': 'Save client',
+        'clients.fieldName': 'Name *',
+        'clients.fieldNamePlaceholder': 'Full name',
+        'clients.fieldContact': 'Contact',
+        'clients.fieldDocument': 'Document',
+        'clients.fieldDocumentPlaceholder': 'ID, passport, tax ID...',
+        'clients.fieldLeadOrigin': 'Lead origin',
+        'clients.fieldLeadOriginPlaceholder': 'Instagram, referral, etc.',
+        'clients.fieldNotes': 'Notes',
+        'clients.fieldNotesPlaceholder': 'Notes about the client',
+        'status.confirmado': 'Confirmed',
+        'status.pendente': 'Pending',
+        'status.concluido': 'Completed',
+        'status.cancelado': 'Cancelled',
+        'status.pendente.filter': 'Pending items',
+        'status.confirmado.filter': 'Confirmed',
+        'status.concluido.filter': 'Completed',
+        'status.cancelado.filter': 'Cancelled',
+      },
+      pt: {
+        'clients.title': 'Clientes',
+        'clients.newClient': 'Novo cliente',
+        'clients.searchPlaceholder': 'Buscar cliente por nome ou contato...',
+        'clients.allAgents': 'Todos os agentes',
+        'clients.pageTitle': 'Clientes — ROTA',
+        'clients.noAgent': 'sem agente',
+        'clients.agentPrefix': 'agente:',
+        'clients.noContact': 'sem contato',
+        'clients.itemsPurchased': 'ITENS ADQUIRIDOS',
+        'clients.noItemsYet': 'Nenhum item registrado ainda.',
+        'clients.noDescription': '(sem descrição)',
+        'clients.itemCount': '{{n}} item',
+        'clients.itemCount_plural': '{{n}} itens',
+        'clients.noItems': 'sem itens',
+        'clients.filterPrefix': 'Filtro:',
+        'clients.previous': 'Anterior',
+        'clients.next': 'Próxima',
+        'clients.pageOf': 'PÁGINA {{atual}} DE {{total}}',
+        'clients.headerWithItem': '{{n}} COM ITEM {{status}}',
+        'clients.headerRegistered': '{{n}} CADASTRADO{{plural}}',
+        'clients.noResultsSearch': 'Nenhum cliente encontrado para "{{termo}}".',
+        'clients.noResultsFilter': 'Nenhum cliente com esse filtro.',
+        'clients.noResultsEmpty': 'Nenhum cliente cadastrado ainda.',
+        'clients.modalTitle': 'Novo cliente',
+        'clients.modalSubmit': 'Salvar cliente',
+        'clients.fieldName': 'Nome *',
+        'clients.fieldNamePlaceholder': 'Nome completo',
+        'clients.fieldContact': 'Contato',
+        'clients.fieldDocument': 'Documento',
+        'clients.fieldDocumentPlaceholder': 'BI, passaporte, NIF...',
+        'clients.fieldLeadOrigin': 'Origem do lead',
+        'clients.fieldLeadOriginPlaceholder': 'Instagram, indicação, etc.',
+        'clients.fieldNotes': 'Notas',
+        'clients.fieldNotesPlaceholder': 'Observações sobre o cliente',
+        'status.confirmado': 'Confirmado',
+        'status.pendente': 'Pendente',
+        'status.concluido': 'Concluído',
+        'status.cancelado': 'Cancelado',
+        'status.pendente.filter': 'Itens pendentes',
+        'status.confirmado.filter': 'Confirmados',
+        'status.concluido.filter': 'Concluídos',
+        'status.cancelado.filter': 'Cancelados',
+      },
+    });
+
     renderShell('clients');
 
+    RotaI18n.apply();
     const $ = (id) => document.getElementById(id);
 
     // Quem está "logado" agora (heurística por nome, até termos login real)
@@ -111,29 +205,28 @@
     const CORES_AVATAR = ['petrol', 'clay', 'amber'];
     const ICONE_TIPO = { roteiro: 'map', ingresso: 'ticket', transfer: 'plane', reserva: 'bed', outro: 'package' };
     const COR_STATUS = { confirmado: 'petrol', pendente: 'amber', concluido: 'ink', cancelado: 'clay' };
-    const LABEL_STATUS = { confirmado: 'Confirmado', pendente: 'Pendente', concluido: 'Concluído', cancelado: 'Cancelado' };
 
     function renderClientCard(cliente, index) {
       const cor = CORES_AVATAR[index % CORES_AVATAR.length];
       const corTexto = cor === 'amber' ? 'text-ink' : 'text-paper';
       const agente = RotaDB.getTeam().find(m => m.id === cliente.agente_id);
-      const nomeAgente = agente ? agente.nome : 'sem agente';
+      const nomeAgente = agente ? agente.nome : RotaI18n.t('clients.noAgent');
 
       const itensHtml = cliente.itens.length
         ? cliente.itens.map(item => `
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-2.5">
               <i data-lucide="${ICONE_TIPO[item.tipo] || 'package'}" class="w-4 h-4 text-ink/50 flex-shrink-0"></i>
-              <span class="text-sm text-ink">${item.descricao || '(sem descrição)'}</span>
+              <span class="text-sm text-ink">${item.descricao || RotaI18n.t('clients.noDescription')}</span>
             </div>
-            <span class="status-stamp text-${COR_STATUS[item.status] || 'ink'}">${LABEL_STATUS[item.status] || item.status}</span>
+            <span class="status-stamp text-${COR_STATUS[item.status] || 'ink'}">${RotaI18n.t('status.' + item.status) || item.status}</span>
           </div>`).join('')
-        : `<p class="text-sm text-ink/40 italic">Nenhum item registrado ainda.</p>`;
+        : `<p class="text-sm text-ink/40 italic">${RotaI18n.t('clients.noItemsYet')}</p>`;
 
       const contagem = cliente.itens.length;
       const resumoTexto = contagem
-        ? `${contagem} item${contagem > 1 ? 's' : ''}`
-        : 'sem itens';
+        ? RotaI18n.t(contagem > 1 ? 'clients.itemCount_plural' : 'clients.itemCount', { n: contagem })
+        : RotaI18n.t('clients.noItems');
 
       return `
         <div class="bg-white border border-ink/10 rounded-lg overflow-hidden">
@@ -142,7 +235,7 @@
               <div class="w-11 h-11 rounded-full bg-${cor} ${corTexto} flex items-center justify-center font-display font-semibold flex-shrink-0">${RotaDB.initials(cliente.nome)}</div>
               <div class="min-w-0">
                 <p class="font-semibold text-ink text-sm truncate">${cliente.nome}</p>
-                <p class="text-xs text-ink/50 truncate">${cliente.contato || 'sem contato'} · agente: ${nomeAgente}</p>
+                <p class="text-xs text-ink/50 truncate">${cliente.contato || RotaI18n.t('clients.noContact')} · ${RotaI18n.t('clients.agentPrefix')} ${nomeAgente}</p>
               </div>
             </a>
             <button onclick="toggleClientCard('${cliente.id}')" class="flex items-center gap-1.5 text-ink/40 hover:text-ink transition flex-shrink-0">
@@ -155,7 +248,7 @@
             <div class="ticket-divider mx-5"></div>
 
             <div class="px-5 py-4 space-y-3">
-              <p class="text-xs font-mono-ticket text-ink/40 tracking-wider mb-1">ITENS ADQUIRIDOS</p>
+              <p class="text-xs font-mono-ticket text-ink/40 tracking-wider mb-1">${RotaI18n.t('clients.itemsPurchased')}</p>
               ${itensHtml}
             </div>
 
@@ -177,14 +270,12 @@
     const urlParams = new URLSearchParams(window.location.search);
     const statusFiltro = urlParams.get('status');
 
-    const LABEL_FILTRO = { pendente: 'Itens pendentes', confirmado: 'Confirmados', concluido: 'Concluídos', cancelado: 'Cancelados' };
-
     function renderFilterChip() {
       if (!statusFiltro) return;
       $('activeFilterChip').classList.remove('hidden');
       $('activeFilterChip').innerHTML = `
         <span class="inline-flex items-center gap-2 bg-amber/15 border border-amber/40 text-ink text-xs font-medium px-3 py-1.5 rounded-full">
-          Filtro: ${LABEL_FILTRO[statusFiltro] || statusFiltro}
+          ${RotaI18n.t('clients.filterPrefix')} ${RotaI18n.t('status.' + statusFiltro + '.filter') || statusFiltro}
           <a href="clients.html" class="text-ink/50 hover:text-clay transition"><i data-lucide="x" class="w-3.5 h-3.5"></i></a>
         </span>`;
       lucide.createIcons();
@@ -217,12 +308,12 @@
 
       const semResultado = clientes.length === 0;
       const motivoVazio = termo
-        ? `Nenhum cliente encontrado para "${$('searchInput').value.trim()}".`
-        : (statusFiltro ? 'Nenhum cliente com esse filtro.' : 'Nenhum cliente cadastrado ainda.');
+        ? RotaI18n.t('clients.noResultsSearch', { termo: $('searchInput').value.trim() })
+        : (statusFiltro ? RotaI18n.t('clients.noResultsFilter') : RotaI18n.t('clients.noResultsEmpty'));
 
       $('headerCount').textContent = statusFiltro
-        ? `${clientes.length} COM ITEM ${LABEL_FILTRO[statusFiltro]?.toUpperCase() || statusFiltro.toUpperCase()}`
-        : `${clientes.length} CADASTRADO${clientes.length === 1 ? '' : 'S'}`;
+        ? RotaI18n.t('clients.headerWithItem', { n: clientes.length, status: (RotaI18n.t('status.' + statusFiltro + '.filter') || statusFiltro).toUpperCase() })
+        : RotaI18n.t('clients.headerRegistered', { n: clientes.length, plural: clientes.length === 1 ? '' : 'S' });
 
       // Paginação — só entra em jogo quando passa de TAMANHO_PAGINA clientes
       const totalPaginas = Math.max(1, Math.ceil(clientes.length / TAMANHO_PAGINA));
@@ -253,12 +344,12 @@
       $('pagination').innerHTML = `
         <button id="pagAnterior" ${paginaAtual === 1 ? 'disabled' : ''}
           class="flex items-center gap-1.5 px-3.5 py-2 rounded-md border border-ink/15 text-sm font-medium text-ink/70 hover:bg-white transition disabled:opacity-40 disabled:cursor-not-allowed">
-          <i data-lucide="chevron-left" class="w-4 h-4"></i> Anterior
+          <i data-lucide="chevron-left" class="w-4 h-4"></i> ${RotaI18n.t('clients.previous')}
         </button>
-        <span class="text-xs font-mono-ticket text-ink/40">PÁGINA ${paginaAtual} DE ${totalPaginas}</span>
+        <span class="text-xs font-mono-ticket text-ink/40">${RotaI18n.t('clients.pageOf', { atual: paginaAtual, total: totalPaginas })}</span>
         <button id="pagProxima" ${paginaAtual === totalPaginas ? 'disabled' : ''}
           class="flex items-center gap-1.5 px-3.5 py-2 rounded-md border border-ink/15 text-sm font-medium text-ink/70 hover:bg-white transition disabled:opacity-40 disabled:cursor-not-allowed">
-          Próxima <i data-lucide="chevron-right" class="w-4 h-4"></i>
+          ${RotaI18n.t('clients.next')} <i data-lucide="chevron-right" class="w-4 h-4"></i>
         </button>`;
 
       $('pagAnterior').onclick = () => { paginaAtual--; renderClients(); };
@@ -287,28 +378,28 @@
 
     $('newClientBtn').onclick = () => {
       RotaModal.open({
-        title: 'Novo cliente',
-        submitLabel: 'Salvar cliente',
+        title: RotaI18n.t('clients.modalTitle'),
+        submitLabel: RotaI18n.t('clients.modalSubmit'),
         bodyHtml: `
           <div>
-            <label class="${ROTA_LABEL_CLASS}">Nome *</label>
-            <input type="text" id="f_nome" required class="${ROTA_INPUT_CLASS}" placeholder="Nome completo" />
+            <label class="${ROTA_LABEL_CLASS}">${RotaI18n.t('clients.fieldName')}</label>
+            <input type="text" id="f_nome" required class="${ROTA_INPUT_CLASS}" placeholder="${RotaI18n.t('clients.fieldNamePlaceholder')}" />
           </div>
           <div>
-            <label class="${ROTA_LABEL_CLASS}">Contato</label>
+            <label class="${ROTA_LABEL_CLASS}">${RotaI18n.t('clients.fieldContact')}</label>
             <input type="text" id="f_contato" class="${ROTA_INPUT_CLASS}" placeholder="+244 900 000 000" />
           </div>
           <div>
-            <label class="${ROTA_LABEL_CLASS}">Documento</label>
-            <input type="text" id="f_documento" class="${ROTA_INPUT_CLASS}" placeholder="BI, passaporte, NIF..." />
+            <label class="${ROTA_LABEL_CLASS}">${RotaI18n.t('clients.fieldDocument')}</label>
+            <input type="text" id="f_documento" class="${ROTA_INPUT_CLASS}" placeholder="${RotaI18n.t('clients.fieldDocumentPlaceholder')}" />
           </div>
           <div>
-            <label class="${ROTA_LABEL_CLASS}">Origem do lead</label>
-            <input type="text" id="f_origem" class="${ROTA_INPUT_CLASS}" placeholder="Instagram, indicação, etc." />
+            <label class="${ROTA_LABEL_CLASS}">${RotaI18n.t('clients.fieldLeadOrigin')}</label>
+            <input type="text" id="f_origem" class="${ROTA_INPUT_CLASS}" placeholder="${RotaI18n.t('clients.fieldLeadOriginPlaceholder')}" />
           </div>
           <div>
-            <label class="${ROTA_LABEL_CLASS}">Notas</label>
-            <textarea id="f_notas" rows="3" class="${ROTA_INPUT_CLASS}" placeholder="Observações sobre o cliente"></textarea>
+            <label class="${ROTA_LABEL_CLASS}">${RotaI18n.t('clients.fieldNotes')}</label>
+            <textarea id="f_notas" rows="3" class="${ROTA_INPUT_CLASS}" placeholder="${RotaI18n.t('clients.fieldNotesPlaceholder')}"></textarea>
           </div>
         `,
         onSubmit: () => {
@@ -328,6 +419,14 @@
         },
       });
     };
+
+    document.title = RotaI18n.t('clients.pageTitle');
+    RotaI18n.onChange(() => {
+      RotaI18n.apply();
+      document.title = RotaI18n.t('clients.pageTitle');
+      renderFilterChip();
+      renderClients();
+    });
   </script>
 </body>
 </html>
