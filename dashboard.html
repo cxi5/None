@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Dashboard — ROTA</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            petrol: '#1F4B4C',
+            amber:  '#E8A33D',
+            clay:   '#C1573A',
+            paper:  '#EDEEE7',
+            ink:    '#14181C'
+          }
+        }
+      }
+    }
+  </script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* pequeno ajuste local: dá espaço no fim da página pra barra inferior no mobile não cobrir conteúdo */
+    .pb-safe { padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
+    @media (min-width: 768px) { .pb-safe { padding-bottom: 2rem; } }
+  </style>
+</head>
+<body class="min-h-screen bg-ticket-field">
+
+  <div class="md:flex">
+
+    <!-- Nav lateral — só desktop/tablet -->
+    <aside class="hidden md:flex md:flex-col md:w-60 md:min-h-screen bg-white border-r border-ink/10 px-5 py-6">
+      <div class="flex items-center gap-3 mb-10">
+        <div class="w-10 h-10 bg-paper stamp-mark rounded-full flex items-center justify-center flex-shrink-0">
+          <i data-lucide="compass" class="w-5 h-5 text-petrol"></i>
+        </div>
+        <span class="font-display font-semibold text-xl text-ink tracking-tight">ROTA</span>
+      </div>
+
+      <nav class="space-y-1 flex-1">
+        <a href="dashboard.html" class="flex items-center gap-3 px-3 py-2.5 rounded-md bg-petrol text-paper font-medium text-sm">
+          <i data-lucide="layout-dashboard" class="w-4.5 h-4.5"></i> Dashboard
+        </a>
+        <a href="clients.html" class="flex items-center gap-3 px-3 py-2.5 rounded-md text-ink/70 hover:bg-paper font-medium text-sm transition">
+          <i data-lucide="users" class="w-4.5 h-4.5"></i> Clientes
+        </a>
+        <a href="financeiro.html" class="flex items-center gap-3 px-3 py-2.5 rounded-md text-ink/70 hover:bg-paper font-medium text-sm transition">
+          <i data-lucide="wallet" class="w-4.5 h-4.5"></i> Financeiro
+        </a>
+        <a href="marketing.html" class="flex items-center gap-3 px-3 py-2.5 rounded-md text-ink/70 hover:bg-paper font-medium text-sm transition">
+          <i data-lucide="megaphone" class="w-4.5 h-4.5"></i> Marketing
+        </a>
+      </nav>
+
+      <a href="index.html" class="flex items-center gap-3 px-3 py-2.5 rounded-md text-ink/50 hover:bg-paper hover:text-clay font-medium text-sm transition">
+        <i data-lucide="log-out" class="w-4.5 h-4.5"></i> Sair
+      </a>
+    </aside>
+
+    <!-- Conteúdo principal -->
+    <main class="flex-1 pb-safe">
+
+      <!-- Header -->
+      <header class="flex items-center justify-between px-5 md:px-8 py-5 border-b border-ink/10 bg-white md:bg-transparent">
+        <div>
+          <p class="font-mono-ticket text-[11px] text-ink/40 tracking-wider mb-0.5">TER, 5 JUL 2026</p>
+          <h1 class="font-display text-2xl font-semibold text-ink">Dashboard</h1>
+        </div>
+        <div class="flex items-center gap-3">
+          <button class="relative w-9 h-9 flex items-center justify-center rounded-full hover:bg-paper transition">
+            <i data-lucide="bell" class="w-5 h-5 text-ink/60"></i>
+            <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-clay rounded-full"></span>
+          </button>
+          <div class="w-9 h-9 rounded-full bg-petrol text-paper flex items-center justify-center font-display text-sm font-semibold">CX</div>
+        </div>
+      </header>
+
+      <div class="px-5 md:px-8 py-6">
+
+        <!-- Cards de resumo -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-8">
+
+          <div class="bg-white border border-ink/10 rounded-lg p-4 relative overflow-hidden">
+            <i data-lucide="users" class="w-4 h-4 text-petrol/50 absolute top-3 right-3"></i>
+            <p class="text-xs text-ink/50 font-medium mb-1">Clientes ativos</p>
+            <p class="font-display text-3xl font-semibold text-ink">24</p>
+          </div>
+
+          <div class="bg-white border border-ink/10 rounded-lg p-4 relative overflow-hidden">
+            <i data-lucide="clock" class="w-4 h-4 text-amber/70 absolute top-3 right-3"></i>
+            <p class="text-xs text-ink/50 font-medium mb-1">Itens pendentes</p>
+            <p class="font-display text-3xl font-semibold text-ink">5</p>
+          </div>
+
+          <div class="bg-white border border-ink/10 rounded-lg p-4 relative overflow-hidden col-span-2 md:col-span-1">
+            <i data-lucide="wallet" class="w-4 h-4 text-petrol/50 absolute top-3 right-3"></i>
+            <p class="text-xs text-ink/50 font-medium mb-2">Saldo consolidado</p>
+            <div class="space-y-0.5 font-mono-ticket text-sm text-ink">
+              <p>AOA <span class="float-right">1.240.000</span></p>
+              <p>USD <span class="float-right">3.180</span></p>
+              <p>EUR <span class="float-right">920</span></p>
+            </div>
+          </div>
+
+          <div class="bg-white border border-ink/10 rounded-lg p-4 relative overflow-hidden col-span-2 md:col-span-1">
+            <i data-lucide="megaphone" class="w-4 h-4 text-clay/60 absolute top-3 right-3"></i>
+            <p class="text-xs text-ink/50 font-medium mb-1">Próximo post</p>
+            <p class="text-sm font-semibold text-ink">Qui, 09 Jul</p>
+            <p class="text-xs text-ink/50">Instagram · Promo pacote feriado</p>
+          </div>
+        </div>
+
+        <!-- Atividade recente, estilo talão -->
+        <div class="bg-white border border-ink/10 rounded-lg p-5 relative overflow-hidden">
+          <h2 class="font-display text-lg font-semibold text-ink mb-1">Atividade recente</h2>
+          <p class="text-xs text-ink/40 font-mono-ticket mb-4">ÚLTIMOS REGISTROS</p>
+
+          <ul class="divide-y divide-ink/10">
+            <li class="flex items-center justify-between py-3">
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full bg-petrol/10 flex items-center justify-center flex-shrink-0">
+                  <i data-lucide="ticket" class="w-4 h-4 text-petrol"></i>
+                </div>
+                <div>
+                  <p class="text-sm font-medium text-ink">Roteiro confirmado — Ana Beatriz</p>
+                  <p class="text-xs text-ink/45">há 2 horas</p>
+                </div>
+              </div>
+              <span class="text-xs font-mono-ticket text-ink/40">AOA 145.000</span>
+            </li>
+            <li class="flex items-center justify-between py-3">
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full bg-amber/15 flex items-center justify-center flex-shrink-0">
+                  <i data-lucide="plane" class="w-4 h-4 text-amber"></i>
+                </div>
+                <div>
+                  <p class="text-sm font-medium text-ink">Transfer agendado — João Miguel</p>
+                  <p class="text-xs text-ink/45">há 5 horas</p>
+                </div>
+              </div>
+              <span class="text-xs font-mono-ticket text-ink/40">USD 60</span>
+            </li>
+            <li class="flex items-center justify-between py-3">
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full bg-clay/10 flex items-center justify-center flex-shrink-0">
+                  <i data-lucide="user-plus" class="w-4 h-4 text-clay"></i>
+                </div>
+                <div>
+                  <p class="text-sm font-medium text-ink">Novo cliente cadastrado — Helena Sá</p>
+                  <p class="text-xs text-ink/45">ontem</p>
+                </div>
+              </div>
+              <span class="text-xs font-mono-ticket text-ink/40">—</span>
+            </li>
+          </ul>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- Barra inferior — só mobile -->
+  <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-ink/10 flex items-center justify-around py-2 px-2 z-40" style="padding-bottom: env(safe-area-inset-bottom);">
+    <a href="dashboard.html" class="flex flex-col items-center gap-1 px-3 py-1.5 text-petrol">
+      <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+      <span class="text-[11px] font-medium">Dashboard</span>
+    </a>
+    <a href="clients.html" class="flex flex-col items-center gap-1 px-3 py-1.5 text-ink/50">
+      <i data-lucide="users" class="w-5 h-5"></i>
+      <span class="text-[11px] font-medium">Clientes</span>
+    </a>
+    <a href="financeiro.html" class="flex flex-col items-center gap-1 px-3 py-1.5 text-ink/50">
+      <i data-lucide="wallet" class="w-5 h-5"></i>
+      <span class="text-[11px] font-medium">Financeiro</span>
+    </a>
+    <a href="marketing.html" class="flex flex-col items-center gap-1 px-3 py-1.5 text-ink/50">
+      <i data-lucide="megaphone" class="w-5 h-5"></i>
+      <span class="text-[11px] font-medium">Marketing</span>
+    </a>
+  </nav>
+
+  <script>
+    lucide.createIcons();
+  </script>
+</body>
+</html>
