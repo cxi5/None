@@ -54,16 +54,21 @@
 
       <header class="flex items-center justify-between px-5 md:px-8 py-5 border-b border-ink/10 bg-white md:bg-transparent">
         <div>
-          <p class="font-mono-ticket text-[11px] text-ink/40 tracking-wider mb-0.5">CONTA, EQUIPE E SISTEMA</p>
+          <p id="sectionEyebrow" class="font-mono-ticket text-[11px] text-ink/40 tracking-wider mb-0.5">CONTA</p>
           <h1 class="font-display text-2xl font-semibold text-ink">Configurações</h1>
+        </div>
+        <div class="relative">
+          <button id="settingsMenuBtn" class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-paper transition text-ink/60" aria-label="Abrir menu de seções">
+            <i data-lucide="info" class="w-5 h-5"></i>
+          </button>
+          <div id="settingsMenu" class="hidden absolute right-0 top-11 w-56 bg-white border border-ink/10 rounded-lg shadow-xl z-30 overflow-hidden"></div>
         </div>
       </header>
 
-      <div class="px-5 md:px-8 py-6 max-w-2xl space-y-8">
+      <div class="px-5 md:px-8 py-6 max-w-2xl">
 
         <!-- ==================== CONTA ==================== -->
         <div id="tabConta" class="space-y-6">
-          <p class="font-mono-ticket text-[11px] text-ink/40 tracking-wider">CONTA</p>
           <div class="bg-white border border-ink/10 rounded-lg p-5">
             <h2 class="font-display text-lg font-semibold text-ink mb-4">Minha conta</h2>
             <div class="flex items-center gap-4 mb-5">
@@ -90,7 +95,6 @@
 
         <!-- ==================== EQUIPE (admin) ==================== -->
         <div id="tabEquipe" class="space-y-6 hidden">
-          <p class="font-mono-ticket text-[11px] text-ink/40 tracking-wider pt-2">EQUIPE</p>
           <div class="bg-white border border-ink/10 rounded-lg overflow-hidden">
             <div class="flex items-center justify-between px-5 py-4">
               <div>
@@ -129,9 +133,7 @@
         </div>
 
         <!-- ==================== SEGURANÇA ==================== -->
-        <div id="tabSeguranca" class="space-y-6">
-          <p class="font-mono-ticket text-[11px] text-ink/40 tracking-wider pt-2">SEGURANÇA</p>
-
+        <div id="tabSeguranca" class="space-y-6 hidden">
           <div class="bg-white border border-ink/10 rounded-lg p-5">
             <div class="flex items-center gap-1.5 mb-4">
               <h2 class="font-display text-lg font-semibold text-ink">Senha</h2>
@@ -176,9 +178,7 @@
         </div>
 
         <!-- ==================== PREFERÊNCIAS ==================== -->
-        <div id="tabPreferencias" class="space-y-6">
-          <p class="font-mono-ticket text-[11px] text-ink/40 tracking-wider pt-2">PREFERÊNCIAS</p>
-
+        <div id="tabPreferencias" class="space-y-6 hidden">
           <div class="bg-white border border-ink/10 rounded-lg p-5">
             <h2 class="font-display text-lg font-semibold text-ink mb-4">Idioma e região</h2>
 
@@ -224,8 +224,49 @@
     const usuarioAtual = RotaDB.getCurrentUser();
     const souAdmin = usuarioAtual.papel === 'admin';
 
-    // Sem abas — a seção Equipe só aparece de fato pra quem é admin.
-    if (souAdmin) $('tabEquipe').classList.remove('hidden');
+    // --- Menu de seções, dentro do botão "i" (substitui a barra de abas) ---
+
+    const SECOES = [
+      { id: 'conta', label: 'Conta', icone: 'user' },
+      ...(souAdmin ? [{ id: 'equipe', label: 'Equipe', icone: 'users' }] : []),
+      { id: 'seguranca', label: 'Segurança', icone: 'shield' },
+      { id: 'preferencias', label: 'Preferências', icone: 'sliders-horizontal' },
+    ];
+    let secaoAtiva = 'conta';
+
+    function aplicarSecao() {
+      ['conta', 'equipe', 'seguranca', 'preferencias'].forEach(id => {
+        $(`tab${id.charAt(0).toUpperCase()}${id.slice(1)}`).classList.toggle('hidden', secaoAtiva !== id);
+      });
+      $('sectionEyebrow').textContent = SECOES.find(s => s.id === secaoAtiva)?.label.toUpperCase() || '';
+    }
+
+    function renderSettingsMenu() {
+      $('settingsMenu').innerHTML = SECOES.map(s => `
+        <button data-secao="${s.id}" class="secaoMenuItem w-full flex items-center gap-2.5 px-4 py-3 text-sm text-left transition ${secaoAtiva === s.id ? 'bg-petrol text-paper' : 'text-ink/70 hover:bg-paper'}">
+          <i data-lucide="${s.icone}" class="w-4 h-4"></i> ${s.label}
+        </button>`).join('');
+      lucide.createIcons();
+
+      document.querySelectorAll('.secaoMenuItem').forEach(btn => {
+        btn.onclick = () => {
+          secaoAtiva = btn.dataset.secao;
+          aplicarSecao();
+          renderSettingsMenu();
+          $('settingsMenu').classList.add('hidden');
+        };
+      });
+    }
+
+    $('settingsMenuBtn').onclick = (e) => {
+      e.stopPropagation();
+      $('settingsMenu').classList.toggle('hidden');
+    };
+    document.addEventListener('click', (e) => {
+      if (!$('settingsMenu').contains(e.target) && e.target !== $('settingsMenuBtn') && !$('settingsMenuBtn').contains(e.target)) {
+        $('settingsMenu').classList.add('hidden');
+      }
+    });
 
     // --- Ícones "i" — texto explicativo que antes ficava sempre visível ---
 
@@ -370,6 +411,8 @@
 
     // --- Inicialização -----------------------------------------------
 
+    aplicarSecao();
+    renderSettingsMenu();
     renderMyAccount();
     renderAvatarSwatches();
     renderActivity();
