@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Clientes — ROTA</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            petrol: '#1F4B4C',
+            amber:  '#E8A33D',
+            clay:   '#C1573A',
+            paper:  '#EDEEE7',
+            ink:    '#14181C'
+          }
+        }
+      }
+    }
+  </script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .pb-safe { padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
+    @media (min-width: 768px) { .pb-safe { padding-bottom: 2rem; } }
+
+    /* selo de status — reaproveita a linguagem do carimbo "Aprovado" do login, em tamanho reduzido */
+    .status-stamp {
+      font-family: 'Oswald', sans-serif;
+      font-size: 10px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 2px 8px;
+      border: 1.5px solid currentColor;
+      border-radius: 3px;
+      transform: rotate(-3deg);
+      display: inline-block;
+      white-space: nowrap;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-ticket-field">
+
+  <div class="md:flex">
+
+    <!-- Nav lateral — desktop/tablet -->
+    <aside class="hidden md:flex md:flex-col md:w-60 md:min-h-screen bg-white border-r border-ink/10 px-5 py-6">
+      <div class="flex items-center gap-3 mb-10">
+        <div class="w-10 h-10 bg-paper stamp-mark rounded-full flex items-center justify-center flex-shrink-0">
+          <i data-lucide="compass" class="w-5 h-5 text-petrol"></i>
+        </div>
+        <span class="font-display font-semibold text-xl text-ink tracking-tight">ROTA</span>
+      </div>
+
+      <nav class="space-y-1 flex-1">
+        <a href="dashboard.html" class="flex items-center gap-3 px-3 py-2.5 rounded-md text-ink/70 hover:bg-paper font-medium text-sm transition">
+          <i data-lucide="layout-dashboard" class="w-4.5 h-4.5"></i> Dashboard
+        </a>
+        <a href="clients.html" class="flex items-center gap-3 px-3 py-2.5 rounded-md bg-petrol text-paper font-medium text-sm">
+          <i data-lucide="users" class="w-4.5 h-4.5"></i> Clientes
+        </a>
+        <a href="financeiro.html" class="flex items-center gap-3 px-3 py-2.5 rounded-md text-ink/70 hover:bg-paper font-medium text-sm transition">
+          <i data-lucide="wallet" class="w-4.5 h-4.5"></i> Financeiro
+        </a>
+        <a href="marketing.html" class="flex items-center gap-3 px-3 py-2.5 rounded-md text-ink/70 hover:bg-paper font-medium text-sm transition">
+          <i data-lucide="megaphone" class="w-4.5 h-4.5"></i> Marketing
+        </a>
+      </nav>
+
+      <a href="index.html" class="flex items-center gap-3 px-3 py-2.5 rounded-md text-ink/50 hover:bg-paper hover:text-clay font-medium text-sm transition">
+        <i data-lucide="log-out" class="w-4.5 h-4.5"></i> Sair
+      </a>
+    </aside>
+
+    <!-- Conteúdo principal -->
+    <main class="flex-1 pb-safe">
+
+      <!-- Header -->
+      <header class="flex items-center justify-between px-5 md:px-8 py-5 border-b border-ink/10 bg-white md:bg-transparent gap-3">
+        <div>
+          <p class="font-mono-ticket text-[11px] text-ink/40 tracking-wider mb-0.5">24 CADASTRADOS</p>
+          <h1 class="font-display text-2xl font-semibold text-ink">Clientes</h1>
+        </div>
+        <button class="btn-ticket bg-amber hover:bg-amber/90 text-ink font-semibold text-sm px-4 py-2.5 flex items-center gap-2 flex-shrink-0">
+          <i data-lucide="plus" class="w-4 h-4"></i>
+          <span class="hidden sm:inline">Novo cliente</span>
+        </button>
+      </header>
+
+      <div class="px-5 md:px-8 py-6">
+
+        <!-- Busca -->
+        <div class="relative mb-6 max-w-md">
+          <i data-lucide="search" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-ink/35 pointer-events-none"></i>
+          <input type="text" placeholder="Buscar cliente por nome ou contato..."
+            class="w-full bg-white border border-ink/15 rounded-md pl-11 pr-4 py-3 text-sm text-ink placeholder-ink/35 focus:outline-none input-focus" />
+        </div>
+
+        <!-- Lista de clientes -->
+        <div class="space-y-4">
+
+          <!-- Cliente 1 -->
+          <div class="bg-white border border-ink/10 rounded-lg overflow-hidden">
+            <div class="flex items-center justify-between px-5 py-4">
+              <div class="flex items-center gap-3">
+                <div class="w-11 h-11 rounded-full bg-petrol text-paper flex items-center justify-center font-display font-semibold flex-shrink-0">AB</div>
+                <div>
+                  <p class="font-semibold text-ink text-sm">Ana Beatriz Ferreira</p>
+                  <p class="text-xs text-ink/50">+244 923 000 111 · agente: Cxi</p>
+                </div>
+              </div>
+              <button class="text-ink/40 hover:text-ink transition"><i data-lucide="chevron-down" class="w-5 h-5"></i></button>
+            </div>
+
+            <div class="ticket-divider mx-5"></div>
+
+            <div class="px-5 py-4 space-y-3">
+              <p class="text-xs font-mono-ticket text-ink/40 tracking-wider mb-1">ITENS ADQUIRIDOS</p>
+
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                  <i data-lucide="map" class="w-4 h-4 text-petrol flex-shrink-0"></i>
+                  <span class="text-sm text-ink">Roteiro completo — Zanzibar, 6 dias</span>
+                </div>
+                <span class="status-stamp text-petrol">Confirmado</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                  <i data-lucide="plane" class="w-4 h-4 text-ink/50 flex-shrink-0"></i>
+                  <span class="text-sm text-ink">Transfer aeroporto — chegada</span>
+                </div>
+                <span class="status-stamp text-amber">Pendente</span>
+              </div>
+            </div>
+
+            <div class="barcode mx-5 mb-4"></div>
+          </div>
+
+          <!-- Cliente 2 -->
+          <div class="bg-white border border-ink/10 rounded-lg overflow-hidden">
+            <div class="flex items-center justify-between px-5 py-4">
+              <div class="flex items-center gap-3">
+                <div class="w-11 h-11 rounded-full bg-clay text-paper flex items-center justify-center font-display font-semibold flex-shrink-0">JM</div>
+                <div>
+                  <p class="font-semibold text-ink text-sm">João Miguel Santos</p>
+                  <p class="text-xs text-ink/50">+244 912 345 678 · agente: Cxi</p>
+                </div>
+              </div>
+              <button class="text-ink/40 hover:text-ink transition"><i data-lucide="chevron-down" class="w-5 h-5"></i></button>
+            </div>
+
+            <div class="ticket-divider mx-5"></div>
+
+            <div class="px-5 py-4 space-y-3">
+              <p class="text-xs font-mono-ticket text-ink/40 tracking-wider mb-1">ITENS ADQUIRIDOS</p>
+
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                  <i data-lucide="ticket" class="w-4 h-4 text-ink/50 flex-shrink-0"></i>
+                  <span class="text-sm text-ink">Ingresso — Parque Nacional Kissama</span>
+                </div>
+                <span class="status-stamp text-ink">Concluído</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                  <i data-lucide="bed" class="w-4 h-4 text-ink/50 flex-shrink-0"></i>
+                  <span class="text-sm text-ink">Reserva — Hotel Talatona, 3 noites</span>
+                </div>
+                <span class="status-stamp text-clay">Cancelado</span>
+              </div>
+            </div>
+
+            <div class="barcode mx-5 mb-4"></div>
+          </div>
+
+          <!-- Cliente 3 -->
+          <div class="bg-white border border-ink/10 rounded-lg overflow-hidden">
+            <div class="flex items-center justify-between px-5 py-4">
+              <div class="flex items-center gap-3">
+                <div class="w-11 h-11 rounded-full bg-amber text-ink flex items-center justify-center font-display font-semibold flex-shrink-0">HS</div>
+                <div>
+                  <p class="font-semibold text-ink text-sm">Helena Sá</p>
+                  <p class="text-xs text-ink/50">+244 934 567 890 · agente: Cxi</p>
+                </div>
+              </div>
+              <button class="text-ink/40 hover:text-ink transition"><i data-lucide="chevron-down" class="w-5 h-5"></i></button>
+            </div>
+
+            <div class="ticket-divider mx-5"></div>
+
+            <div class="px-5 py-4">
+              <p class="text-xs font-mono-ticket text-ink/40 tracking-wider mb-2">ITENS ADQUIRIDOS</p>
+              <p class="text-sm text-ink/40 italic">Nenhum item registrado ainda.</p>
+            </div>
+
+            <div class="barcode mx-5 mb-4"></div>
+          </div>
+
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Barra inferior — mobile -->
+  <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-ink/10 flex items-center justify-around py-2 px-2 z-40" style="padding-bottom: env(safe-area-inset-bottom);">
+    <a href="dashboard.html" class="flex flex-col items-center gap-1 px-3 py-1.5 text-ink/50">
+      <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+      <span class="text-[11px] font-medium">Dashboard</span>
+    </a>
+    <a href="clients.html" class="flex flex-col items-center gap-1 px-3 py-1.5 text-petrol">
+      <i data-lucide="users" class="w-5 h-5"></i>
+      <span class="text-[11px] font-medium">Clientes</span>
+    </a>
+    <a href="financeiro.html" class="flex flex-col items-center gap-1 px-3 py-1.5 text-ink/50">
+      <i data-lucide="wallet" class="w-5 h-5"></i>
+      <span class="text-[11px] font-medium">Financeiro</span>
+    </a>
+    <a href="marketing.html" class="flex flex-col items-center gap-1 px-3 py-1.5 text-ink/50">
+      <i data-lucide="megaphone" class="w-5 h-5"></i>
+      <span class="text-[11px] font-medium">Marketing</span>
+    </a>
+  </nav>
+
+  <script>
+    lucide.createIcons();
+  </script>
+</body>
+</html>
