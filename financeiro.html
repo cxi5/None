@@ -34,34 +34,8 @@
 
   <div class="md:flex">
 
-    <!-- Nav lateral — desktop/tablet -->
-    <aside class="hidden md:flex md:flex-col md:w-60 md:min-h-screen bg-white border-r border-ink/10 px-5 py-6">
-      <div class="flex items-center gap-3 mb-10">
-        <div class="w-10 h-10 bg-paper stamp-mark rounded-full flex items-center justify-center flex-shrink-0">
-          <i data-lucide="compass" class="w-5 h-5 text-petrol"></i>
-        </div>
-        <span class="font-display font-semibold text-xl text-ink tracking-tight">ROTA</span>
-      </div>
-
-      <nav class="space-y-1 flex-1">
-        <a href="dashboard.html" class="flex items-center gap-3 px-3 py-2.5 rounded-md text-ink/70 hover:bg-paper font-medium text-sm transition">
-          <i data-lucide="layout-dashboard" class="w-4.5 h-4.5"></i> Dashboard
-        </a>
-        <a href="clients.html" class="flex items-center gap-3 px-3 py-2.5 rounded-md text-ink/70 hover:bg-paper font-medium text-sm transition">
-          <i data-lucide="users" class="w-4.5 h-4.5"></i> Clientes
-        </a>
-        <a href="financeiro.html" class="flex items-center gap-3 px-3 py-2.5 rounded-md bg-petrol text-paper font-medium text-sm">
-          <i data-lucide="wallet" class="w-4.5 h-4.5"></i> Financeiro
-        </a>
-        <a href="marketing.html" class="flex items-center gap-3 px-3 py-2.5 rounded-md text-ink/70 hover:bg-paper font-medium text-sm transition">
-          <i data-lucide="megaphone" class="w-4.5 h-4.5"></i> Marketing
-        </a>
-      </nav>
-
-      <a href="index.html" class="flex items-center gap-3 px-3 py-2.5 rounded-md text-ink/50 hover:bg-paper hover:text-clay font-medium text-sm transition">
-        <i data-lucide="log-out" class="w-4.5 h-4.5"></i> Sair
-      </a>
-    </aside>
+    <!-- Sidebar + bottom nav agora vêm do shell.js -->
+    <div id="shell"></div>
 
     <!-- Conteúdo principal -->
     <main class="flex-1 pb-safe">
@@ -183,28 +157,9 @@
     </main>
   </div>
 
-  <!-- Barra inferior — mobile -->
-  <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-ink/10 flex items-center justify-around py-2 px-2 z-40" style="padding-bottom: env(safe-area-inset-bottom);">
-    <a href="dashboard.html" class="flex flex-col items-center gap-1 px-3 py-1.5 text-ink/50">
-      <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
-      <span class="text-[11px] font-medium">Dashboard</span>
-    </a>
-    <a href="clients.html" class="flex flex-col items-center gap-1 px-3 py-1.5 text-ink/50">
-      <i data-lucide="users" class="w-5 h-5"></i>
-      <span class="text-[11px] font-medium">Clientes</span>
-    </a>
-    <a href="financeiro.html" class="flex flex-col items-center gap-1 px-3 py-1.5 text-petrol">
-      <i data-lucide="wallet" class="w-5 h-5"></i>
-      <span class="text-[11px] font-medium">Financeiro</span>
-    </a>
-    <a href="marketing.html" class="flex flex-col items-center gap-1 px-3 py-1.5 text-ink/50">
-      <i data-lucide="megaphone" class="w-5 h-5"></i>
-      <span class="text-[11px] font-medium">Marketing</span>
-    </a>
-  </nav>
-
+  <script src="shell.js"></script>
   <script>
-    lucide.createIcons();
+    renderShell('financeiro');
   </script>
 </body>
 </html>
