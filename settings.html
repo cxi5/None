@@ -57,18 +57,28 @@
 
       <header class="flex items-center justify-between px-5 md:px-8 py-5 border-b border-ink/10 bg-white md:bg-transparent">
         <div>
-          <p id="sectionEyebrow" class="font-mono-ticket text-[11px] text-ink/40 tracking-wider mb-0.5"></p>
           <h1 class="font-display text-2xl font-semibold text-ink" data-i18n="settings.title">Settings</h1>
         </div>
-        <div class="relative">
-          <button id="settingsMenuBtn" class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-paper transition text-ink/60" data-i18n-aria-label="settings.openSectionsMenu" aria-label="Open sections menu">
-            <i data-lucide="info" class="w-5 h-5"></i>
-          </button>
-          <div id="settingsMenu" class="hidden absolute right-0 top-11 w-56 bg-white border border-ink/10 rounded-lg shadow-xl z-30 overflow-hidden"></div>
-        </div>
+        <button id="settingsMenuBtn" class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-paper transition text-ink/60" data-i18n-aria-label="settings.openSectionsMenu" aria-label="Open settings panel">
+          <i data-lucide="info" class="w-5 h-5"></i>
+        </button>
       </header>
 
-      <div class="px-5 md:px-8 py-6 max-w-2xl">
+      <div class="px-5 md:px-8 py-16 max-w-2xl flex flex-col items-center text-center gap-3">
+        <div class="w-12 h-12 rounded-full bg-white border border-ink/10 flex items-center justify-center text-ink/40">
+          <i data-lucide="info" class="w-5 h-5"></i>
+        </div>
+        <p class="text-sm text-ink/50 max-w-xs" data-i18n="settings.openPanelHint">Tap the info icon above to manage your account, team, security and preferences.</p>
+      </div>
+
+      <!-- ==================== PAINEL DE CONFIGURAÇÕES (gaveta) ==================== -->
+      <div id="settingsOverlay" class="hidden fixed inset-0 z-40 bg-ink/40 backdrop-blur-sm">
+        <div id="settingsPanel" class="absolute right-0 top-0 bottom-0 w-full sm:max-w-sm bg-white overflow-y-auto p-5 md:p-6 space-y-8 pb-safe">
+          <div class="flex justify-end">
+            <button id="settingsPanelCloseBtn" class="w-8 h-8 flex items-center justify-center rounded-full bg-paper border border-ink/10 text-ink/50 hover:text-ink transition" data-i18n-aria-label="settings.closePanel" aria-label="Close">
+              <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+          </div>
 
         <!-- ==================== CONTA ==================== -->
         <div id="secaoConta" class="space-y-6 scroll-mt-6">
@@ -262,6 +272,7 @@
           </div>
         </div>
 
+        </div>
       </div>
     </main>
   </div>
@@ -272,7 +283,9 @@
       en: {
         'settings.pageTitle': 'Settings — ROTA',
         'settings.title': 'Settings',
-        'settings.openSectionsMenu': 'Open sections menu',
+        'settings.openSectionsMenu': 'Open settings panel',
+        'settings.openPanelHint': 'Tap the info icon above to manage your account, team, security and preferences.',
+        'settings.closePanel': 'Close',
         'settings.moreInfo': 'More information',
         'settings.sectionAccount': 'Account',
         'settings.sectionTeam': 'Team',
@@ -346,7 +359,9 @@
       pt: {
         'settings.pageTitle': 'Configurações — ROTA',
         'settings.title': 'Configurações',
-        'settings.openSectionsMenu': 'Abrir menu de seções',
+        'settings.openSectionsMenu': 'Abrir painel de configurações',
+        'settings.openPanelHint': 'Toque no ícone de informação acima para gerenciar sua conta, equipe, segurança e preferências.',
+        'settings.closePanel': 'Fechar',
         'settings.moreInfo': 'Mais informações',
         'settings.sectionAccount': 'Conta',
         'settings.sectionTeam': 'Equipe',
@@ -421,6 +436,8 @@
 
     renderShell('settings');
 
+    RotaI18n.apply();
+
     const $ = (id) => document.getElementById(id);
 
     // --- Aparência --------------------------------------------------
@@ -457,79 +474,30 @@
     const usuarioAtual = RotaDB.getCurrentUser();
     const souAdmin = usuarioAtual.papel === 'admin';
 
-    // --- Menu do cabeçalho: agora é "ir para", não "mostrar só esta" —
-    // todas as seções ficam sempre na página, uma rolagem contínua. ---
+    // --- Painel de configurações: Conta/Equipe/Segurança/Preferências ---
+    // moraram na gaveta aberta pelo ícone (i) — nada disso aparece direto
+    // na página. Sem rolagem-com-destaque, sem observer: é abrir e fechar.
 
-    const SECOES_DEF = [
-      { id: 'conta', chave: 'settings.sectionAccount', icone: 'user' },
-      ...(souAdmin ? [{ id: 'equipe', chave: 'settings.sectionTeam', icone: 'users' }] : []),
-      { id: 'seguranca', chave: 'settings.sectionSecurity', icone: 'shield' },
-      { id: 'preferencias', chave: 'settings.sectionPreferences', icone: 'sliders-horizontal' },
-    ];
-    // label é resolvido no momento do uso (não guardado), pra sempre refletir o idioma atual
-    function SECOES() {
-      return SECOES_DEF.map(s => ({ ...s, label: RotaI18n.t(s.chave) }));
-    }
-
-    // Some pra quem não é admin — não é mais "aba escondida", é seção que
+    // Some pra quem não é admin — não é "aba escondida", é seção que
     // nem existe pra esse papel.
     if (!souAdmin) $('secaoEquipe').classList.add('hidden');
 
-    // Qual seção está visível no momento, conforme o scroll — só pra
-    // destacar no menu e no rótulo do cabeçalho, puramente cosmético.
-    let secaoVisivel = 'conta';
-
-    function renderSettingsMenu() {
-      $('settingsMenu').innerHTML = SECOES().map(s => `
-        <button data-secao="${s.id}" class="secaoMenuItem w-full flex items-center gap-2.5 px-4 py-3 text-sm text-left transition ${secaoVisivel === s.id ? 'bg-petrol text-paper' : 'text-ink/70 hover:bg-paper'}">
-          <i data-lucide="${s.icone}" class="w-4 h-4"></i> ${s.label}
-        </button>`).join('');
-      lucide.createIcons();
-
-      document.querySelectorAll('.secaoMenuItem').forEach(btn => {
-        btn.onclick = () => {
-          $(`secao${btn.dataset.secao.charAt(0).toUpperCase()}${btn.dataset.secao.slice(1)}`)
-            .scrollIntoView({ behavior: 'smooth', block: 'start' });
-          $('settingsMenu').classList.add('hidden');
-        };
-      });
+    function abrirPainelConfiguracoes() {
+      $('settingsOverlay').classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+    }
+    function fecharPainelConfiguracoes() {
+      $('settingsOverlay').classList.add('hidden');
+      document.body.style.overflow = '';
     }
 
-    // Atualiza o rótulo do cabeçalho pra seção informada (ou pra atualmente
-    // visível, quando chamado sem argumento — útil na carga inicial e ao trocar de idioma).
-    function renderSectionEyebrow(id) {
-      const alvo = id || secaoVisivel;
-      $('sectionEyebrow').textContent = SECOES().find(s => s.id === alvo)?.label.toUpperCase() || '';
-    }
-
-    $('settingsMenuBtn').onclick = (e) => {
-      e.stopPropagation();
-      $('settingsMenu').classList.toggle('hidden');
-    };
-    document.addEventListener('click', (e) => {
-      if (!$('settingsMenu').contains(e.target) && e.target !== $('settingsMenuBtn') && !$('settingsMenuBtn').contains(e.target)) {
-        $('settingsMenu').classList.add('hidden');
-      }
+    $('settingsMenuBtn').onclick = abrirPainelConfiguracoes;
+    $('settingsPanelCloseBtn').onclick = fecharPainelConfiguracoes;
+    $('settingsOverlay').addEventListener('click', (e) => {
+      if (e.target === $('settingsOverlay')) fecharPainelConfiguracoes();
     });
-
-    // Observa qual seção está mais visível na tela pra manter o rótulo do
-    // cabeçalho e o destaque do menu certos enquanto o usuário rola a página.
-    const observadorSecoes = new IntersectionObserver((entries) => {
-      const maisVisivel = entries
-        .filter(e => e.isIntersecting)
-        .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-      if (!maisVisivel) return;
-
-      const id = maisVisivel.target.id.replace('secao', '').toLowerCase();
-      if (id === secaoVisivel) return;
-      secaoVisivel = id;
-      renderSectionEyebrow(id);
-      renderSettingsMenu();
-    }, { threshold: [0.3, 0.6] });
-
-    SECOES_DEF.forEach(s => {
-      const el = document.getElementById(`secao${s.id.charAt(0).toUpperCase()}${s.id.slice(1)}`);
-      if (el) observadorSecoes.observe(el);
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') fecharPainelConfiguracoes();
     });
 
     // --- Ícones "i" — texto explicativo que antes ficava sempre visível ---
@@ -689,8 +657,6 @@
 
     // --- Inicialização -----------------------------------------------
 
-    renderSectionEyebrow();
-    renderSettingsMenu();
     renderMyAccount();
     renderAvatarSwatches();
     renderActivity();
@@ -802,8 +768,6 @@
       document.title = RotaI18n.t('settings.pageTitle');
       renderLanguageSelect();
       renderTheme();
-      renderSectionEyebrow();
-      renderSettingsMenu();
       renderMyAccount();
       renderActivity();
       if (souAdmin) { renderTeam(); renderPermissionMatrix(); }
