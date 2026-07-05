@@ -68,10 +68,17 @@
       <div class="px-5 md:px-8 py-6">
 
         <!-- Busca -->
-        <div class="relative mb-3 max-w-md">
-          <i data-lucide="search" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-ink/35 pointer-events-none"></i>
-          <input type="text" placeholder="Buscar cliente por nome ou contato..."
-            class="w-full bg-white border border-ink/15 rounded-md pl-11 pr-4 py-3 text-sm text-ink placeholder-ink/35 focus:outline-none input-focus" />
+        <div class="flex flex-col sm:flex-row gap-3 mb-3">
+          <div class="relative flex-1 max-w-md">
+            <i data-lucide="search" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-ink/35 pointer-events-none"></i>
+            <input type="text" id="searchInput" placeholder="Buscar cliente por nome ou contato..."
+              class="w-full bg-white border border-ink/15 rounded-md pl-11 pr-4 py-3 text-sm text-ink placeholder-ink/35 focus:outline-none input-focus" />
+          </div>
+
+          <!-- só aparece pra admin — agente só vê os próprios clientes, sem precisar filtrar -->
+          <select id="agenteFilter" class="hidden bg-white border border-ink/15 rounded-md px-3.5 py-3 text-sm text-ink focus:outline-none input-focus sm:max-w-[220px]">
+            <option value="">Todos os agentes</option>
+          </select>
         </div>
 
         <!-- Chip de filtro ativo (só aparece se veio de um card do dashboard) -->
@@ -79,6 +86,9 @@
 
         <!-- Lista de clientes -->
         <div id="clientList" class="space-y-4"></div>
+
+        <!-- Paginação — só aparece quando passa de uma página -->
+        <div id="pagination" class="hidden items-center justify-between mt-5"></div>
       </div>
     </main>
   </div>
@@ -89,6 +99,15 @@
 
     const $ = (id) => document.getElementById(id);
 
+    // Quem está "logado" agora (heurística por nome, até termos login real)
+    // e se é admin — decide se mostra o filtro por agente ou já restringe a lista.
+    const usuarioAtual = RotaDB.getCurrentUser();
+    const meuMembro = RotaDB.getTeam().find(m => m.nome === usuarioAtual.nome);
+    const souAdmin = usuarioAtual.papel === 'admin';
+
+    const TAMANHO_PAGINA = 10;
+    let paginaAtual = 1;
+
     const CORES_AVATAR = ['petrol', 'clay', 'amber'];
     const ICONE_TIPO = { roteiro: 'map', ingresso: 'ticket', transfer: 'plane', reserva: 'bed', outro: 'package' };
     const COR_STATUS = { confirmado: 'petrol', pendente: 'amber', concluido: 'ink', cancelado: 'clay' };
@@ -97,6 +116,8 @@
     function renderClientCard(cliente, index) {
       const cor = CORES_AVATAR[index % CORES_AVATAR.length];
       const corTexto = cor === 'amber' ? 'text-ink' : 'text-paper';
+      const agente = RotaDB.getTeam().find(m => m.id === cliente.agente_id);
+      const nomeAgente = agente ? agente.nome : 'sem agente';
 
       const itensHtml = cliente.itens.length
         ? cliente.itens.map(item => `
@@ -109,28 +130,47 @@
           </div>`).join('')
         : `<p class="text-sm text-ink/40 italic">Nenhum item registrado ainda.</p>`;
 
+      const contagem = cliente.itens.length;
+      const resumoTexto = contagem
+        ? `${contagem} item${contagem > 1 ? 's' : ''}`
+        : 'sem itens';
+
       return `
         <div class="bg-white border border-ink/10 rounded-lg overflow-hidden">
           <div class="flex items-center justify-between px-5 py-4">
-            <div class="flex items-center gap-3">
+            <a href="client.html?id=${cliente.id}" class="flex items-center gap-3 min-w-0 flex-1 hover:opacity-80 transition">
               <div class="w-11 h-11 rounded-full bg-${cor} ${corTexto} flex items-center justify-center font-display font-semibold flex-shrink-0">${RotaDB.initials(cliente.nome)}</div>
-              <div>
-                <p class="font-semibold text-ink text-sm">${cliente.nome}</p>
-                <p class="text-xs text-ink/50">${cliente.contato || 'sem contato'} · agente: ${cliente.agente_id}</p>
+              <div class="min-w-0">
+                <p class="font-semibold text-ink text-sm truncate">${cliente.nome}</p>
+                <p class="text-xs text-ink/50 truncate">${cliente.contato || 'sem contato'} · agente: ${nomeAgente}</p>
               </div>
+            </a>
+            <button onclick="toggleClientCard('${cliente.id}')" class="flex items-center gap-1.5 text-ink/40 hover:text-ink transition flex-shrink-0">
+              <span class="text-xs font-mono-ticket">${resumoTexto}</span>
+              <i id="chevron-${cliente.id}" data-lucide="chevron-down" class="w-5 h-5 transition-transform"></i>
+            </button>
+          </div>
+
+          <div id="itemsWrap-${cliente.id}" class="hidden">
+            <div class="ticket-divider mx-5"></div>
+
+            <div class="px-5 py-4 space-y-3">
+              <p class="text-xs font-mono-ticket text-ink/40 tracking-wider mb-1">ITENS ADQUIRIDOS</p>
+              ${itensHtml}
             </div>
-            <button class="text-ink/40 hover:text-ink transition"><i data-lucide="chevron-down" class="w-5 h-5"></i></button>
+
+            <div class="barcode mx-5 mb-4"></div>
           </div>
-
-          <div class="ticket-divider mx-5"></div>
-
-          <div class="px-5 py-4 space-y-3">
-            <p class="text-xs font-mono-ticket text-ink/40 tracking-wider mb-1">ITENS ADQUIRIDOS</p>
-            ${itensHtml}
-          </div>
-
-          <div class="barcode mx-5 mb-4"></div>
         </div>`;
+    }
+
+    // Abre/fecha a lista de itens de um cliente — recolhido por padrão
+    // pra lista não ficar gigante quando tiver muito cliente com muito item.
+    function toggleClientCard(id) {
+      const wrap = document.getElementById(`itemsWrap-${id}`);
+      const chevron = document.getElementById(`chevron-${id}`);
+      wrap.classList.toggle('hidden');
+      chevron.classList.toggle('rotate-180');
     }
 
     // Filtro vindo de um card do dashboard (ex: clients.html?status=pendente)
@@ -153,27 +193,97 @@
     function renderClients() {
       let clientes = RotaDB.getClients();
 
+      // regra de visibilidade: agente só vê o que é dele, admin vê tudo
+      // (ou filtra por um agente específico, se escolher no select)
+      if (!souAdmin) {
+        clientes = meuMembro ? clientes.filter(c => c.agente_id === meuMembro.id) : [];
+      } else if ($('agenteFilter').value) {
+        clientes = clientes.filter(c => c.agente_id === $('agenteFilter').value);
+      }
+
       // só mantém clientes que têm pelo menos um item com o status filtrado
       if (statusFiltro) {
         clientes = clientes.filter(c => c.itens.some(i => i.status === statusFiltro));
       }
 
+      // busca por nome ou contato, sem acento/caixa fazendo diferença
+      const termo = normalizarTexto($('searchInput').value.trim());
+      if (termo) {
+        clientes = clientes.filter(c =>
+          normalizarTexto(c.nome).includes(termo) ||
+          normalizarTexto(c.contato).includes(termo)
+        );
+      }
+
+      const semResultado = clientes.length === 0;
+      const motivoVazio = termo
+        ? `Nenhum cliente encontrado para "${$('searchInput').value.trim()}".`
+        : (statusFiltro ? 'Nenhum cliente com esse filtro.' : 'Nenhum cliente cadastrado ainda.');
+
       $('headerCount').textContent = statusFiltro
         ? `${clientes.length} COM ITEM ${LABEL_FILTRO[statusFiltro]?.toUpperCase() || statusFiltro.toUpperCase()}`
         : `${clientes.length} CADASTRADO${clientes.length === 1 ? '' : 'S'}`;
 
-      $('clientList').innerHTML = clientes.length
-        ? clientes.map(renderClientCard).join('')
+      // Paginação — só entra em jogo quando passa de TAMANHO_PAGINA clientes
+      const totalPaginas = Math.max(1, Math.ceil(clientes.length / TAMANHO_PAGINA));
+      if (paginaAtual > totalPaginas) paginaAtual = totalPaginas;
+      const inicio = (paginaAtual - 1) * TAMANHO_PAGINA;
+      const clientesPagina = clientes.slice(inicio, inicio + TAMANHO_PAGINA);
+
+      $('clientList').innerHTML = !semResultado
+        ? clientesPagina.map(renderClientCard).join('')
         : `<div class="bg-white border border-ink/10 rounded-lg p-8 text-center">
-             <i data-lucide="user-plus" class="w-8 h-8 text-ink/25 mx-auto mb-2"></i>
-             <p class="text-sm text-ink/40">${statusFiltro ? 'Nenhum cliente com esse filtro.' : 'Nenhum cliente cadastrado ainda.'}</p>
+             <i data-lucide="user-${termo ? 'search' : 'plus'}" class="w-8 h-8 text-ink/25 mx-auto mb-2"></i>
+             <p class="text-sm text-ink/40">${motivoVazio}</p>
            </div>`;
 
+      renderPagination(totalPaginas);
       lucide.createIcons();
+    }
+
+    function renderPagination(totalPaginas) {
+      if (totalPaginas <= 1) {
+        $('pagination').classList.add('hidden');
+        $('pagination').classList.remove('flex');
+        return;
+      }
+
+      $('pagination').classList.remove('hidden');
+      $('pagination').classList.add('flex');
+      $('pagination').innerHTML = `
+        <button id="pagAnterior" ${paginaAtual === 1 ? 'disabled' : ''}
+          class="flex items-center gap-1.5 px-3.5 py-2 rounded-md border border-ink/15 text-sm font-medium text-ink/70 hover:bg-white transition disabled:opacity-40 disabled:cursor-not-allowed">
+          <i data-lucide="chevron-left" class="w-4 h-4"></i> Anterior
+        </button>
+        <span class="text-xs font-mono-ticket text-ink/40">PÁGINA ${paginaAtual} DE ${totalPaginas}</span>
+        <button id="pagProxima" ${paginaAtual === totalPaginas ? 'disabled' : ''}
+          class="flex items-center gap-1.5 px-3.5 py-2 rounded-md border border-ink/15 text-sm font-medium text-ink/70 hover:bg-white transition disabled:opacity-40 disabled:cursor-not-allowed">
+          Próxima <i data-lucide="chevron-right" class="w-4 h-4"></i>
+        </button>`;
+
+      $('pagAnterior').onclick = () => { paginaAtual--; renderClients(); };
+      $('pagProxima').onclick = () => { paginaAtual++; renderClients(); };
+      lucide.createIcons();
+    }
+
+    // Remove acentos e baixa a caixa, pra "joão" encontrar "Joao" e vice-versa
+    function normalizarTexto(texto) {
+      return (texto || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    }
+
+    // Popula e exibe o filtro de agente só pra admin
+    if (souAdmin) {
+      const opcoes = RotaDB.getTeam()
+        .map(m => `<option value="${m.id}">${m.nome}</option>`).join('');
+      $('agenteFilter').insertAdjacentHTML('beforeend', opcoes);
+      $('agenteFilter').classList.remove('hidden');
+      $('agenteFilter').addEventListener('change', () => { paginaAtual = 1; renderClients(); });
     }
 
     renderFilterChip();
     renderClients();
+
+    $('searchInput').addEventListener('input', () => { paginaAtual = 1; renderClients(); });
 
     $('newClientBtn').onclick = () => {
       RotaModal.open({
@@ -187,6 +297,10 @@
           <div>
             <label class="${ROTA_LABEL_CLASS}">Contato</label>
             <input type="text" id="f_contato" class="${ROTA_INPUT_CLASS}" placeholder="+244 900 000 000" />
+          </div>
+          <div>
+            <label class="${ROTA_LABEL_CLASS}">Documento</label>
+            <input type="text" id="f_documento" class="${ROTA_INPUT_CLASS}" placeholder="BI, passaporte, NIF..." />
           </div>
           <div>
             <label class="${ROTA_LABEL_CLASS}">Origem do lead</label>
@@ -204,6 +318,7 @@
           RotaDB.saveClient({
             nome,
             contato: $('f_contato').value.trim(),
+            documento: $('f_documento').value.trim(),
             origem_lead: $('f_origem').value.trim(),
             notas: $('f_notas').value.trim(),
           });

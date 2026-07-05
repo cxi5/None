@@ -71,12 +71,21 @@ function getClientById(id) {
   return getClients().find(c => c.id === id) || null;
 }
 
+function getDefaultAgenteId() {
+  const team = getTeam();
+  const nomeAtual = getCurrentUser().nome;
+  const eu = team.find(m => m.nome === nomeAtual);
+  if (eu) return eu.id;
+  const admin = team.find(m => m.papel === 'admin');
+  return admin ? admin.id : (team[0]?.id || '');
+}
+
 function saveClient(dadosCliente) {
   const clients = getClients();
   const novo = {
     id: newId('c'),
     nome: '', contato: '', documento: '', origem_lead: '', notas: '',
-    agente_id: 'cxi', // fixo até termos usuário logado de verdade
+    agente_id: getDefaultAgenteId(),
     criado_em: new Date().toISOString(),
     itens: [],
     ...dadosCliente,
@@ -124,6 +133,26 @@ function updateItemStatus(clientId, itemId, novoStatus) {
   item.status = novoStatus;
   writeAll(DB_KEYS.clients, clients);
   return item;
+}
+
+function updateClientItem(clientId, itemId, dadosParciais) {
+  const clients = getClients();
+  const cliente = clients.find(c => c.id === clientId);
+  if (!cliente) return null;
+  const idx = cliente.itens.findIndex(i => i.id === itemId);
+  if (idx === -1) return null;
+  cliente.itens[idx] = { ...cliente.itens[idx], ...dadosParciais };
+  writeAll(DB_KEYS.clients, clients);
+  return cliente.itens[idx];
+}
+
+function deleteClientItem(clientId, itemId) {
+  const clients = getClients();
+  const cliente = clients.find(c => c.id === clientId);
+  if (!cliente) return null;
+  cliente.itens = cliente.itens.filter(i => i.id !== itemId);
+  writeAll(DB_KEYS.clients, clients);
+  return true;
 }
 
 // ---------------------------------------------------------------------
@@ -367,7 +396,7 @@ function logout() {
 window.RotaDB = {
   seedIfNeeded,
   getClients, getClientById, saveClient, updateClient, deleteClient,
-  addItemToClient, updateItemStatus,
+  addItemToClient, updateItemStatus, updateClientItem, deleteClientItem,
   getTransactions, saveTransaction, updateTransaction, deleteTransaction, getSaldoPorMoeda,
   getPosts, savePost, updatePostStatus, deletePost,
   getTeam, addTeamMember, updateTeamMember, removeTeamMember,

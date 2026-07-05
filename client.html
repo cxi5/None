@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Cliente — ROTA</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            petrol: '#1F4B4C',
+            amber:  '#E8A33D',
+            clay:   '#C1573A',
+            paper:  '#EDEEE7',
+            ink:    '#14181C'
+          }
+        }
+      }
+    }
+  </script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="style.css">
+  <script src="data.js"></script>
+  <script src="modal.js"></script>
+  <style>
+    .pb-safe { padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
+    @media (min-width: 768px) { .pb-safe { padding-bottom: 2rem; } }
+
+    .status-stamp {
+      font-family: 'Oswald', sans-serif;
+      font-size: 10px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 2px 8px;
+      border: 1.5px solid currentColor;
+      border-radius: 3px;
+      transform: rotate(-3deg);
+      display: inline-block;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-ticket-field">
+
+  <div class="md:flex">
+
+    <div id="shell"></div>
+
+    <main class="flex-1 pb-safe">
+
+      <!-- Header -->
+      <header class="flex items-center gap-3 px-5 md:px-8 py-5 border-b border-ink/10 bg-white md:bg-transparent">
+        <a href="clients.html" class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-paper transition text-ink/60 flex-shrink-0">
+          <i data-lucide="arrow-left" class="w-5 h-5"></i>
+        </a>
+        <div class="min-w-0">
+          <p class="font-mono-ticket text-[11px] text-ink/40 tracking-wider mb-0.5">CLIENTES / PERFIL</p>
+          <h1 id="pageTitle" class="font-display text-2xl font-semibold text-ink truncate">—</h1>
+        </div>
+      </header>
+
+      <!-- Estado: cliente não encontrado -->
+      <div id="notFoundState" class="hidden px-5 md:px-8 py-12 text-center">
+        <i data-lucide="user-x" class="w-10 h-10 text-ink/25 mx-auto mb-3"></i>
+        <p class="text-ink/50 mb-4">Cliente não encontrado.</p>
+        <a href="clients.html" class="text-petrol hover:text-ink font-medium text-sm transition">Voltar pra lista de clientes</a>
+      </div>
+
+      <div id="profileContent" class="px-5 md:px-8 py-6 space-y-5 max-w-2xl">
+
+        <!-- Cartão de identificação -->
+        <div class="bg-white border border-ink/10 rounded-lg p-5 relative overflow-hidden">
+          <div class="absolute top-4 right-4 flex items-center gap-1.5">
+            <button id="editClientBtn" class="w-8 h-8 flex items-center justify-center rounded-md text-ink/40 hover:text-petrol hover:bg-paper transition" aria-label="Editar cliente">
+              <i data-lucide="pencil" class="w-4 h-4"></i>
+            </button>
+            <button id="deleteClientBtn" class="w-8 h-8 flex items-center justify-center rounded-md text-ink/40 hover:text-clay hover:bg-paper transition" aria-label="Excluir cliente">
+              <i data-lucide="trash-2" class="w-4 h-4"></i>
+            </button>
+          </div>
+
+          <div class="flex items-center gap-4 mb-4">
+            <div id="clientAvatar" class="w-16 h-16 rounded-full bg-petrol text-paper flex items-center justify-center font-display text-xl font-semibold flex-shrink-0">—</div>
+            <div class="min-w-0">
+              <p id="clientName" class="font-display text-xl font-semibold text-ink truncate">—</p>
+              <p id="clientAgente" class="text-xs text-ink/45 mt-0.5"></p>
+            </div>
+          </div>
+
+          <div class="ticket-divider mx-1 mb-4"></div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+            <div class="flex items-center gap-2.5 text-ink/70">
+              <i data-lucide="phone" class="w-4 h-4 text-ink/35 flex-shrink-0"></i>
+              <span id="clientContato">sem contato</span>
+            </div>
+            <div class="flex items-center gap-2.5 text-ink/70">
+              <i data-lucide="id-card" class="w-4 h-4 text-ink/35 flex-shrink-0"></i>
+              <span id="clientDocumento">sem documento</span>
+            </div>
+            <div class="flex items-center gap-2.5 text-ink/70 sm:col-span-2">
+              <i data-lucide="megaphone" class="w-4 h-4 text-ink/35 flex-shrink-0"></i>
+              <span>Origem: <span id="clientOrigem">não informada</span></span>
+            </div>
+          </div>
+
+          <div id="clientNotasWrap" class="mt-4 pt-4 border-t border-ink/10">
+            <p class="text-xs font-mono-ticket text-ink/40 tracking-wider mb-1.5">NOTAS</p>
+            <p id="clientNotas" class="text-sm text-ink/70 leading-relaxed whitespace-pre-line"></p>
+          </div>
+        </div>
+
+        <!-- Itens adquiridos -->
+        <div class="bg-white border border-ink/10 rounded-lg overflow-hidden">
+          <div class="flex items-center justify-between px-5 py-4">
+            <div>
+              <h2 class="font-display text-lg font-semibold text-ink">Itens adquiridos</h2>
+              <p id="itemCount" class="text-xs text-ink/40 font-mono-ticket tracking-wider mt-0.5">—</p>
+            </div>
+            <button id="addItemBtn" class="btn-ticket bg-amber hover:bg-amber/90 text-ink font-semibold text-sm px-4 py-2.5 flex items-center gap-2 flex-shrink-0">
+              <i data-lucide="plus" class="w-4 h-4"></i>
+              <span class="hidden sm:inline">Novo item</span>
+            </button>
+          </div>
+
+          <ul id="itemList" class="divide-y divide-ink/10"></ul>
+
+          <div class="barcode mx-5 my-4"></div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <script src="shell.js"></script>
+  <script>
+    renderShell('clients');
+
+    const $ = (id) => document.getElementById(id);
+
+    const ICONE_TIPO = { roteiro: 'map', ingresso: 'ticket', transfer: 'plane', reserva: 'bed', outro: 'package' };
+    const LABEL_TIPO = { roteiro: 'Roteiro completo', ingresso: 'Ingresso', transfer: 'Transfer', reserva: 'Reserva', outro: 'Outro' };
+    const COR_STATUS = { confirmado: 'petrol', pendente: 'amber', concluido: 'ink', cancelado: 'clay' };
+    const LABEL_STATUS = { confirmado: 'Confirmado', pendente: 'Pendente', concluido: 'Concluído', cancelado: 'Cancelado' };
+    const ORDEM_STATUS = ['pendente', 'confirmado', 'concluido', 'cancelado'];
+
+    const clientId = new URLSearchParams(window.location.search).get('id');
+    let cliente = clientId ? RotaDB.getClientById(clientId) : null;
+
+    if (!cliente) {
+      $('notFoundState').classList.remove('hidden');
+      $('profileContent').remove();
+      $('pageTitle').textContent = 'Cliente não encontrado';
+    } else {
+      iniciar();
+    }
+
+    function iniciar() {
+      renderPerfil();
+      renderItens();
+
+      $('editClientBtn').onclick = abrirEdicaoCliente;
+      $('deleteClientBtn').onclick = excluirCliente;
+      $('addItemBtn').onclick = abrirNovoItem;
+    }
+
+    function renderPerfil() {
+      $('pageTitle').textContent = cliente.nome;
+      $('clientAvatar').textContent = RotaDB.initials(cliente.nome);
+      $('clientName').textContent = cliente.nome;
+
+      const membro = RotaDB.getTeam().find(m => m.id === cliente.agente_id);
+      $('clientAgente').textContent = `Agente: ${membro ? membro.nome : cliente.agente_id}`;
+
+      $('clientContato').textContent = cliente.contato || 'sem contato';
+      $('clientDocumento').textContent = cliente.documento || 'sem documento';
+      $('clientOrigem').textContent = cliente.origem_lead || 'não informada';
+
+      if (cliente.notas) {
+        $('clientNotasWrap').classList.remove('hidden');
+        $('clientNotas').textContent = cliente.notas;
+      } else {
+        $('clientNotasWrap').classList.add('hidden');
+      }
+    }
+
+    function renderItens() {
+      const itens = cliente.itens || [];
+      $('itemCount').textContent = `${itens.length} ITEM${itens.length === 1 ? '' : 'S'}`;
+
+      $('itemList').innerHTML = itens.length
+        ? itens.map(item => `
+          <li class="flex items-center justify-between px-5 py-4 gap-3">
+            <div class="flex items-center gap-3 min-w-0 flex-1">
+              <div class="w-9 h-9 rounded-full bg-ink/5 flex items-center justify-center flex-shrink-0">
+                <i data-lucide="${ICONE_TIPO[item.tipo] || 'package'}" class="w-4 h-4 text-ink/50"></i>
+              </div>
+              <div class="min-w-0">
+                <p class="text-sm font-medium text-ink truncate">${item.descricao || LABEL_TIPO[item.tipo] || '(sem descrição)'}</p>
+                <p class="text-xs text-ink/45">
+                  ${item.valor ? RotaDB.formatCurrency(item.valor, item.moeda) : 'sem valor'}
+                  ${item.data_servico ? ' · ' + RotaDB.formatDate(item.data_servico, 'short') : ''}
+                  ${item.fornecedor ? ' · ' + item.fornecedor : ''}
+                </p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 flex-shrink-0">
+              <span data-item-id="${item.id}" class="statusBtn status-stamp text-${COR_STATUS[item.status] || 'ink'}" title="Clique pra avançar o status">${LABEL_STATUS[item.status] || item.status}</span>
+              <button data-item-id="${item.id}" class="editItemBtn text-ink/30 hover:text-petrol transition p-1"><i data-lucide="pencil" class="w-4 h-4"></i></button>
+              <button data-item-id="${item.id}" class="deleteItemBtn text-ink/30 hover:text-clay transition p-1"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+            </div>
+          </li>`).join('')
+        : `<li class="py-8 text-center text-sm text-ink/35 italic">Nenhum item adquirido ainda.</li>`;
+
+      lucide.createIcons();
+
+      // Clicar no selo avança pro próximo status do fluxo — jeito rápido
+      // de atualizar sem abrir modal, já que é a ação mais comum aqui.
+      document.querySelectorAll('.statusBtn').forEach(el => {
+        el.onclick = () => {
+          const id = el.dataset.itemId;
+          const item = cliente.itens.find(i => i.id === id);
+          const posAtual = ORDEM_STATUS.indexOf(item.status);
+          const proximo = ORDEM_STATUS[(posAtual + 1) % ORDEM_STATUS.length];
+          RotaDB.updateClientItem(cliente.id, id, { status: proximo });
+          cliente = RotaDB.getClientById(cliente.id);
+          renderItens();
+        };
+      });
+
+      document.querySelectorAll('.editItemBtn').forEach(btn => {
+        btn.onclick = () => abrirEdicaoItem(btn.dataset.itemId);
+      });
+
+      document.querySelectorAll('.deleteItemBtn').forEach(btn => {
+        btn.onclick = () => {
+          const item = cliente.itens.find(i => i.id === btn.dataset.itemId);
+          if (!confirm(`Remover "${item.descricao || 'este item'}"?`)) return;
+          RotaDB.deleteClientItem(cliente.id, btn.dataset.itemId);
+          cliente = RotaDB.getClientById(cliente.id);
+          renderItens();
+        };
+      });
+    }
+
+    function camposItemHtml(item = {}) {
+      return `
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="${ROTA_LABEL_CLASS}">Tipo *</label>
+            <select id="f_tipo" class="${ROTA_INPUT_CLASS}">
+              ${Object.entries(LABEL_TIPO).map(([v, l]) => `<option value="${v}" ${item.tipo === v ? 'selected' : ''}>${l}</option>`).join('')}
+            </select>
+          </div>
+          <div>
+            <label class="${ROTA_LABEL_CLASS}">Status *</label>
+            <select id="f_status" class="${ROTA_INPUT_CLASS}">
+              ${ORDEM_STATUS.map(v => `<option value="${v}" ${item.status === v ? 'selected' : ''}>${LABEL_STATUS[v]}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="${ROTA_LABEL_CLASS}">Descrição *</label>
+          <input type="text" id="f_descricao" required class="${ROTA_INPUT_CLASS}" placeholder="Ex: Roteiro Zanzibar, 6 dias" value="${item.descricao || ''}" />
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="${ROTA_LABEL_CLASS}">Valor</label>
+            <input type="number" id="f_valor" min="0" step="0.01" class="${ROTA_INPUT_CLASS}" value="${item.valor || ''}" />
+          </div>
+          <div>
+            <label class="${ROTA_LABEL_CLASS}">Moeda</label>
+            <select id="f_moeda" class="${ROTA_INPUT_CLASS}">
+              ${['AOA', 'USD', 'EUR'].map(m => `<option value="${m}" ${item.moeda === m ? 'selected' : ''}>${m}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="${ROTA_LABEL_CLASS}">Data do serviço</label>
+            <input type="date" id="f_data" class="${ROTA_INPUT_CLASS}" value="${item.data_servico ? item.data_servico.slice(0, 10) : ''}" />
+          </div>
+          <div>
+            <label class="${ROTA_LABEL_CLASS}">Fornecedor</label>
+            <input type="text" id="f_fornecedor" class="${ROTA_INPUT_CLASS}" value="${item.fornecedor || ''}" />
+          </div>
+        </div>`;
+    }
+
+    function abrirNovoItem() {
+      RotaModal.open({
+        title: 'Novo item adquirido',
+        submitLabel: 'Salvar item',
+        bodyHtml: camposItemHtml(),
+        onSubmit: () => {
+          const descricao = $('f_descricao').value.trim();
+          if (!descricao) { $('f_descricao').focus(); return; }
+
+          RotaDB.addItemToClient(cliente.id, {
+            tipo: $('f_tipo').value,
+            status: $('f_status').value,
+            descricao,
+            valor: parseFloat($('f_valor').value) || 0,
+            moeda: $('f_moeda').value,
+            data_servico: $('f_data').value || null,
+            fornecedor: $('f_fornecedor').value.trim(),
+          });
+
+          cliente = RotaDB.getClientById(cliente.id);
+          RotaModal.close();
+          renderItens();
+        },
+      });
+    }
+
+    function abrirEdicaoItem(itemId) {
+      const item = cliente.itens.find(i => i.id === itemId);
+      RotaModal.open({
+        title: 'Editar item',
+        submitLabel: 'Salvar alterações',
+        bodyHtml: camposItemHtml(item),
+        onSubmit: () => {
+          const descricao = $('f_descricao').value.trim();
+          if (!descricao) { $('f_descricao').focus(); return; }
+
+          RotaDB.updateClientItem(cliente.id, itemId, {
+            tipo: $('f_tipo').value,
+            status: $('f_status').value,
+            descricao,
+            valor: parseFloat($('f_valor').value) || 0,
+            moeda: $('f_moeda').value,
+            data_servico: $('f_data').value || null,
+            fornecedor: $('f_fornecedor').value.trim(),
+          });
+
+          cliente = RotaDB.getClientById(cliente.id);
+          RotaModal.close();
+          renderItens();
+        },
+      });
+    }
+
+    function abrirEdicaoCliente() {
+      const opcoesAgente = RotaDB.getTeam()
+        .map(m => `<option value="${m.id}" ${cliente.agente_id === m.id ? 'selected' : ''}>${m.nome}</option>`).join('');
+
+      RotaModal.open({
+        title: 'Editar cliente',
+        submitLabel: 'Salvar alterações',
+        bodyHtml: `
+          <div>
+            <label class="${ROTA_LABEL_CLASS}">Nome *</label>
+            <input type="text" id="f_nome" required class="${ROTA_INPUT_CLASS}" value="${cliente.nome}" />
+          </div>
+          <div>
+            <label class="${ROTA_LABEL_CLASS}">Contato</label>
+            <input type="text" id="f_contato" class="${ROTA_INPUT_CLASS}" value="${cliente.contato || ''}" />
+          </div>
+          <div>
+            <label class="${ROTA_LABEL_CLASS}">Documento</label>
+            <input type="text" id="f_documento" class="${ROTA_INPUT_CLASS}" value="${cliente.documento || ''}" />
+          </div>
+          <div>
+            <label class="${ROTA_LABEL_CLASS}">Origem do lead</label>
+            <input type="text" id="f_origem" class="${ROTA_INPUT_CLASS}" value="${cliente.origem_lead || ''}" />
+          </div>
+          <div>
+            <label class="${ROTA_LABEL_CLASS}">Agente responsável</label>
+            <select id="f_agente" class="${ROTA_INPUT_CLASS}">${opcoesAgente}</select>
+          </div>
+          <div>
+            <label class="${ROTA_LABEL_CLASS}">Notas</label>
+            <textarea id="f_notas" rows="3" class="${ROTA_INPUT_CLASS}">${cliente.notas || ''}</textarea>
+          </div>
+        `,
+        onSubmit: () => {
+          const nome = $('f_nome').value.trim();
+          if (!nome) { $('f_nome').focus(); return; }
+
+          RotaDB.updateClient(cliente.id, {
+            nome,
+            contato: $('f_contato').value.trim(),
+            documento: $('f_documento').value.trim(),
+            origem_lead: $('f_origem').value.trim(),
+            agente_id: $('f_agente').value,
+            notas: $('f_notas').value.trim(),
+          });
+
+          cliente = RotaDB.getClientById(cliente.id);
+          RotaModal.close();
+          renderPerfil();
+        },
+      });
+    }
+
+    function excluirCliente() {
+      if (!confirm(`Excluir ${cliente.nome}? Isso remove o cliente e todos os itens adquiridos. Essa ação não pode ser desfeita.`)) return;
+      RotaDB.deleteClient(cliente.id);
+      window.location.href = 'clients.html';
+    }
+  </script>
+</body>
+</html>
