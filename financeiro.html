@@ -48,24 +48,27 @@
           <p id="headerMonth" class="font-mono-ticket text-[11px] text-ink/40 tracking-wider mb-0.5">—</p>
           <h1 class="font-display text-2xl font-semibold text-ink">Financeiro</h1>
         </div>
-        <button id="newTransactionBtn" class="btn-ticket bg-amber hover:bg-amber/90 text-ink font-semibold text-sm px-4 py-2.5 flex items-center gap-2 flex-shrink-0">
-          <i data-lucide="plus" class="w-4 h-4"></i>
-          <span class="hidden sm:inline">Novo lançamento</span>
-        </button>
+        <div class="flex items-center gap-2 flex-shrink-0">
+          <button id="configMoedasBtn" class="w-9 h-9 flex items-center justify-center rounded-md text-ink/50 hover:text-petrol hover:bg-paper transition" aria-label="Configurar moedas" title="Configurar moedas">
+            <i data-lucide="coins" class="w-5 h-5"></i>
+          </button>
+          <button id="newTransactionBtn" class="btn-ticket bg-amber hover:bg-amber/90 text-ink font-semibold text-sm px-4 py-2.5 flex items-center gap-2 flex-shrink-0">
+            <i data-lucide="plus" class="w-4 h-4"></i>
+            <span class="hidden sm:inline">Novo lançamento</span>
+          </button>
+        </div>
       </header>
 
       <div class="px-5 md:px-8 py-6">
 
         <!-- Saldos por moeda -->
-        <div id="saldoCards" class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8"></div>
+        <div id="saldoCards" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-2"></div>
 
-        <!-- Filtros -->
-        <div class="flex items-center gap-2 mb-4 overflow-x-auto pb-1">
-          <button class="px-3.5 py-1.5 rounded-full bg-petrol text-paper text-xs font-medium flex-shrink-0">Todas</button>
-          <button class="px-3.5 py-1.5 rounded-full bg-white border border-ink/15 text-ink/60 text-xs font-medium flex-shrink-0">AOA</button>
-          <button class="px-3.5 py-1.5 rounded-full bg-white border border-ink/15 text-ink/60 text-xs font-medium flex-shrink-0">USD</button>
-          <button class="px-3.5 py-1.5 rounded-full bg-white border border-ink/15 text-ink/60 text-xs font-medium flex-shrink-0">EUR</button>
-        </div>
+        <!-- Saldo de moedas que têm lançamento mas não estão mais ativas — nunca escondemos dado -->
+        <div id="saldoForaAtiva" class="hidden mb-6"></div>
+
+        <!-- Filtros por moeda — o clique ainda não filtra de verdade, isso é o próximo passo -->
+        <div id="moedaChips" class="flex items-center gap-2 mb-4 overflow-x-auto pb-1"></div>
 
         <!-- Lançamentos -->
         <div class="bg-white border border-ink/10 rounded-lg overflow-hidden">
@@ -92,19 +95,105 @@
     const hoje = new Date();
     $('headerMonth').textContent = hoje.toLocaleDateString('pt-PT', { month: 'short', year: 'numeric' }).replace('.', '').toUpperCase();
 
-    const MOEDA_INFO = {
-      AOA: { nome: 'Kwanza', cor: 'petrol' },
-      USD: { nome: 'Dólar', cor: 'amber' },
-      EUR: { nome: 'Euro', cor: 'clay' },
-    };
-
+    // Renderiza os cards de saldo com base nas moedas que o usuário ativou —
+    // nada de moeda fixa. Se não houver nenhuma ativa, mostra um estado
+    // vazio guiando pra configuração em vez de simplesmente não mostrar nada.
     function renderSaldoCards() {
+      const ativas = RotaDB.getMoedasAtivas();
       const saldo = RotaDB.getSaldoPorMoeda();
-      $('saldoCards').innerHTML = Object.entries(MOEDA_INFO).map(([moeda, info]) => `
-        <div class="currency-card border-${info.cor} bg-white rounded-lg p-4">
-          <p class="text-xs text-ink/50 font-medium mb-1">Saldo · ${info.nome}</p>
-          <p class="font-mono-ticket text-2xl font-medium text-ink">${RotaDB.formatCurrency(saldo[moeda] || 0, moeda)}</p>
-        </div>`).join('');
+
+      $('saldoCards').innerHTML = ativas.length
+        ? ativas.map(moeda => `
+            <div class="currency-card border-${RotaDB.corMoeda(moeda)} bg-white rounded-lg p-4">
+              <p class="text-xs text-ink/50 font-medium mb-1">Saldo · ${RotaDB.nomeMoeda(moeda)}</p>
+              <p class="font-mono-ticket text-2xl font-medium text-ink">${RotaDB.formatCurrency(saldo[moeda] || 0, moeda)}</p>
+            </div>`).join('')
+        : `<div class="sm:col-span-2 lg:col-span-4 bg-white border border-dashed border-ink/20 rounded-lg p-6 text-center">
+             <i data-lucide="coins" class="w-7 h-7 text-ink/25 mx-auto mb-2"></i>
+             <p class="text-sm text-ink/50 mb-3">Nenhuma moeda configurada ainda.</p>
+             <button id="configMoedasBtnVazio" class="text-sm text-petrol hover:text-ink font-semibold transition">Configurar moedas</button>
+           </div>`;
+
+      if (!ativas.length) {
+        $('configMoedasBtnVazio').onclick = abrirConfigMoedas;
+      }
+
+      // Moedas com lançamento mas fora da lista ativa (ex.: foram desativadas
+      // depois de já ter dado com elas) — mostra num rodapé discreto, nunca some.
+      const fora = RotaDB.getMoedasForaDaAtiva();
+      if (fora.length) {
+        $('saldoForaAtiva').classList.remove('hidden');
+        $('saldoForaAtiva').innerHTML = `
+          <p class="text-xs text-ink/40 leading-relaxed">
+            Também há lançamentos em ${fora.map(m => `<strong class="text-ink/60">${RotaDB.nomeMoeda(m)} (${m})</strong>`).join(', ')},
+            fora das moedas ativas no momento. Saldo: ${fora.map(m => RotaDB.formatCurrency(saldo[m] || 0, m)).join(' · ')}.
+            <button id="reativarMoedaLink" class="text-petrol hover:text-ink font-medium underline underline-offset-2">Configurar moedas</button>
+          </p>`;
+        $('reativarMoedaLink').onclick = abrirConfigMoedas;
+      } else {
+        $('saldoForaAtiva').classList.add('hidden');
+        $('saldoForaAtiva').innerHTML = '';
+      }
+
+      lucide.createIcons();
+    }
+
+    // Chips por moeda ativa — por enquanto só refletem quais moedas existem;
+    // o filtro de verdade entra na próxima etapa (ainda não filtram ao clicar).
+    function renderMoedaChips() {
+      const ativas = RotaDB.getMoedasAtivas();
+      const chipBase = 'px-3.5 py-1.5 rounded-full text-xs font-medium flex-shrink-0';
+
+      $('moedaChips').innerHTML = `
+        <button class="${chipBase} bg-petrol text-paper">Todas</button>
+        ${ativas.map(m => `<button class="${chipBase} bg-white border border-ink/15 text-ink/60">${m}</button>`).join('')}
+      `;
+    }
+
+    function abrirConfigMoedas() {
+      const ativas = new Set(RotaDB.getMoedasAtivas());
+      const opcoesHtml = Object.entries(RotaDB.CATALOGO_MOEDAS)
+        .map(([codigo, nome]) => `
+          <label class="flex items-center gap-2.5 py-1.5 cursor-pointer select-none">
+            <input type="checkbox" class="moedaCheckbox w-4 h-4 rounded border-ink/25 text-petrol focus:ring-2 focus:ring-petrol/40" value="${codigo}" ${ativas.has(codigo) ? 'checked' : ''} />
+            <span class="text-sm text-ink/80">${nome} <span class="text-ink/40 font-mono-ticket text-xs">${codigo}</span></span>
+          </label>`).join('');
+
+      RotaModal.open({
+        title: 'Configurar moedas',
+        submitLabel: 'Salvar moedas',
+        bodyHtml: `
+          <p class="text-xs text-ink/45 mb-1">Escolha até ${RotaDB.LIMITE_MOEDAS_ATIVAS} moedas pra usar no Financeiro.</p>
+          <p id="limiteAviso" class="hidden text-clay text-xs -mt-1"></p>
+          <div class="max-h-72 overflow-y-auto divide-y divide-ink/5 -mx-1 px-1">${opcoesHtml}</div>
+        `,
+        onSubmit: () => {
+          const escolhidas = Array.from(document.querySelectorAll('.moedaCheckbox:checked')).map(el => el.value);
+          const resultado = RotaDB.saveMoedasAtivas(escolhidas);
+
+          if (resultado.erro === 'limite_excedido') {
+            $('limiteAviso').textContent = `Escolha no máximo ${resultado.limite} moedas.`;
+            $('limiteAviso').classList.remove('hidden');
+            return;
+          }
+
+          RotaModal.close();
+          renderSaldoCards();
+          renderMoedaChips();
+          renderTransactions();
+        },
+      });
+
+      // Trava a marcação de novos checkboxes quando já se atingiu o limite,
+      // mas deixa desmarcar os que já estão marcados normalmente.
+      const checkboxes = document.querySelectorAll('.moedaCheckbox');
+      const atualizarLimite = () => {
+        const marcados = document.querySelectorAll('.moedaCheckbox:checked').length;
+        checkboxes.forEach(cb => { cb.disabled = !cb.checked && marcados >= RotaDB.LIMITE_MOEDAS_ATIVAS; });
+        $('limiteAviso').classList.add('hidden');
+      };
+      checkboxes.forEach(cb => cb.addEventListener('change', atualizarLimite));
+      atualizarLimite();
     }
 
     function renderTransactions() {
@@ -142,11 +231,25 @@
     }
 
     renderSaldoCards();
+    renderMoedaChips();
     renderTransactions();
 
+    $('configMoedasBtn').onclick = abrirConfigMoedas;
+
     $('newTransactionBtn').onclick = () => {
+      const moedasAtivas = RotaDB.getMoedasAtivas();
+
+      // Sem moeda configurada ainda, não dá pra montar o select de moeda —
+      // manda configurar primeiro em vez de abrir um formulário quebrado.
+      if (!moedasAtivas.length) {
+        abrirConfigMoedas();
+        return;
+      }
+
       const opcoesClientes = RotaDB.getClients()
         .map(c => `<option value="${c.id}">${c.nome}</option>`).join('');
+      const opcoesMoeda = moedasAtivas
+        .map(m => `<option value="${m}">${m} — ${RotaDB.nomeMoeda(m)}</option>`).join('');
 
       RotaModal.open({
         title: 'Novo lançamento',
@@ -162,11 +265,7 @@
             </div>
             <div>
               <label class="${ROTA_LABEL_CLASS}">Moeda *</label>
-              <select id="f_moeda" class="${ROTA_INPUT_CLASS}">
-                <option value="AOA">AOA</option>
-                <option value="USD">USD</option>
-                <option value="EUR">EUR</option>
-              </select>
+              <select id="f_moeda" class="${ROTA_INPUT_CLASS}">${opcoesMoeda}</select>
             </div>
           </div>
           <div class="grid grid-cols-2 gap-3">

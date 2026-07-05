@@ -18,7 +18,57 @@ const DB_KEYS = {
   team: 'rota_team',
   seeded: 'rota_seeded_v1',
   currentUser: 'rota_current_user',
+  moedasAtivas: 'rota_moedas_ativas',
 };
+
+// Limite de moedas ativas ao mesmo tempo — mantém os cards de saldo e os
+// chips de filtro legíveis. Pode subir no futuro, mas 4 é o combinado por ora.
+const LIMITE_MOEDAS_ATIVAS = 4;
+
+// Catálogo de moedas disponíveis pra escolher — não é a lista de moedas
+// "ativas" (essa fica salva por conta do usuário), é só o cardápio de opções.
+const CATALOGO_MOEDAS = {
+  AOA: 'Kwanza angolano',
+  USD: 'Dólar americano',
+  EUR: 'Euro',
+  BRL: 'Real brasileiro',
+  GBP: 'Libra esterlina',
+  ZAR: 'Rand sul-africano',
+  MZN: 'Metical moçambicano',
+  CVE: 'Escudo cabo-verdiano',
+  XOF: 'Franco CFA (BCEAO)',
+  XAF: 'Franco CFA (BEAC)',
+  NGN: 'Naira nigeriana',
+  GHS: 'Cedi ganês',
+  KES: 'Xelim queniano',
+  EGP: 'Libra egípcia',
+  CNY: 'Yuan chinês',
+  JPY: 'Iene japonês',
+  INR: 'Rupia indiana',
+  AED: 'Dirham dos Emirados',
+  SAR: 'Rial saudita',
+  CHF: 'Franco suíço',
+  CAD: 'Dólar canadense',
+  AUD: 'Dólar australiano',
+  RUB: 'Rublo russo',
+  TRY: 'Lira turca',
+  MXN: 'Peso mexicano',
+  ARS: 'Peso argentino',
+  CLP: 'Peso chileno',
+  COP: 'Peso colombiano',
+  PLN: 'Zloty polonês',
+  SEK: 'Coroa sueca',
+  NOK: 'Coroa norueguesa',
+  DKK: 'Coroa dinamarquesa',
+  HKD: 'Dólar de Hong Kong',
+  SGD: 'Dólar de Singapura',
+  KRW: 'Won sul-coreano',
+  THB: 'Baht tailandês',
+};
+
+// Cores que ciclam pelas moedas ativas, na ordem em que foram escolhidas —
+// dá pra ter até LIMITE_MOEDAS_ATIVAS cores distintas do design system.
+const CICLO_CORES_MOEDA = ['petrol', 'amber', 'clay', 'ink'];
 
 // Gera um id simples (suficiente pro localStorage; troca por uuid do
 // Postgres quando o Supabase entrar — o resto do código nem percebe).
@@ -49,6 +99,7 @@ function seedIfNeeded() {
   writeAll(DB_KEYS.clients, []);
   writeAll(DB_KEYS.transactions, []);
   writeAll(DB_KEYS.posts, []);
+  writeAll(DB_KEYS.moedasAtivas, []); // nenhuma moeda ativa por padrão — o usuário escolhe
   writeAll(DB_KEYS.team, [{
     id: newId('u'),
     nome: 'Cxi',
@@ -193,13 +244,59 @@ function deleteTransaction(id) {
 
 // Saldo consolidado por moeda: soma receitas, subtrai despesas, sem
 // converter entre moedas (evita o problema de câmbio que o escopo já identificou).
+// Dinâmico: reflete qualquer moeda que apareça nos lançamentos, mesmo que
+// não esteja mais na lista de moedas "ativas" — nenhum dado fica escondido.
 function getSaldoPorMoeda() {
-  const saldo = { AOA: 0, USD: 0, EUR: 0 };
+  const saldo = {};
   for (const t of getTransactions()) {
     const sinal = t.tipo === 'receita' ? 1 : -1;
     saldo[t.moeda] = (saldo[t.moeda] || 0) + sinal * t.valor;
   }
   return saldo;
+}
+
+// ---------------------------------------------------------------------
+// Moedas ativas — quais moedas o usuário decidiu usar no Financeiro.
+// Vazio por padrão; o usuário escolhe até LIMITE_MOEDAS_ATIVAS no início.
+// ---------------------------------------------------------------------
+
+function getMoedasAtivas() {
+  return readAll(DB_KEYS.moedasAtivas);
+}
+
+// Recebe a lista completa de códigos que devem ficar ativos (substitui a
+// lista anterior). Retorna { ok: true, lista } ou { erro: 'limite_excedido' }
+// se vier mais que o limite — quem chama decide como avisar o usuário.
+function saveMoedasAtivas(listaCodigos) {
+  const unicos = [...new Set(listaCodigos)].filter(c => CATALOGO_MOEDAS[c]);
+  if (unicos.length > LIMITE_MOEDAS_ATIVAS) {
+    return { erro: 'limite_excedido', limite: LIMITE_MOEDAS_ATIVAS };
+  }
+  writeAll(DB_KEYS.moedasAtivas, unicos);
+  return { ok: true, lista: unicos };
+}
+
+// Nome de exibição de uma moeda — cai pro próprio código se não estiver
+// no catálogo (ex.: moeda antiga digitada manualmente antes do catálogo existir).
+function nomeMoeda(codigo) {
+  return CATALOGO_MOEDAS[codigo] || codigo;
+}
+
+// Cor do design system associada a uma moeda ativa, pela posição dela na
+// lista ativa (cicla entre as cores disponíveis). Moeda fora da lista ativa
+// (ex.: aparece em lançamentos antigos mas foi desativada) cai sempre em 'ink'.
+function corMoeda(codigo) {
+  const ativas = getMoedasAtivas();
+  const idx = ativas.indexOf(codigo);
+  return idx === -1 ? 'ink' : CICLO_CORES_MOEDA[idx % CICLO_CORES_MOEDA.length];
+}
+
+// Moedas que aparecem em lançamentos reais mas não estão (mais) na lista
+// ativa — usado pra nunca esconder saldo de dados que já existem.
+function getMoedasForaDaAtiva() {
+  const ativas = new Set(getMoedasAtivas());
+  const usadas = new Set(getTransactions().map(t => t.moeda));
+  return [...usadas].filter(m => !ativas.has(m));
 }
 
 // ---------------------------------------------------------------------
@@ -403,6 +500,8 @@ window.RotaDB = {
   getDashboardMetrics,
   formatCurrency, formatDate, initials,
   getCurrentUser, setCurrentUser, logout,
+  getMoedasAtivas, saveMoedasAtivas, nomeMoeda, corMoeda, getMoedasForaDaAtiva,
+  CATALOGO_MOEDAS, LIMITE_MOEDAS_ATIVAS,
 };
 
 // Roda sozinho ao incluir <script src="data.js"> — nenhuma página
