@@ -219,7 +219,7 @@ function saveTransaction(dadosTransacao) {
   const nova = {
     id: newId('t'),
     client_id: null, tipo: 'receita', valor: 0, moeda: 'AOA',
-    taxa_cambio_no_momento: 1, categoria: '', agente_id: 'cxi',
+    taxa_cambio_no_momento: 1, categoria: '', agente_id: getDefaultAgenteId(),
     data: new Date().toISOString(), notas: '',
     ...dadosTransacao,
   };

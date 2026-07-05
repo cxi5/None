@@ -21,6 +21,9 @@
     }
   </script>
   <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
   <link rel="stylesheet" href="style.css">
   <script src="data.js"></script>
   <script src="modal.js"></script>
@@ -67,19 +70,60 @@
         <!-- Saldo de moedas que têm lançamento mas não estão mais ativas — nunca escondemos dado -->
         <div id="saldoForaAtiva" class="hidden mb-6"></div>
 
-        <!-- Filtros por moeda — o clique ainda não filtra de verdade, isso é o próximo passo -->
+        <!-- Filtros por moeda -->
         <div id="moedaChips" class="flex items-center gap-2 mb-4 overflow-x-auto pb-1"></div>
+
+        <!-- Filtro por período -->
+        <div class="flex flex-wrap items-center gap-2 mb-4">
+          <label for="dataInicio" class="text-xs text-ink/45 font-medium">De</label>
+          <input type="date" id="dataInicio" class="bg-white border border-ink/15 rounded-md px-3 py-2 text-sm text-ink focus:outline-none input-focus" />
+          <label for="dataFim" class="text-xs text-ink/45 font-medium">até</label>
+          <input type="date" id="dataFim" class="bg-white border border-ink/15 rounded-md px-3 py-2 text-sm text-ink focus:outline-none input-focus" />
+          <button id="limparPeriodo" class="hidden text-xs text-petrol hover:text-ink font-medium underline underline-offset-2">Limpar período</button>
+        </div>
+
+        <!-- Filtro por cliente / agente -->
+        <div class="flex flex-col sm:flex-row gap-3 mb-4">
+          <select id="clienteFiltro" class="bg-white border border-ink/15 rounded-md px-3.5 py-2.5 text-sm text-ink focus:outline-none input-focus sm:max-w-[240px]">
+            <option value="">Todos os clientes</option>
+          </select>
+          <!-- só aparece pra admin — agente só vê os próprios lançamentos, sem precisar filtrar -->
+          <select id="agenteFiltro" class="hidden bg-white border border-ink/15 rounded-md px-3.5 py-2.5 text-sm text-ink focus:outline-none input-focus sm:max-w-[220px]">
+            <option value="">Todos os agentes</option>
+          </select>
+        </div>
+
+        <!-- Evolução financeira -->
+        <div class="bg-white border border-ink/10 rounded-lg p-5 mb-6">
+          <p class="text-xs font-mono-ticket text-ink/40 tracking-wider mb-0.5">EVOLUÇÃO FINANCEIRA</p>
+          <p class="text-[11px] text-ink/35 mb-3">Saldo acumulado por moeda, dentro dos filtros aplicados acima.</p>
+          <div id="chartEmptyState" class="hidden text-sm text-ink/35 italic text-center py-10"></div>
+          <div class="relative" style="height: 240px;">
+            <canvas id="evolucaoChart"></canvas>
+          </div>
+        </div>
 
         <!-- Lançamentos -->
         <div class="bg-white border border-ink/10 rounded-lg overflow-hidden">
-          <div class="px-5 py-4">
+          <div class="px-5 py-4 flex items-center justify-between gap-3">
             <p class="text-xs font-mono-ticket text-ink/40 tracking-wider">LANÇAMENTOS RECENTES</p>
+            <div class="flex items-center gap-1 flex-shrink-0">
+              <button id="exportCsvBtn" class="flex items-center gap-1.5 text-xs font-medium text-ink/50 hover:text-petrol px-2.5 py-1.5 rounded-md hover:bg-paper transition" title="Exportar lista filtrada em CSV">
+                <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5"></i> <span class="hidden sm:inline">CSV</span>
+              </button>
+              <button id="exportPdfBtn" class="flex items-center gap-1.5 text-xs font-medium text-ink/50 hover:text-clay px-2.5 py-1.5 rounded-md hover:bg-paper transition" title="Exportar lista filtrada em PDF">
+                <i data-lucide="file-text" class="w-3.5 h-3.5"></i> <span class="hidden sm:inline">PDF</span>
+              </button>
+            </div>
           </div>
 
           <ul id="transactionList" class="divide-y divide-ink/10"></ul>
 
           <div class="barcode mx-5 my-4"></div>
         </div>
+
+        <!-- Paginação — só aparece quando passa de uma página -->
+        <div id="pagination" class="hidden items-center justify-between mt-4"></div>
 
       </div>
     </main>
@@ -90,6 +134,12 @@
     renderShell('financeiro');
 
     const $ = (id) => document.getElementById(id);
+
+    // Quem está "logado" agora e se é admin — mesmo padrão de clients.html:
+    // agente só vê os próprios lançamentos, admin vê tudo (ou filtra por agente).
+    const usuarioAtual = RotaDB.getCurrentUser();
+    const meuMembro = RotaDB.getTeam().find(m => m.nome === usuarioAtual.nome);
+    const souAdmin = usuarioAtual.papel === 'admin';
 
     // Cabeçalho do mês — dinâmico, no formato "JUL 2026"
     const hoje = new Date();
@@ -138,16 +188,37 @@
       lucide.createIcons();
     }
 
-    // Chips por moeda ativa — por enquanto só refletem quais moedas existem;
-    // o filtro de verdade entra na próxima etapa (ainda não filtram ao clicar).
+    // Moeda selecionada pro filtro — null significa "Todas". Fica em memória
+    // (não precisa persistir entre sessões, é só um filtro de visualização).
+    let moedaFiltro = null;
+
+    const TAMANHO_PAGINA = 10;
+    let paginaAtual = 1;
+
+    // Mesmos valores hex do tailwind.config no topo do arquivo — o Chart.js
+    // não lê classes Tailwind, então precisa da cor em hex direto.
+    const CORES_HEX_MOEDA = { petrol: '#1F4B4C', amber: '#E8A33D', clay: '#C1573A', ink: '#14181C' };
+    let evolucaoChartInstance = null;
+
+    // Chips por moeda ativa — clicar troca o filtro e re-renderiza tanto os
+    // próprios chips (pra destacar o selecionado) quanto a lista de lançamentos.
     function renderMoedaChips() {
       const ativas = RotaDB.getMoedasAtivas();
-      const chipBase = 'px-3.5 py-1.5 rounded-full text-xs font-medium flex-shrink-0';
+      const chipBase = 'px-3.5 py-1.5 rounded-full text-xs font-medium flex-shrink-0 transition';
+      const chipAtivo = `${chipBase} bg-petrol text-paper`;
+      const chipInativo = `${chipBase} bg-white border border-ink/15 text-ink/60 hover:border-ink/30`;
 
       $('moedaChips').innerHTML = `
-        <button class="${chipBase} bg-petrol text-paper">Todas</button>
-        ${ativas.map(m => `<button class="${chipBase} bg-white border border-ink/15 text-ink/60">${m}</button>`).join('')}
+        <button class="${moedaFiltro === null ? chipAtivo : chipInativo}" onclick="selecionarMoedaFiltro(null)">Todas</button>
+        ${ativas.map(m => `<button class="${moedaFiltro === m ? chipAtivo : chipInativo}" onclick="selecionarMoedaFiltro('${m}')">${m}</button>`).join('')}
       `;
+    }
+
+    function selecionarMoedaFiltro(moeda) {
+      moedaFiltro = moeda;
+      paginaAtual = 1;
+      renderMoedaChips();
+      renderTransactions();
     }
 
     function abrirConfigMoedas() {
@@ -178,6 +249,7 @@
           }
 
           RotaModal.close();
+          if (moedaFiltro && !resultado.lista.includes(moedaFiltro)) moedaFiltro = null;
           renderSaldoCards();
           renderMoedaChips();
           renderTransactions();
@@ -196,47 +268,200 @@
       atualizarLimite();
     }
 
+    // Compara só a data (ignora hora) — "até" inclui o dia inteiro, senão um
+    // lançamento feito às 18h do último dia escolhido ficaria de fora.
+    function passaFiltroPeriodo(t) {
+      const dataTransacao = new Date(t.data);
+      const inicio = $('dataInicio').value ? new Date(`${$('dataInicio').value}T00:00:00`) : null;
+      const fim = $('dataFim').value ? new Date(`${$('dataFim').value}T23:59:59`) : null;
+      if (inicio && dataTransacao < inicio) return false;
+      if (fim && dataTransacao > fim) return false;
+      return true;
+    }
+
+    // Aplica os 4 filtros (moeda, período, cliente, agente/visibilidade) e
+    // devolve em ordem cronológica — tanto a lista quanto o gráfico partem
+    // daqui, cada um decidindo depois como ordenar/agrupar o resultado.
+    function getTransacoesFiltradas() {
+      let transacoes = RotaDB.getTransactions().slice();
+
+      if (moedaFiltro) {
+        transacoes = transacoes.filter(t => t.moeda === moedaFiltro);
+      }
+      transacoes = transacoes.filter(passaFiltroPeriodo);
+
+      // visibilidade por agente: agente só vê os próprios, admin vê tudo
+      // (ou filtra por um agente específico, se escolher no select)
+      if (!souAdmin) {
+        transacoes = meuMembro ? transacoes.filter(t => t.agente_id === meuMembro.id) : [];
+      } else if ($('agenteFiltro').value) {
+        transacoes = transacoes.filter(t => t.agente_id === $('agenteFiltro').value);
+      }
+
+      if ($('clienteFiltro').value) {
+        transacoes = transacoes.filter(t => t.client_id === $('clienteFiltro').value);
+      }
+
+      return transacoes.sort((a, b) => new Date(a.data) - new Date(b.data));
+    }
+
     function renderTransactions() {
-      const transacoes = RotaDB.getTransactions()
-        .slice()
-        .sort((a, b) => new Date(b.data) - new Date(a.data));
+      const transacoes = getTransacoesFiltradas().slice().sort((a, b) => new Date(b.data) - new Date(a.data));
+
+      const semPeriodo = !$('dataInicio').value && !$('dataFim').value;
+
+      // Paginação — só entra em jogo quando passa de TAMANHO_PAGINA lançamentos
+      const totalPaginas = Math.max(1, Math.ceil(transacoes.length / TAMANHO_PAGINA));
+      if (paginaAtual > totalPaginas) paginaAtual = totalPaginas;
+      const inicio = (paginaAtual - 1) * TAMANHO_PAGINA;
+      const transacoesPagina = transacoes.slice(inicio, inicio + TAMANHO_PAGINA);
 
       $('transactionList').innerHTML = transacoes.length
-        ? transacoes.map(t => {
+        ? transacoesPagina.map(t => {
             const cliente = t.client_id ? RotaDB.getClientById(t.client_id) : null;
             const receita = t.tipo === 'receita';
             const cor = receita ? 'petrol' : 'clay';
             const icone = receita ? 'arrow-down-left' : 'arrow-up-right';
             const subtitulo = cliente ? cliente.nome : (t.categoria || 'Sem categoria');
             return `
-              <li class="flex items-center justify-between px-5 py-4">
-                <div class="flex items-center gap-3">
+              <li class="flex items-center justify-between px-5 py-4 group">
+                <div class="flex items-center gap-3 min-w-0">
                   <div class="w-9 h-9 rounded-full bg-${cor}/10 flex items-center justify-center flex-shrink-0">
                     <i data-lucide="${icone}" class="w-4 h-4 text-${cor}"></i>
                   </div>
-                  <div>
-                    <p class="text-sm font-medium text-ink">${t.notas || (receita ? 'Receita' : 'Despesa')}</p>
-                    <p class="text-xs text-ink/45">${subtitulo} · ${RotaDB.formatDate(t.data, 'short')}</p>
+                  <div class="min-w-0">
+                    <p class="text-sm font-medium text-ink truncate">${t.notas || (receita ? 'Receita' : 'Despesa')}</p>
+                    <p class="text-xs text-ink/45 truncate">${subtitulo} · ${RotaDB.formatDate(t.data, 'short')}</p>
                   </div>
                 </div>
-                <div class="text-right">
-                  <p class="font-mono-ticket text-sm font-medium text-${cor}">${receita ? '+' : '−'} ${RotaDB.formatCurrency(t.valor, t.moeda)}</p>
-                  <p class="text-[11px] text-ink/35 font-mono-ticket">câmbio ${Number(t.taxa_cambio_no_momento).toFixed(2)}</p>
+                <div class="flex items-center gap-3 flex-shrink-0">
+                  <div class="text-right">
+                    <p class="font-mono-ticket text-sm font-medium text-${cor}">${receita ? '+' : '−'} ${RotaDB.formatCurrency(t.valor, t.moeda)}</p>
+                    <p class="text-[11px] text-ink/35 font-mono-ticket">câmbio ${Number(t.taxa_cambio_no_momento).toFixed(2)}</p>
+                  </div>
+                  <div class="flex items-center gap-1 opacity-60 group-hover:opacity-100 transition">
+                    <button onclick="editarTransacao('${t.id}')" class="w-8 h-8 flex items-center justify-center rounded-md text-ink/40 hover:text-petrol hover:bg-paper transition" aria-label="Editar lançamento" title="Editar">
+                      <i data-lucide="pencil" class="w-4 h-4"></i>
+                    </button>
+                    <button onclick="excluirTransacao('${t.id}')" class="w-8 h-8 flex items-center justify-center rounded-md text-ink/40 hover:text-clay hover:bg-paper transition" aria-label="Excluir lançamento" title="Excluir">
+                      <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                  </div>
                 </div>
               </li>`;
           }).join('')
-        : `<li class="py-8 text-center text-sm text-ink/35 italic">Nenhum lançamento registrado ainda.</li>`;
+        : `<li class="py-8 text-center text-sm text-ink/35 italic">${
+            moedaFiltro || !semPeriodo || $('clienteFiltro').value || $('agenteFiltro').value
+              ? 'Nenhum lançamento encontrado com esses filtros.'
+              : 'Nenhum lançamento registrado ainda.'
+          }</li>`;
 
+      renderPagination(totalPaginas);
+      renderEvolucaoChart();
       lucide.createIcons();
     }
 
-    renderSaldoCards();
-    renderMoedaChips();
-    renderTransactions();
+    function renderPagination(totalPaginas) {
+      if (totalPaginas <= 1) {
+        $('pagination').classList.add('hidden');
+        $('pagination').classList.remove('flex');
+        return;
+      }
 
-    $('configMoedasBtn').onclick = abrirConfigMoedas;
+      $('pagination').classList.remove('hidden');
+      $('pagination').classList.add('flex');
+      $('pagination').innerHTML = `
+        <button id="pagAnterior" ${paginaAtual === 1 ? 'disabled' : ''}
+          class="flex items-center gap-1.5 px-3.5 py-2 rounded-md border border-ink/15 text-sm font-medium text-ink/70 hover:bg-white transition disabled:opacity-40 disabled:cursor-not-allowed">
+          <i data-lucide="chevron-left" class="w-4 h-4"></i> Anterior
+        </button>
+        <span class="text-xs font-mono-ticket text-ink/40">PÁGINA ${paginaAtual} DE ${totalPaginas}</span>
+        <button id="pagProxima" ${paginaAtual === totalPaginas ? 'disabled' : ''}
+          class="flex items-center gap-1.5 px-3.5 py-2 rounded-md border border-ink/15 text-sm font-medium text-ink/70 hover:bg-white transition disabled:opacity-40 disabled:cursor-not-allowed">
+          Próxima <i data-lucide="chevron-right" class="w-4 h-4"></i>
+        </button>`;
 
-    $('newTransactionBtn').onclick = () => {
+      $('pagAnterior').onclick = () => { paginaAtual--; renderTransactions(); };
+      $('pagProxima').onclick = () => { paginaAtual++; renderTransactions(); };
+      lucide.createIcons();
+    }
+
+    // Saldo acumulado por moeda, agrupado por mês — nunca soma moedas
+    // diferentes na mesma linha (mesma regra de getSaldoPorMoeda: sem câmbio).
+    // Usa o conjunto já filtrado (moeda/período/cliente/agente), então o
+    // gráfico sempre reflete exatamente o que a lista abaixo está mostrando.
+    function renderEvolucaoChart() {
+      const transacoes = getTransacoesFiltradas();
+
+      if (!transacoes.length) {
+        $('evolucaoChart').classList.add('hidden');
+        $('chartEmptyState').classList.remove('hidden');
+        $('chartEmptyState').textContent = 'Sem lançamentos suficientes pra mostrar evolução com esses filtros.';
+        if (evolucaoChartInstance) { evolucaoChartInstance.destroy(); evolucaoChartInstance = null; }
+        return;
+      }
+
+      $('evolucaoChart').classList.remove('hidden');
+      $('chartEmptyState').classList.add('hidden');
+
+      // Variação líquida (receita - despesa) por moeda, por mês
+      const variacaoPorMoedaMes = {};
+      for (const t of transacoes) {
+        const mesChave = t.data.slice(0, 7); // 'YYYY-MM'
+        const sinal = t.tipo === 'receita' ? 1 : -1;
+        variacaoPorMoedaMes[t.moeda] = variacaoPorMoedaMes[t.moeda] || {};
+        variacaoPorMoedaMes[t.moeda][mesChave] = (variacaoPorMoedaMes[t.moeda][mesChave] || 0) + sinal * t.valor;
+      }
+
+      // Eixo X compartilhado entre todas as moedas presentes no filtro
+      const meses = [...new Set(transacoes.map(t => t.data.slice(0, 7)))].sort();
+      const labels = meses.map(m => {
+        const [ano, mes] = m.split('-');
+        return new Date(Number(ano), Number(mes) - 1, 1)
+          .toLocaleDateString('pt-PT', { month: 'short', year: '2-digit' }).replace('.', '');
+      });
+
+      const datasets = Object.keys(variacaoPorMoedaMes).map(moeda => {
+        let acumulado = 0;
+        const pontos = meses.map(mes => (acumulado += variacaoPorMoedaMes[moeda][mes] || 0));
+        const cor = CORES_HEX_MOEDA[RotaDB.corMoeda(moeda)] || CORES_HEX_MOEDA.ink;
+        return {
+          label: moeda,
+          data: pontos,
+          borderColor: cor,
+          backgroundColor: cor,
+          tension: 0.3,
+          pointRadius: 3,
+          fill: false,
+        };
+      });
+
+      if (evolucaoChartInstance) evolucaoChartInstance.destroy();
+
+      evolucaoChartInstance = new Chart($('evolucaoChart'), {
+        type: 'line',
+        data: { labels, datasets },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { display: datasets.length > 1, position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => `${ctx.dataset.label}: ${RotaDB.formatCurrency(ctx.parsed.y, ctx.dataset.label)}`,
+              },
+            },
+          },
+          scales: {
+            y: { ticks: { font: { size: 11 } } },
+            x: { ticks: { font: { size: 11 } } },
+          },
+        },
+      });
+    }
+
+    function abrirModalTransacao(transacaoExistente = null) {
       const moedasAtivas = RotaDB.getMoedasAtivas();
 
       // Sem moeda configurada ainda, não dá pra montar o select de moeda —
@@ -246,21 +471,30 @@
         return;
       }
 
+      const editando = !!transacaoExistente;
+      const t = transacaoExistente || {};
+
       const opcoesClientes = RotaDB.getClients()
-        .map(c => `<option value="${c.id}">${c.nome}</option>`).join('');
-      const opcoesMoeda = moedasAtivas
-        .map(m => `<option value="${m}">${m} — ${RotaDB.nomeMoeda(m)}</option>`).join('');
+        .map(c => `<option value="${c.id}" ${t.client_id === c.id ? 'selected' : ''}>${c.nome}</option>`).join('');
+
+      // Ao editar, a moeda do lançamento pode ter sido desativada depois —
+      // garante que ela apareça no select mesmo assim, senão o valor some.
+      const moedasParaSelect = t.moeda && !moedasAtivas.includes(t.moeda)
+        ? [...moedasAtivas, t.moeda]
+        : moedasAtivas;
+      const opcoesMoeda = moedasParaSelect
+        .map(m => `<option value="${m}" ${t.moeda === m ? 'selected' : ''}>${m} — ${RotaDB.nomeMoeda(m)}</option>`).join('');
 
       RotaModal.open({
-        title: 'Novo lançamento',
-        submitLabel: 'Salvar lançamento',
+        title: editando ? 'Editar lançamento' : 'Novo lançamento',
+        submitLabel: editando ? 'Salvar alterações' : 'Salvar lançamento',
         bodyHtml: `
           <div class="grid grid-cols-2 gap-3">
             <div>
               <label class="${ROTA_LABEL_CLASS}">Tipo *</label>
               <select id="f_tipo" class="${ROTA_INPUT_CLASS}">
-                <option value="receita">Receita</option>
-                <option value="despesa">Despesa</option>
+                <option value="receita" ${t.tipo === 'receita' || !editando ? 'selected' : ''}>Receita</option>
+                <option value="despesa" ${t.tipo === 'despesa' ? 'selected' : ''}>Despesa</option>
               </select>
             </div>
             <div>
@@ -271,16 +505,16 @@
           <div class="grid grid-cols-2 gap-3">
             <div>
               <label class="${ROTA_LABEL_CLASS}">Valor *</label>
-              <input type="number" id="f_valor" min="0" step="0.01" required class="${ROTA_INPUT_CLASS}" placeholder="0,00" />
+              <input type="number" id="f_valor" min="0" step="0.01" required value="${t.valor ?? ''}" class="${ROTA_INPUT_CLASS}" placeholder="0,00" />
             </div>
             <div>
               <label class="${ROTA_LABEL_CLASS}">Câmbio no momento</label>
-              <input type="number" id="f_cambio" min="0" step="0.01" value="1" class="${ROTA_INPUT_CLASS}" />
+              <input type="number" id="f_cambio" min="0" step="0.01" value="${t.taxa_cambio_no_momento ?? 1}" class="${ROTA_INPUT_CLASS}" />
             </div>
           </div>
           <div>
             <label class="${ROTA_LABEL_CLASS}">Categoria</label>
-            <input type="text" id="f_categoria" class="${ROTA_INPUT_CLASS}" placeholder="Pagamento cliente, fornecedor, marketing..." />
+            <input type="text" id="f_categoria" value="${t.categoria || ''}" class="${ROTA_INPUT_CLASS}" placeholder="Pagamento cliente, fornecedor, marketing..." />
           </div>
           <div>
             <label class="${ROTA_LABEL_CLASS}">Cliente vinculado</label>
@@ -291,14 +525,14 @@
           </div>
           <div>
             <label class="${ROTA_LABEL_CLASS}">Notas</label>
-            <input type="text" id="f_notas" class="${ROTA_INPUT_CLASS}" placeholder="Descrição do lançamento" />
+            <input type="text" id="f_notas" value="${t.notas || ''}" class="${ROTA_INPUT_CLASS}" placeholder="Descrição do lançamento" />
           </div>
         `,
         onSubmit: () => {
           const valor = parseFloat($('f_valor').value);
           if (!valor || valor <= 0) { $('f_valor').focus(); return; }
 
-          RotaDB.saveTransaction({
+          const dados = {
             tipo: $('f_tipo').value,
             moeda: $('f_moeda').value,
             valor,
@@ -306,15 +540,194 @@
             categoria: $('f_categoria').value.trim(),
             client_id: $('f_cliente').value || null,
             notas: $('f_notas').value.trim(),
-            data: new Date().toISOString(),
-          });
+          };
+
+          if (editando) {
+            RotaDB.updateTransaction(t.id, dados);
+          } else {
+            RotaDB.saveTransaction({ ...dados, data: new Date().toISOString() });
+          }
 
           RotaModal.close();
           renderSaldoCards();
           renderTransactions();
         },
       });
+    }
+
+    function editarTransacao(id) {
+      const transacao = RotaDB.getTransactions().find(t => t.id === id);
+      if (!transacao) return;
+      abrirModalTransacao(transacao);
+    }
+
+    function excluirTransacao(id) {
+      const transacao = RotaDB.getTransactions().find(t => t.id === id);
+      if (!transacao) return;
+      const rotulo = transacao.notas || (transacao.tipo === 'receita' ? 'esta receita' : 'esta despesa');
+      if (!confirm(`Excluir "${rotulo}"? Essa ação não pode ser desfeita.`)) return;
+
+      RotaDB.deleteTransaction(id);
+      renderSaldoCards();
+      renderTransactions();
+    }
+
+    // Resumo textual dos filtros ativos — usado no topo do PDF exportado,
+    // pra quem abrir o arquivo depois saber exatamente o que está vendo.
+    function descreverFiltrosAtivos() {
+      const partes = [];
+      if (moedaFiltro) partes.push(`Moeda: ${moedaFiltro}`);
+      if ($('dataInicio').value || $('dataFim').value) {
+        partes.push(`Período: ${$('dataInicio').value || '—'} a ${$('dataFim').value || '—'}`);
+      }
+      if ($('clienteFiltro').value) {
+        const cliente = RotaDB.getClientById($('clienteFiltro').value);
+        if (cliente) partes.push(`Cliente: ${cliente.nome}`);
+      }
+      if (souAdmin && $('agenteFiltro').value) {
+        const agente = RotaDB.getTeam().find(m => m.id === $('agenteFiltro').value);
+        if (agente) partes.push(`Agente: ${agente.nome}`);
+      }
+      return partes.length ? partes.join(' · ') : 'Todos os lançamentos, sem filtro';
+    }
+
+    function baixarBlob(blob, nomeArquivo) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = nomeArquivo;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    // Exporta exatamente o que está filtrado (moeda/período/cliente/agente),
+    // ignorando a paginação — quem exporta quer os dados completos do recorte, não só a página visível.
+    function exportarCSV() {
+      const transacoes = getTransacoesFiltradas().slice().sort((a, b) => new Date(b.data) - new Date(a.data));
+      if (!transacoes.length) { alert('Nenhum lançamento pra exportar com esses filtros.'); return; }
+
+      const cabecalho = ['Data', 'Tipo', 'Moeda', 'Valor', 'Câmbio', 'Categoria', 'Cliente', 'Agente', 'Notas'];
+      const linhas = transacoes.map(t => {
+        const cliente = t.client_id ? RotaDB.getClientById(t.client_id) : null;
+        const agente = RotaDB.getTeam().find(m => m.id === t.agente_id);
+        return [
+          t.data.slice(0, 10),
+          t.tipo === 'receita' ? 'Receita' : 'Despesa',
+          t.moeda,
+          t.valor,
+          t.taxa_cambio_no_momento,
+          t.categoria || '',
+          cliente ? cliente.nome : '',
+          agente ? agente.nome : '',
+          t.notas || '',
+        ];
+      });
+
+      // ; como separador (não ,) pra abrir certo no Excel em pt-BR/pt-PT,
+      // onde a vírgula já é usada como separador decimal regional.
+      const csv = [cabecalho, ...linhas]
+        .map(linha => linha.map(campo => `"${String(campo).replace(/"/g, '""')}"`).join(';'))
+        .join('\r\n');
+
+      // BOM no início garante que acentos abram certo no Excel
+      const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+      baixarBlob(blob, `financeiro_${new Date().toISOString().slice(0, 10)}.csv`);
+    }
+
+    function exportarPDF() {
+      const transacoes = getTransacoesFiltradas().slice().sort((a, b) => new Date(b.data) - new Date(a.data));
+      if (!transacoes.length) { alert('Nenhum lançamento pra exportar com esses filtros.'); return; }
+
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+
+      doc.setFontSize(14);
+      doc.setTextColor(20, 24, 28);
+      doc.text('Financeiro — ROTA', 14, 16);
+
+      doc.setFontSize(9);
+      doc.setTextColor(120, 120, 120);
+      doc.text(descreverFiltrosAtivos(), 14, 22);
+      doc.text(`Gerado em ${new Date().toLocaleDateString('pt-PT')}`, 14, 27);
+
+      const linhas = transacoes.map(t => {
+        const cliente = t.client_id ? RotaDB.getClientById(t.client_id) : null;
+        return [
+          t.data.slice(0, 10),
+          t.tipo === 'receita' ? 'Receita' : 'Despesa',
+          RotaDB.formatCurrency(t.valor, t.moeda),
+          t.categoria || '—',
+          cliente ? cliente.nome : '—',
+          t.notas || '—',
+        ];
+      });
+
+      doc.autoTable({
+        startY: 32,
+        head: [['Data', 'Tipo', 'Valor', 'Categoria', 'Cliente', 'Notas']],
+        body: linhas,
+        styles: { fontSize: 8, textColor: [20, 24, 28] },
+        headStyles: { fillColor: [31, 75, 76], textColor: [237, 238, 231] },
+        alternateRowStyles: { fillColor: [245, 246, 244] },
+      });
+
+      doc.save(`financeiro_${new Date().toISOString().slice(0, 10)}.pdf`);
+    }
+
+    renderSaldoCards();
+    renderMoedaChips();
+    renderTransactions();
+
+    $('configMoedasBtn').onclick = abrirConfigMoedas;
+    $('newTransactionBtn').onclick = () => abrirModalTransacao();
+    $('exportCsvBtn').onclick = exportarCSV;
+    $('exportPdfBtn').onclick = exportarPDF;
+
+    function atualizarVisibilidadeLimparPeriodo() {
+      const ativo = $('dataInicio').value || $('dataFim').value;
+      $('limparPeriodo').classList.toggle('hidden', !ativo);
+    }
+
+    $('dataInicio').addEventListener('change', () => {
+      // não deixa "de" ficar depois de "até"
+      if ($('dataFim').value && $('dataInicio').value > $('dataFim').value) {
+        $('dataFim').value = $('dataInicio').value;
+      }
+      atualizarVisibilidadeLimparPeriodo();
+      paginaAtual = 1;
+      renderTransactions();
+    });
+
+    $('dataFim').addEventListener('change', () => {
+      if ($('dataInicio').value && $('dataFim').value < $('dataInicio').value) {
+        $('dataInicio').value = $('dataFim').value;
+      }
+      atualizarVisibilidadeLimparPeriodo();
+      paginaAtual = 1;
+      renderTransactions();
+    });
+
+    $('limparPeriodo').onclick = () => {
+      $('dataInicio').value = '';
+      $('dataFim').value = '';
+      atualizarVisibilidadeLimparPeriodo();
+      paginaAtual = 1;
+      renderTransactions();
     };
+
+    // Popula o select de clientes pra todo mundo, e o de agentes só pra admin
+    $('clienteFiltro').insertAdjacentHTML('beforeend',
+      RotaDB.getClients().map(c => `<option value="${c.id}">${c.nome}</option>`).join(''));
+    $('clienteFiltro').addEventListener('change', () => { paginaAtual = 1; renderTransactions(); });
+
+    if (souAdmin) {
+      $('agenteFiltro').insertAdjacentHTML('beforeend',
+        RotaDB.getTeam().map(m => `<option value="${m.id}">${m.nome}</option>`).join(''));
+      $('agenteFiltro').classList.remove('hidden');
+      $('agenteFiltro').addEventListener('change', () => { paginaAtual = 1; renderTransactions(); });
+    }
   </script>
 </body>
 </html>
