@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Login — ROTA</title>
+  <title>Criar conta — ROTA</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -34,7 +34,7 @@
   <div class="w-full max-w-[420px] relative">
     <div class="bg-white border border-ink/10 rounded-lg shadow-[0_8px_28px_rgba(20,24,28,0.12)] p-8 pt-9 relative overflow-hidden">
 
-      <!-- carimbo de sucesso, aparece ao "entrar" -->
+      <!-- carimbo de sucesso -->
       <div id="stampSuccess" class="stamp-pop absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
         <div class="border-[3px] border-clay text-clay font-display text-xl uppercase tracking-widest px-6 py-2 rounded-sm rotate-[-8deg] bg-white/90">
           Aprovado
@@ -50,7 +50,7 @@
           <i data-lucide="compass" class="w-6 h-6 text-petrol"></i>
         </div>
         <h1 class="text-3xl font-display font-semibold text-ink tracking-tight">ROTA</h1>
-        <p class="text-ink/50 text-sm mt-1">Painel da agência — entre para continuar</p>
+        <p class="text-ink/50 text-sm mt-1">Cria a conta da tua agência</p>
       </div>
 
       <!-- SSO (visual apenas, sem função ainda) -->
@@ -64,7 +64,27 @@
       </div>
 
       <!-- Form: só validação de formato, sem checagem contra backend -->
-      <form id="loginForm" novalidate class="space-y-5">
+      <form id="signupForm" novalidate class="space-y-5">
+        <div>
+          <label for="agencyName" class="text-sm font-medium text-ink/70 mb-2 block">Nome da agência</label>
+          <div class="relative">
+            <i data-lucide="briefcase" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-ink/35 pointer-events-none"></i>
+            <input type="text" id="agencyName" required autocomplete="organization" aria-describedby="agencyNameError"
+              class="w-full bg-white border border-ink/15 rounded-md pl-11 pr-4 py-3.5 text-ink placeholder-ink/35 focus:outline-none input-focus transition-all text-base" />
+          </div>
+          <p id="agencyNameError" class="text-clay text-xs mt-1.5 h-4"></p>
+        </div>
+
+        <div>
+          <label for="fullName" class="text-sm font-medium text-ink/70 mb-2 block">Teu nome</label>
+          <div class="relative">
+            <i data-lucide="user" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-ink/35 pointer-events-none"></i>
+            <input type="text" id="fullName" required autocomplete="name" aria-describedby="fullNameError"
+              class="w-full bg-white border border-ink/15 rounded-md pl-11 pr-4 py-3.5 text-ink placeholder-ink/35 focus:outline-none input-focus transition-all text-base" />
+          </div>
+          <p id="fullNameError" class="text-clay text-xs mt-1.5 h-4"></p>
+        </div>
+
         <div>
           <label for="email" class="text-sm font-medium text-ink/70 mb-2 block">Email</label>
           <div class="relative">
@@ -76,13 +96,10 @@
         </div>
 
         <div>
-          <div class="flex justify-between items-center mb-2">
-            <label for="password" class="text-sm font-medium text-ink/70">Senha</label>
-            <a href="forgot-password.html" class="text-sm text-petrol hover:text-ink transition font-medium">Esqueci</a>
-          </div>
+          <label for="password" class="text-sm font-medium text-ink/70 mb-2 block">Senha</label>
           <div class="relative">
             <i data-lucide="lock" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-ink/35 pointer-events-none"></i>
-            <input type="password" id="password" required autocomplete="current-password" aria-describedby="passwordError"
+            <input type="password" id="password" required autocomplete="new-password" aria-describedby="passwordError"
               class="w-full bg-white border border-ink/15 rounded-md pl-11 pr-12 py-3.5 text-ink placeholder-ink/35 focus:outline-none input-focus transition-all text-base" />
             <button type="button" id="togglePassword" aria-label="Mostrar senha" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-ink/35 hover:text-ink transition">
               <i data-lucide="eye" class="w-5 h-5"></i>
@@ -92,25 +109,26 @@
           <p id="passwordError" class="text-clay text-xs mt-1.5 h-4"></p>
         </div>
 
-        <div class="flex items-center justify-between">
-          <label class="flex items-center gap-2 cursor-pointer select-none">
-            <input type="checkbox" id="remember" class="w-4 h-4 rounded border-ink/25 text-petrol focus:ring-2 focus:ring-petrol/40 focus:ring-offset-0" />
-            <span class="text-sm text-ink/70">Lembrar de mim</span>
+        <div class="flex items-start gap-2.5">
+          <input type="checkbox" id="terms" class="w-4 h-4 mt-0.5 rounded border-ink/25 text-petrol focus:ring-2 focus:ring-petrol/40 focus:ring-offset-0" />
+          <label for="terms" class="text-sm text-ink/70 select-none">
+            Aceito os <a href="#" class="text-petrol hover:text-ink font-medium transition">termos de uso</a>
           </label>
         </div>
+        <p id="termsError" class="text-clay text-xs -mt-3 h-4"></p>
 
         <button type="submit" id="submitBtn"
           class="btn-ticket w-full bg-amber hover:bg-amber/90 text-ink font-semibold py-3.5 px-4 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2">
-          <span id="btnText">Entrar</span>
+          <span id="btnText">Criar conta</span>
           <i data-lucide="loader-2" id="loader" class="w-5 h-5 animate-spin hidden"></i>
         </button>
       </form>
 
-      <p class="text-center text-sm text-ink/50 mt-8">Não tem uma conta? <a href="register.html" class="text-petrol hover:text-ink font-semibold transition">Crie grátis</a></p>
+      <p class="text-center text-sm text-ink/50 mt-8">Já tens uma conta? <a href="index.html" class="text-petrol hover:text-ink font-semibold transition">Entrar</a></p>
 
       <div class="barcode mt-7 -mx-8"></div>
     </div>
-    <p class="text-center text-xs text-ink/40 mt-6">Protótipo — login ainda não conectado ao backend</p>
+    <p class="text-center text-xs text-ink/40 mt-6">Protótipo — cadastro ainda não conectado ao backend</p>
   </div>
 
   <script>
@@ -118,24 +136,13 @@
     let isSubmitting = false;
 
     const $ = (id) => document.getElementById(id);
+    const agencyName = $('agencyName');
+    const fullName = $('fullName');
     const email = $('email');
     const password = $('password');
-    const remember = $('remember');
+    const terms = $('terms');
 
-    const REMEMBER_KEY = 'rota_remembered_email';
-
-    // "Lembrar de mim": guarda só o email (nunca a senha) no dispositivo.
-    // Se já tiver um email salvo, pré-preenche o campo e marca a checkbox.
-    window.onload = () => {
-      const savedEmail = localStorage.getItem(REMEMBER_KEY);
-      if (savedEmail) {
-        email.value = savedEmail;
-        remember.checked = true;
-        password.focus();
-      } else {
-        email.focus();
-      }
-    };
+    window.onload = () => agencyName.focus();
 
     const validateEmail = (val) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
 
@@ -150,6 +157,8 @@
       errorEl.textContent = '';
     }
 
+    agencyName.addEventListener('input', () => { if (agencyName.value) clearError(agencyName, $('agencyNameError')); });
+    fullName.addEventListener('input', () => { if (fullName.value) clearError(fullName, $('fullNameError')); });
     email.addEventListener('input', () => { if (email.value) clearError(email, $('emailError')); });
     password.addEventListener('input', () => { if (password.value) clearError(password, $('passwordError')); });
 
@@ -178,33 +187,30 @@
     }
 
     // SEM CHAMADA AO BACKEND: só valida formato e segue pro dashboard,
-    // pra você conseguir ver o fluxo funcionando antes do PHP existir.
-    $('loginForm').addEventListener('submit', async (e) => {
+    // pra você conseguir ver o fluxo funcionando antes do Supabase existir.
+    $('signupForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       if (isSubmitting) return;
 
       let valid = true;
+      if (!agencyName.value.trim()) { showError(agencyName, $('agencyNameError'), 'Digite o nome da agência'); valid = false; }
+      if (!fullName.value.trim()) { showError(fullName, $('fullNameError'), 'Digite teu nome'); valid = false; }
       if (!validateEmail(email.value)) { showError(email, $('emailError'), 'Digite um email válido'); valid = false; }
       if (password.value.length < 8) { showError(password, $('passwordError'), 'Senha precisa ter 8+ caracteres'); valid = false; }
+      if (!terms.checked) { $('termsError').textContent = 'Precisa aceitar os termos pra continuar'; valid = false; }
+      else { $('termsError').textContent = ''; }
       if (!valid) return;
-
-      // Salva ou remove o email lembrado conforme o estado da checkbox
-      if (remember.checked) {
-        localStorage.setItem(REMEMBER_KEY, email.value);
-      } else {
-        localStorage.removeItem(REMEMBER_KEY);
-      }
 
       isSubmitting = true;
       $('submitBtn').disabled = true;
-      $('btnText').textContent = 'Entrando...';
+      $('btnText').textContent = 'Criando conta...';
       $('loader').classList.remove('hidden');
 
       await new Promise(res => setTimeout(res, 800)); // só pra simular uma espera real
 
       $('stampSuccess').classList.add('show');
       setTimeout(() => {
-        showToast('Login realizado com sucesso!');
+        showToast('Conta criada com sucesso!');
         setTimeout(() => { window.location.href = 'dashboard.html'; }, 900);
       }, 250);
     });
