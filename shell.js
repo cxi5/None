@@ -56,12 +56,19 @@ function renderShell(activePage) {
       <nav class="space-y-1 flex-1">${sidebarLinks}
       </nav>
 
+      <a href="settings.html" class="flex items-center gap-3 px-3 py-2.5 rounded-md ${activePage === 'settings' ? 'bg-petrol text-paper' : 'text-ink/70 hover:bg-paper'} font-medium text-sm transition mb-1">
+        <i data-lucide="settings" class="w-4.5 h-4.5"></i> Configurações
+      </a>
       <a href="index.html" onclick="if (window.RotaDB) RotaDB.logout();" class="flex items-center gap-3 px-3 py-2.5 rounded-md text-ink/50 hover:bg-paper hover:text-clay font-medium text-sm transition">
         <i data-lucide="log-out" class="w-4.5 h-4.5"></i> Sair
       </a>
     </aside>
 
     <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-ink/10 flex items-center justify-around py-2 px-2 z-40" style="padding-bottom: env(safe-area-inset-bottom);">${bottomLinks}
+      <a href="settings.html" class="flex flex-col items-center gap-1 px-3 py-1.5 ${activePage === 'settings' ? 'text-petrol' : 'text-ink/50'}">
+        <i data-lucide="settings" class="w-5 h-5"></i>
+        <span class="text-[11px] font-medium">Ajustes</span>
+      </a>
     </nav>
   `;
 

@@ -15,6 +15,7 @@ const DB_KEYS = {
   clients: 'rota_clients',
   transactions: 'rota_transactions',
   posts: 'rota_marketing_posts',
+  team: 'rota_team',
   seeded: 'rota_seeded_v1',
   currentUser: 'rota_current_user',
 };
@@ -48,6 +49,13 @@ function seedIfNeeded() {
   writeAll(DB_KEYS.clients, []);
   writeAll(DB_KEYS.transactions, []);
   writeAll(DB_KEYS.posts, []);
+  writeAll(DB_KEYS.team, [{
+    id: newId('u'),
+    nome: 'Cxi',
+    email: '',
+    papel: 'admin',
+    criado_em: new Date().toISOString(),
+  }]);
   localStorage.setItem(DB_KEYS.seeded, '1');
 }
 
@@ -201,6 +209,60 @@ function deletePost(id) {
 }
 
 // ---------------------------------------------------------------------
+// Equipe — quem tem acesso ao sistema e com qual papel.
+// Local por enquanto (sem convite por email de verdade); quando o
+// backend existir, "convidar" passa a disparar um email real.
+// ---------------------------------------------------------------------
+
+function getTeam() {
+  return readAll(DB_KEYS.team);
+}
+
+function countAdmins() {
+  return getTeam().filter(m => m.papel === 'admin').length;
+}
+
+function addTeamMember(dadosMembro) {
+  const team = getTeam();
+  const novo = {
+    id: newId('u'),
+    nome: '', email: '', papel: 'agente',
+    criado_em: new Date().toISOString(),
+    ...dadosMembro,
+  };
+  team.push(novo);
+  writeAll(DB_KEYS.team, team);
+  return novo;
+}
+
+function updateTeamMember(id, dadosParciais) {
+  const team = getTeam();
+  const idx = team.findIndex(m => m.id === id);
+  if (idx === -1) return null;
+
+  // não deixa remover o papel de admin do último administrador —
+  // senão ninguém mais consegue gerenciar a equipe
+  if (dadosParciais.papel === 'agente' && team[idx].papel === 'admin' && countAdmins() <= 1) {
+    return { erro: 'ultimo_admin' };
+  }
+
+  team[idx] = { ...team[idx], ...dadosParciais };
+  writeAll(DB_KEYS.team, team);
+  return team[idx];
+}
+
+function removeTeamMember(id) {
+  const team = getTeam();
+  const membro = team.find(m => m.id === id);
+  if (!membro) return { erro: 'nao_encontrado' };
+  if (membro.papel === 'admin' && countAdmins() <= 1) {
+    return { erro: 'ultimo_admin' };
+  }
+  writeAll(DB_KEYS.team, team.filter(m => m.id !== id));
+  return { ok: true };
+}
+
+// ---------------------------------------------------------------------
 // Métricas do Dashboard — calculadas a partir dos dados reais acima
 // ---------------------------------------------------------------------
 
@@ -308,6 +370,7 @@ window.RotaDB = {
   addItemToClient, updateItemStatus,
   getTransactions, saveTransaction, updateTransaction, deleteTransaction, getSaldoPorMoeda,
   getPosts, savePost, updatePostStatus, deletePost,
+  getTeam, addTeamMember, updateTeamMember, removeTeamMember,
   getDashboardMetrics,
   formatCurrency, formatDate, initials,
   getCurrentUser, setCurrentUser, logout,

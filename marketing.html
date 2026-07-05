@@ -192,6 +192,8 @@
 
     renderFilterChip();
     renderPosts();
+
+    $('newPostBtn').onclick = () => {
       RotaModal.open({
         title: 'Novo post',
         submitLabel: 'Salvar post',

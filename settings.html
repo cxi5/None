@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Configurações — ROTA</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            petrol: '#1F4B4C',
+            amber:  '#E8A33D',
+            clay:   '#C1573A',
+            paper:  '#EDEEE7',
+            ink:    '#14181C'
+          }
+        }
+      }
+    }
+  </script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="style.css">
+  <script src="data.js"></script>
+  <script src="modal.js"></script>
+  <style>
+    .pb-safe { padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
+    @media (min-width: 768px) { .pb-safe { padding-bottom: 2rem; } }
+
+    .status-stamp {
+      font-family: 'Oswald', sans-serif;
+      font-size: 10px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 2px 8px;
+      border: 1.5px solid currentColor;
+      border-radius: 3px;
+      transform: rotate(-3deg);
+      display: inline-block;
+      white-space: nowrap;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-ticket-field">
+
+  <div class="md:flex">
+
+    <!-- Sidebar + bottom nav agora vêm do shell.js -->
+    <div id="shell"></div>
+
+    <!-- Conteúdo principal -->
+    <main class="flex-1 pb-safe">
+
+      <!-- Header -->
+      <header class="flex items-center justify-between px-5 md:px-8 py-5 border-b border-ink/10 bg-white md:bg-transparent">
+        <div>
+          <p class="font-mono-ticket text-[11px] text-ink/40 tracking-wider mb-0.5">CONTA E EQUIPE</p>
+          <h1 class="font-display text-2xl font-semibold text-ink">Configurações</h1>
+        </div>
+      </header>
+
+      <div class="px-5 md:px-8 py-6 space-y-6 max-w-2xl">
+
+        <!-- Minha conta -->
+        <div class="bg-white border border-ink/10 rounded-lg p-5">
+          <h2 class="font-display text-lg font-semibold text-ink mb-4">Minha conta</h2>
+          <div class="flex items-center gap-4">
+            <div id="myAvatar" class="w-14 h-14 rounded-full bg-petrol text-paper flex items-center justify-center font-display text-lg font-semibold flex-shrink-0">—</div>
+            <div class="flex-1 min-w-0">
+              <p id="myName" class="font-semibold text-ink">—</p>
+              <p id="myRole" class="text-xs text-ink/50"></p>
+            </div>
+            <button id="editAccountBtn" class="text-sm text-petrol hover:text-ink font-medium transition flex-shrink-0">Editar</button>
+          </div>
+        </div>
+
+        <!-- Equipe -->
+        <div class="bg-white border border-ink/10 rounded-lg overflow-hidden">
+          <div class="flex items-center justify-between px-5 py-4">
+            <div>
+              <h2 class="font-display text-lg font-semibold text-ink">Equipe</h2>
+              <p id="teamCount" class="text-xs text-ink/40 font-mono-ticket tracking-wider mt-0.5">—</p>
+            </div>
+            <button id="inviteBtn" class="btn-ticket bg-amber hover:bg-amber/90 text-ink font-semibold text-sm px-4 py-2.5 flex items-center gap-2 flex-shrink-0">
+              <i data-lucide="user-plus" class="w-4 h-4"></i>
+              <span class="hidden sm:inline">Convidar</span>
+            </button>
+          </div>
+
+          <ul id="teamList" class="divide-y divide-ink/10"></ul>
+        </div>
+
+        <p class="text-xs text-ink/35 leading-relaxed">
+          Convites ainda não enviam email de verdade — o membro aparece direto na lista, pronto pra quando o backend existir. Papel <strong>Admin</strong> vê tudo; <strong>Agente</strong> só os próprios clientes e lançamentos.
+        </p>
+
+      </div>
+    </main>
+  </div>
+
+  <script src="shell.js"></script>
+  <script>
+    renderShell('settings');
+
+    const $ = (id) => document.getElementById(id);
+
+    const LABEL_PAPEL = { admin: 'Admin', agente: 'Agente' };
+    const COR_PAPEL = { admin: 'petrol', agente: 'amber' };
+
+    function renderMyAccount() {
+      const user = RotaDB.getCurrentUser();
+      $('myAvatar').textContent = RotaDB.initials(user.nome) || '—';
+      $('myName').textContent = user.nome;
+      $('myRole').textContent = user.papel === 'admin' ? 'Administrador' : 'Agente';
+    }
+
+    function renderTeamRow(membro) {
+      const souEu = membro.nome === RotaDB.getCurrentUser().nome; // heurística simples até termos login real
+      return `
+        <li class="flex items-center justify-between px-5 py-4 gap-3">
+          <div class="flex items-center gap-3 min-w-0">
+            <div class="w-10 h-10 rounded-full bg-${COR_PAPEL[membro.papel]} ${membro.papel === 'agente' ? 'text-ink' : 'text-paper'} flex items-center justify-center font-display font-semibold flex-shrink-0">
+              ${RotaDB.initials(membro.nome) || '?'}
+            </div>
+            <div class="min-w-0">
+              <p class="text-sm font-medium text-ink truncate">${membro.nome}${souEu ? ' <span class=\"text-ink/40\">(você)</span>' : ''}</p>
+              <p class="text-xs text-ink/45 truncate">${membro.email || 'sem email cadastrado'}</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 flex-shrink-0">
+            <span class="status-stamp text-${COR_PAPEL[membro.papel]}">${LABEL_PAPEL[membro.papel]}</span>
+            <button data-id="${membro.id}" class="removeMemberBtn text-ink/30 hover:text-clay transition p-1">
+              <i data-lucide="trash-2" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </li>`;
+    }
+
+    function renderTeam() {
+      const team = RotaDB.getTeam();
+      $('teamCount').textContent = `${team.length} MEMBRO${team.length === 1 ? '' : 'S'}`;
+      $('teamList').innerHTML = team.map(renderTeamRow).join('');
+      lucide.createIcons();
+
+      document.querySelectorAll('.removeMemberBtn').forEach(btn => {
+        btn.onclick = () => {
+          const id = btn.dataset.id;
+          const membro = team.find(m => m.id === id);
+          if (!confirm(`Remover ${membro.nome} da equipe?`)) return;
+
+          const resultado = RotaDB.removeTeamMember(id);
+          if (resultado?.erro === 'ultimo_admin') {
+            alert('Não é possível remover o único administrador da equipe.');
+            return;
+          }
+          renderTeam();
+        };
+      });
+    }
+
+    renderMyAccount();
+    renderTeam();
+
+    $('editAccountBtn').onclick = () => {
+      const user = RotaDB.getCurrentUser();
+      RotaModal.open({
+        title: 'Editar conta',
+        submitLabel: 'Salvar',
+        bodyHtml: `
+          <div>
+            <label class="${ROTA_LABEL_CLASS}">Nome</label>
+            <input type="text" id="f_nome" class="${ROTA_INPUT_CLASS}" value="${user.nome}" />
+          </div>
+          <div>
+            <label class="${ROTA_LABEL_CLASS}">Email</label>
+            <input type="email" id="f_email" class="${ROTA_INPUT_CLASS}" value="${user.email || ''}" />
+          </div>
+        `,
+        onSubmit: () => {
+          const nome = $('f_nome').value.trim() || user.nome;
+          RotaDB.setCurrentUser({ nome, email: $('f_email').value.trim() });
+          RotaModal.close();
+          renderMyAccount();
+        },
+      });
+    };
+
+    $('inviteBtn').onclick = () => {
+      RotaModal.open({
+        title: 'Convidar membro',
+        submitLabel: 'Convidar',
+        bodyHtml: `
+          <div>
+            <label class="${ROTA_LABEL_CLASS}">Nome *</label>
+            <input type="text" id="f_nome" required class="${ROTA_INPUT_CLASS}" placeholder="Nome completo" />
+          </div>
+          <div>
+            <label class="${ROTA_LABEL_CLASS}">Email</label>
+            <input type="email" id="f_email" class="${ROTA_INPUT_CLASS}" placeholder="email@agencia.com" />
+          </div>
+          <div>
+            <label class="${ROTA_LABEL_CLASS}">Papel *</label>
+            <select id="f_papel" class="${ROTA_INPUT_CLASS}">
+              <option value="agente">Agente — vê só os próprios clientes</option>
+              <option value="admin">Admin — vê tudo</option>
+            </select>
+          </div>
+        `,
+        onSubmit: () => {
+          const nome = $('f_nome').value.trim();
+          if (!nome) { $('f_nome').focus(); return; }
+
+          RotaDB.addTeamMember({
+            nome,
+            email: $('f_email').value.trim(),
+            papel: $('f_papel').value,
+          });
+
+          RotaModal.close();
+          renderTeam();
+        },
+      });
+    };
+  </script>
+</body>
+</html>
