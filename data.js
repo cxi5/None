@@ -16,6 +16,7 @@ const DB_KEYS = {
   transactions: 'rota_transactions',
   posts: 'rota_marketing_posts',
   seeded: 'rota_seeded_v1',
+  currentUser: 'rota_current_user',
 };
 
 // Gera um id simples (suficiente pro localStorage; troca por uuid do
@@ -271,6 +272,36 @@ function initials(nome) {
 
 // ---------------------------------------------------------------------
 
+// ---------------------------------------------------------------------
+// Sessão / Perfil — separado dos dados do negócio de propósito:
+// "Sair" nunca apaga clientes, lançamentos ou posts, só a sessão.
+// ---------------------------------------------------------------------
+
+function defaultUser() {
+  return { nome: 'Cxi', papel: 'admin', email: '' };
+}
+
+function getCurrentUser() {
+  try {
+    return JSON.parse(localStorage.getItem(DB_KEYS.currentUser)) || defaultUser();
+  } catch {
+    return defaultUser();
+  }
+}
+
+function setCurrentUser(dadosParciais) {
+  const atual = getCurrentUser();
+  const novo = { ...atual, ...dadosParciais };
+  localStorage.setItem(DB_KEYS.currentUser, JSON.stringify(novo));
+  return novo;
+}
+
+function logout() {
+  localStorage.removeItem(DB_KEYS.currentUser);
+}
+
+// ---------------------------------------------------------------------
+
 window.RotaDB = {
   seedIfNeeded,
   getClients, getClientById, saveClient, updateClient, deleteClient,
@@ -279,6 +310,7 @@ window.RotaDB = {
   getPosts, savePost, updatePostStatus, deletePost,
   getDashboardMetrics,
   formatCurrency, formatDate, initials,
+  getCurrentUser, setCurrentUser, logout,
 };
 
 // Roda sozinho ao incluir <script src="data.js"> — nenhuma página

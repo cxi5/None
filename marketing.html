@@ -96,6 +96,9 @@
           </div>
         </div>
 
+        <!-- Chip de filtro ativo (só aparece se veio de um card do dashboard) -->
+        <div id="activeFilterChip" class="hidden mb-4"></div>
+
         <!-- Filtros por rede -->
         <div class="flex items-center gap-2 mb-4 overflow-x-auto pb-1">
           <button class="px-3.5 py-1.5 rounded-full bg-petrol text-paper text-xs font-medium flex-shrink-0">Todas</button>
@@ -128,8 +131,29 @@
       publicado: { label: 'Publicado', cor: 'ink' },
     };
 
+    // Filtro vindo de um card do dashboard (ex: marketing.html?status=agendado)
+    const urlParams = new URLSearchParams(window.location.search);
+    const statusFiltro = urlParams.get('status');
+
+    function renderFilterChip() {
+      if (!statusFiltro) return;
+      $('activeFilterChip').classList.remove('hidden');
+      $('activeFilterChip').innerHTML = `
+        <span class="inline-flex items-center gap-2 bg-amber/15 border border-amber/40 text-ink text-xs font-medium px-3 py-1.5 rounded-full">
+          Filtro: ${STATUS_INFO[statusFiltro]?.label || statusFiltro}
+          <a href="marketing.html" class="text-ink/50 hover:text-clay transition"><i data-lucide="x" class="w-3.5 h-3.5"></i></a>
+        </span>`;
+      lucide.createIcons();
+    }
+
     function renderPosts() {
-      const posts = RotaDB.getPosts()
+      let posts = RotaDB.getPosts();
+
+      if (statusFiltro) {
+        posts = posts.filter(p => p.status === statusFiltro);
+      }
+
+      posts = posts
         .slice()
         .sort((a, b) => {
           // sem data primeiro por status (ideia/produção), com data por ordem cronológica
@@ -160,15 +184,14 @@
           }).join('')
         : `<div class="bg-white border border-ink/10 rounded-lg p-8 text-center">
              <i data-lucide="calendar-plus" class="w-8 h-8 text-ink/25 mx-auto mb-2"></i>
-             <p class="text-sm text-ink/40">Nenhum post cadastrado ainda.</p>
+             <p class="text-sm text-ink/40">${statusFiltro ? 'Nenhum post com esse filtro.' : 'Nenhum post cadastrado ainda.'}</p>
            </div>`;
 
       lucide.createIcons();
     }
 
+    renderFilterChip();
     renderPosts();
-
-    $('newPostBtn').onclick = () => {
       RotaModal.open({
         title: 'Novo post',
         submitLabel: 'Salvar post',

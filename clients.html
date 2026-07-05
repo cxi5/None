@@ -68,11 +68,14 @@
       <div class="px-5 md:px-8 py-6">
 
         <!-- Busca -->
-        <div class="relative mb-6 max-w-md">
+        <div class="relative mb-3 max-w-md">
           <i data-lucide="search" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-ink/35 pointer-events-none"></i>
           <input type="text" placeholder="Buscar cliente por nome ou contato..."
             class="w-full bg-white border border-ink/15 rounded-md pl-11 pr-4 py-3 text-sm text-ink placeholder-ink/35 focus:outline-none input-focus" />
         </div>
+
+        <!-- Chip de filtro ativo (só aparece se veio de um card do dashboard) -->
+        <div id="activeFilterChip" class="hidden mb-4"></div>
 
         <!-- Lista de clientes -->
         <div id="clientList" class="space-y-4"></div>
@@ -130,20 +133,46 @@
         </div>`;
     }
 
+    // Filtro vindo de um card do dashboard (ex: clients.html?status=pendente)
+    const urlParams = new URLSearchParams(window.location.search);
+    const statusFiltro = urlParams.get('status');
+
+    const LABEL_FILTRO = { pendente: 'Itens pendentes', confirmado: 'Confirmados', concluido: 'Concluídos', cancelado: 'Cancelados' };
+
+    function renderFilterChip() {
+      if (!statusFiltro) return;
+      $('activeFilterChip').classList.remove('hidden');
+      $('activeFilterChip').innerHTML = `
+        <span class="inline-flex items-center gap-2 bg-amber/15 border border-amber/40 text-ink text-xs font-medium px-3 py-1.5 rounded-full">
+          Filtro: ${LABEL_FILTRO[statusFiltro] || statusFiltro}
+          <a href="clients.html" class="text-ink/50 hover:text-clay transition"><i data-lucide="x" class="w-3.5 h-3.5"></i></a>
+        </span>`;
+      lucide.createIcons();
+    }
+
     function renderClients() {
-      const clientes = RotaDB.getClients();
-      $('headerCount').textContent = `${clientes.length} CADASTRADO${clientes.length === 1 ? '' : 'S'}`;
+      let clientes = RotaDB.getClients();
+
+      // só mantém clientes que têm pelo menos um item com o status filtrado
+      if (statusFiltro) {
+        clientes = clientes.filter(c => c.itens.some(i => i.status === statusFiltro));
+      }
+
+      $('headerCount').textContent = statusFiltro
+        ? `${clientes.length} COM ITEM ${LABEL_FILTRO[statusFiltro]?.toUpperCase() || statusFiltro.toUpperCase()}`
+        : `${clientes.length} CADASTRADO${clientes.length === 1 ? '' : 'S'}`;
 
       $('clientList').innerHTML = clientes.length
         ? clientes.map(renderClientCard).join('')
         : `<div class="bg-white border border-ink/10 rounded-lg p-8 text-center">
              <i data-lucide="user-plus" class="w-8 h-8 text-ink/25 mx-auto mb-2"></i>
-             <p class="text-sm text-ink/40">Nenhum cliente cadastrado ainda.</p>
+             <p class="text-sm text-ink/40">${statusFiltro ? 'Nenhum cliente com esse filtro.' : 'Nenhum cliente cadastrado ainda.'}</p>
            </div>`;
 
       lucide.createIcons();
     }
 
+    renderFilterChip();
     renderClients();
 
     $('newClientBtn').onclick = () => {

@@ -56,7 +56,7 @@ function renderShell(activePage) {
       <nav class="space-y-1 flex-1">${sidebarLinks}
       </nav>
 
-      <a href="index.html" class="flex items-center gap-3 px-3 py-2.5 rounded-md text-ink/50 hover:bg-paper hover:text-clay font-medium text-sm transition">
+      <a href="index.html" onclick="if (window.RotaDB) RotaDB.logout();" class="flex items-center gap-3 px-3 py-2.5 rounded-md text-ink/50 hover:bg-paper hover:text-clay font-medium text-sm transition">
         <i data-lucide="log-out" class="w-4.5 h-4.5"></i> Sair
       </a>
     </aside>

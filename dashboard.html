@@ -23,6 +23,7 @@
   <script src="https://unpkg.com/lucide@latest"></script>
   <link rel="stylesheet" href="style.css">
   <script src="data.js"></script>
+  <script src="modal.js"></script>
   <style>
     /* pequeno ajuste local: dá espaço no fim da página pra barra inferior no mobile não cobrir conteúdo */
     .pb-safe { padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
@@ -46,11 +47,19 @@
           <h1 class="font-display text-2xl font-semibold text-ink">Dashboard</h1>
         </div>
         <div class="flex items-center gap-3">
-          <button class="relative w-9 h-9 flex items-center justify-center rounded-full hover:bg-paper transition">
-            <i data-lucide="bell" class="w-5 h-5 text-ink/60"></i>
-            <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-clay rounded-full"></span>
-          </button>
-          <div class="w-9 h-9 rounded-full bg-petrol text-paper flex items-center justify-center font-display text-sm font-semibold">CX</div>
+          <div class="relative">
+            <button id="notifBtn" class="relative w-9 h-9 flex items-center justify-center rounded-full hover:bg-paper transition" aria-label="Notificações">
+              <i data-lucide="bell" class="w-5 h-5 text-ink/60"></i>
+              <span id="notifDot" class="hidden absolute top-1.5 right-1.5 w-2 h-2 bg-clay rounded-full"></span>
+            </button>
+            <div id="notifPanel" class="hidden absolute right-0 top-11 w-72 bg-white border border-ink/10 rounded-lg shadow-xl z-30 overflow-hidden">
+              <div class="px-4 py-3 border-b border-ink/10">
+                <p class="text-xs font-mono-ticket text-ink/40 tracking-wider">NOTIFICAÇÕES</p>
+              </div>
+              <ul id="notifList" class="max-h-72 overflow-y-auto divide-y divide-ink/10"></ul>
+            </div>
+          </div>
+          <button id="profileBtn" class="w-9 h-9 rounded-full bg-petrol text-paper flex items-center justify-center font-display text-sm font-semibold hover:opacity-90 transition" aria-label="Perfil">—</button>
         </div>
       </header>
 
@@ -65,7 +74,7 @@
             <p id="metricClientes" class="font-display text-3xl font-semibold text-ink">—</p>
           </a>
 
-          <a href="clients.html" class="bg-white border border-ink/10 rounded-lg p-4 relative overflow-hidden hover:border-amber/40 transition">
+          <a href="clients.html?status=pendente" class="bg-white border border-ink/10 rounded-lg p-4 relative overflow-hidden hover:border-amber/40 transition">
             <i data-lucide="clock" class="w-4 h-4 text-amber/70 absolute top-3 right-3"></i>
             <p class="text-xs text-ink/50 font-medium mb-1">Itens pendentes</p>
             <p id="metricPendentes" class="font-display text-3xl font-semibold text-ink">—</p>
@@ -77,7 +86,7 @@
             <div id="saldoList" class="space-y-0.5 font-mono-ticket text-sm text-ink"></div>
           </a>
 
-          <a href="marketing.html" class="bg-white border border-ink/10 rounded-lg p-4 relative overflow-hidden col-span-2 md:col-span-1 hover:border-clay/30 transition">
+          <a href="marketing.html?status=agendado" class="bg-white border border-ink/10 rounded-lg p-4 relative overflow-hidden col-span-2 md:col-span-1 hover:border-clay/30 transition">
             <i data-lucide="megaphone" class="w-4 h-4 text-clay/60 absolute top-3 right-3"></i>
             <p class="text-xs text-ink/50 font-medium mb-1">Próximo post</p>
             <div id="proximoPostBox"></div>
@@ -162,6 +171,109 @@
     }
 
     renderDashboard();
+
+    function renderProfileBadge() {
+      const user = RotaDB.getCurrentUser();
+      $('profileBtn').textContent = RotaDB.initials(user.nome) || '—';
+    }
+    renderProfileBadge();
+
+    // Notificações — geradas a partir de dados reais, sem nada inventado:
+    // itens pendentes, posts agendados nas próximas 48h, clientes novos hoje.
+    function gerarNotificacoes() {
+      const notifs = [];
+      const agora = new Date();
+      const em48h = new Date(agora.getTime() + 48 * 60 * 60 * 1000);
+
+      const pendentes = RotaDB.getClients().flatMap(c => c.itens.filter(i => i.status === 'pendente'));
+      if (pendentes.length) {
+        notifs.push({
+          icone: 'clock', cor: 'amber',
+          texto: `${pendentes.length} item${pendentes.length > 1 ? 'ns' : ''} pendente${pendentes.length > 1 ? 's' : ''} de confirmação`,
+          href: 'clients.html?status=pendente',
+        });
+      }
+
+      RotaDB.getPosts()
+        .filter(p => p.data_agendada && new Date(p.data_agendada) >= agora && new Date(p.data_agendada) <= em48h)
+        .forEach(p => notifs.push({
+          icone: 'megaphone', cor: 'clay',
+          texto: `Post agendado — ${RotaDB.formatDate(p.data_agendada, 'weekday')}`,
+          href: 'marketing.html?status=agendado',
+        }));
+
+      RotaDB.getClients()
+        .filter(c => new Date(c.criado_em).toDateString() === agora.toDateString())
+        .forEach(c => notifs.push({
+          icone: 'user-plus', cor: 'petrol',
+          texto: `Novo cliente cadastrado hoje — ${c.nome}`,
+          href: 'clients.html',
+        }));
+
+      return notifs;
+    }
+
+    function renderNotifPanel() {
+      const notifs = gerarNotificacoes();
+      $('notifDot').classList.toggle('hidden', notifs.length === 0);
+
+      $('notifList').innerHTML = notifs.length
+        ? notifs.map(n => `
+          <li>
+            <a href="${n.href}" class="flex items-center gap-3 px-4 py-3 hover:bg-paper transition">
+              <div class="w-8 h-8 rounded-full bg-${n.cor}/10 flex items-center justify-center flex-shrink-0">
+                <i data-lucide="${n.icone}" class="w-4 h-4 text-${n.cor}"></i>
+              </div>
+              <span class="text-sm text-ink">${n.texto}</span>
+            </a>
+          </li>`).join('')
+        : `<li class="px-4 py-6 text-center text-sm text-ink/35 italic">Sem notificações por agora</li>`;
+
+      lucide.createIcons();
+    }
+    renderNotifPanel();
+
+    $('notifBtn').onclick = (e) => {
+      e.stopPropagation();
+      $('notifPanel').classList.toggle('hidden');
+    };
+    document.addEventListener('click', (e) => {
+      if (!$('notifPanel').contains(e.target) && e.target !== $('notifBtn')) {
+        $('notifPanel').classList.add('hidden');
+      }
+    });
+
+    $('profileBtn').onclick = () => {
+      const user = RotaDB.getCurrentUser();
+      RotaModal.open({
+        title: 'Perfil',
+        submitLabel: 'Salvar',
+        bodyHtml: `
+          <div>
+            <label class="${ROTA_LABEL_CLASS}">Nome</label>
+            <input type="text" id="f_perfil_nome" class="${ROTA_INPUT_CLASS}" value="${user.nome}" />
+          </div>
+          <div>
+            <label class="${ROTA_LABEL_CLASS}">Papel</label>
+            <input type="text" class="${ROTA_INPUT_CLASS} bg-paper text-ink/60" value="${user.papel === 'admin' ? 'Administrador' : 'Agente'}" disabled />
+          </div>
+          <button type="button" id="logoutBtn" class="text-clay text-sm font-medium hover:text-clay/80 transition flex items-center gap-1.5 pt-1">
+            <i data-lucide="log-out" class="w-4 h-4"></i> Sair da conta
+          </button>
+        `,
+        onSubmit: () => {
+          const nome = $('f_perfil_nome').value.trim() || user.nome;
+          RotaDB.setCurrentUser({ nome });
+          RotaModal.close();
+          renderProfileBadge();
+        },
+      });
+
+      document.getElementById('logoutBtn').onclick = () => {
+        RotaDB.logout();
+        window.location.href = 'index.html';
+      };
+    };
   </script>
 </body>
 </html>
