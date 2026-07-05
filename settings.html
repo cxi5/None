@@ -59,13 +59,11 @@
         </div>
       </header>
 
-      <div class="px-5 md:px-8 py-6 max-w-2xl">
-
-        <!-- Abas -->
-        <div id="tabBar" class="flex items-center gap-1 mb-6 overflow-x-auto pb-1"></div>
+      <div class="px-5 md:px-8 py-6 max-w-2xl space-y-8">
 
         <!-- ==================== CONTA ==================== -->
         <div id="tabConta" class="space-y-6">
+          <p class="font-mono-ticket text-[11px] text-ink/40 tracking-wider">CONTA</p>
           <div class="bg-white border border-ink/10 rounded-lg p-5">
             <h2 class="font-display text-lg font-semibold text-ink mb-4">Minha conta</h2>
             <div class="flex items-center gap-4 mb-5">
@@ -92,6 +90,7 @@
 
         <!-- ==================== EQUIPE (admin) ==================== -->
         <div id="tabEquipe" class="space-y-6 hidden">
+          <p class="font-mono-ticket text-[11px] text-ink/40 tracking-wider pt-2">EQUIPE</p>
           <div class="bg-white border border-ink/10 rounded-lg overflow-hidden">
             <div class="flex items-center justify-between px-5 py-4">
               <div>
@@ -108,8 +107,12 @@
 
           <!-- Matriz de permissões -->
           <div class="bg-white border border-ink/10 rounded-lg p-5">
-            <h2 class="font-display text-lg font-semibold text-ink mb-1">O que cada papel pode fazer</h2>
-            <p class="text-xs text-ink/40 mb-4">Reflete o que já está implementado hoje — não uma promessa futura.</p>
+            <div class="flex items-center gap-1.5 mb-4">
+              <h2 class="font-display text-lg font-semibold text-ink">O que cada papel pode fazer</h2>
+              <button data-info="permissoes" class="infoBtn w-5 h-5 flex items-center justify-center rounded-full text-ink/35 hover:text-ink hover:bg-paper transition" aria-label="Mais informações">
+                <i data-lucide="info" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
             <div class="overflow-x-auto">
               <table class="w-full text-sm">
                 <thead>
@@ -126,19 +129,30 @@
         </div>
 
         <!-- ==================== SEGURANÇA ==================== -->
-        <div id="tabSeguranca" class="space-y-6 hidden">
+        <div id="tabSeguranca" class="space-y-6">
+          <p class="font-mono-ticket text-[11px] text-ink/40 tracking-wider pt-2">SEGURANÇA</p>
+
           <div class="bg-white border border-ink/10 rounded-lg p-5">
-            <h2 class="font-display text-lg font-semibold text-ink mb-1">Senha</h2>
-            <p class="text-xs text-ink/40 mb-4">A troca ainda não é salva de verdade — isso passa a funcionar quando o backend estiver no ar.</p>
+            <div class="flex items-center gap-1.5 mb-4">
+              <h2 class="font-display text-lg font-semibold text-ink">Senha</h2>
+              <button data-info="senha" class="infoBtn w-5 h-5 flex items-center justify-center rounded-full text-ink/35 hover:text-ink hover:bg-paper transition" aria-label="Mais informações">
+                <i data-lucide="info" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
             <button id="changePasswordBtn" class="text-sm text-petrol hover:text-ink font-medium transition">Trocar senha</button>
           </div>
 
           <div class="bg-white border border-ink/10 rounded-lg p-5">
-            <h2 class="font-display text-lg font-semibold text-ink mb-1">Sessões</h2>
-            <p class="text-sm text-ink/60">Hoje cada navegador guarda sua própria sessão local. Gestão de sessões por dispositivo chega junto com o backend.</p>
+            <div class="flex items-center gap-1.5">
+              <h2 class="font-display text-lg font-semibold text-ink">Sessões</h2>
+              <button data-info="sessoes" class="infoBtn w-5 h-5 flex items-center justify-center rounded-full text-ink/35 hover:text-ink hover:bg-paper transition" aria-label="Mais informações">
+                <i data-lucide="info" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+            <p class="text-sm text-ink/60 mt-1">Cada navegador guarda sua própria sessão local.</p>
           </div>
 
-          <!-- Zona de perigo -->
+          <!-- Zona de perigo — avisos ficam visíveis de propósito, não atrás de um ícone -->
           <div class="bg-white border-2 border-clay/30 rounded-lg p-5">
             <h2 class="font-display text-lg font-semibold text-clay mb-1">Zona de perigo</h2>
             <p class="text-xs text-ink/45 mb-4">Ações que afetam todo o sistema neste navegador.</p>
@@ -162,16 +176,22 @@
         </div>
 
         <!-- ==================== PREFERÊNCIAS ==================== -->
-        <div id="tabPreferencias" class="space-y-6 hidden">
+        <div id="tabPreferencias" class="space-y-6">
+          <p class="font-mono-ticket text-[11px] text-ink/40 tracking-wider pt-2">PREFERÊNCIAS</p>
+
           <div class="bg-white border border-ink/10 rounded-lg p-5">
             <h2 class="font-display text-lg font-semibold text-ink mb-4">Idioma e região</h2>
 
             <div class="mb-4">
-              <label class="text-xs font-mono-ticket text-ink/40 tracking-wider block mb-1.5">IDIOMA</label>
+              <div class="flex items-center gap-1.5 mb-1.5">
+                <label class="text-xs font-mono-ticket text-ink/40 tracking-wider">IDIOMA</label>
+                <button data-info="idioma" class="infoBtn w-4 h-4 flex items-center justify-center rounded-full text-ink/35 hover:text-ink transition" aria-label="Mais informações">
+                  <i data-lucide="info" class="w-3 h-3"></i>
+                </button>
+              </div>
               <select disabled class="w-full bg-paper border border-ink/15 rounded-md px-3.5 py-2.5 text-sm text-ink/60">
                 <option>Português (Brasil) — ativo</option>
               </select>
-              <p class="text-xs text-ink/35 mt-1.5">Mais idiomas em breve.</p>
             </div>
 
             <div>
@@ -204,35 +224,24 @@
     const usuarioAtual = RotaDB.getCurrentUser();
     const souAdmin = usuarioAtual.papel === 'admin';
 
-    // --- Abas -------------------------------------------------------
+    // Sem abas — a seção Equipe só aparece de fato pra quem é admin.
+    if (souAdmin) $('tabEquipe').classList.remove('hidden');
 
-    const ABAS = [
-      { id: 'conta', label: 'Conta', icone: 'user' },
-      ...(souAdmin ? [{ id: 'equipe', label: 'Equipe', icone: 'users' }] : []),
-      { id: 'seguranca', label: 'Segurança', icone: 'shield' },
-      { id: 'preferencias', label: 'Preferências', icone: 'sliders-horizontal' },
-    ];
-    let abaAtiva = 'conta';
+    // --- Ícones "i" — texto explicativo que antes ficava sempre visível ---
 
-    function renderTabBar() {
-      const base = 'flex items-center gap-1.5 px-3.5 py-2 rounded-md text-sm font-medium transition flex-shrink-0';
-      $('tabBar').innerHTML = ABAS.map(aba => `
-        <button data-aba="${aba.id}" class="${base} ${abaAtiva === aba.id ? 'bg-petrol text-paper' : 'text-ink/60 hover:bg-white'}">
-          <i data-lucide="${aba.icone}" class="w-4 h-4"></i> ${aba.label}
-        </button>`).join('');
-      lucide.createIcons();
+    const TEXTOS_INFO = {
+      senha: 'A troca ainda não é salva de verdade — isso passa a funcionar quando o backend estiver no ar.',
+      sessoes: 'Hoje cada navegador guarda sua própria sessão local. Gestão de sessões por dispositivo chega junto com o backend.',
+      permissoes: 'Reflete o que já está implementado hoje — não uma promessa futura.',
+      idioma: 'Mais idiomas em breve.',
+    };
 
-      document.querySelectorAll('#tabBar button').forEach(btn => {
-        btn.onclick = () => { abaAtiva = btn.dataset.aba; aplicarAba(); };
-      });
-    }
-
-    function aplicarAba() {
-      renderTabBar();
-      ['conta', 'equipe', 'seguranca', 'preferencias'].forEach(id => {
-        $(`tab${id.charAt(0).toUpperCase()}${id.slice(1)}`).classList.toggle('hidden', abaAtiva !== id);
-      });
-    }
+    document.querySelectorAll('.infoBtn').forEach(btn => {
+      btn.onclick = () => {
+        const texto = TEXTOS_INFO[btn.dataset.info] || '';
+        RotaModal.info('Mais informações', `<p class="text-sm text-ink/70 leading-relaxed">${texto}</p>`);
+      };
+    });
 
     // --- Conta --------------------------------------------------------
 
@@ -361,7 +370,6 @@
 
     // --- Inicialização -----------------------------------------------
 
-    aplicarAba();
     renderMyAccount();
     renderAvatarSwatches();
     renderActivity();

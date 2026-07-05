@@ -45,17 +45,34 @@ function ensureModalRoot() {
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
 }
 
-function openModal({ title, bodyHtml, onSubmit, submitLabel }) {
+function openModal({ title, bodyHtml, onSubmit, submitLabel, info }) {
   ensureModalRoot();
 
   document.getElementById('rotaModalTitle').textContent = title;
   document.getElementById('rotaModalBody').innerHTML = bodyHtml;
-  document.getElementById('rotaModalSubmit').textContent = submitLabel || 'Salvar';
+
+  const cancelBtn = document.getElementById('rotaModalCancel');
+  const submitBtn = document.getElementById('rotaModalSubmit');
+
+  // Modo "info": só uma explicação com botão "Entendi" — sem Cancelar/Salvar,
+  // porque não há nada pra confirmar ou descartar.
+  if (info) {
+    cancelBtn.classList.add('hidden');
+    submitBtn.classList.remove('flex-1');
+    submitBtn.classList.add('w-full');
+    submitBtn.textContent = submitLabel || 'Entendi';
+  } else {
+    cancelBtn.classList.remove('hidden');
+    submitBtn.classList.remove('w-full');
+    submitBtn.classList.add('flex-1');
+    submitBtn.textContent = submitLabel || 'Salvar';
+  }
 
   // .onsubmit substitui o handler anterior sozinho — não precisa
   // remover listener nenhum antes de trocar de formulário.
   document.getElementById('rotaModalForm').onsubmit = (e) => {
     e.preventDefault();
+    if (info) { closeModal(); return; }
     onSubmit();
   };
 
@@ -73,7 +90,12 @@ function closeModal() {
   root.classList.remove('flex');
 }
 
-window.RotaModal = { open: openModal, close: closeModal };
+window.RotaModal = {
+  open: openModal,
+  close: closeModal,
+  // Atalho pros ícones "i" — só título + texto, sem formulário nenhum.
+  info: (title, bodyHtml) => openModal({ title, bodyHtml, info: true }),
+};
 
 // Classe de input compartilhada — pra manter a mesma cara do resto do app
 window.ROTA_INPUT_CLASS = 'w-full bg-white border border-ink/15 rounded-md px-3.5 py-2.5 text-ink placeholder-ink/35 focus:outline-none input-focus text-sm transition-all';
