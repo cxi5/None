@@ -52,9 +52,6 @@
           <h1 class="font-display text-2xl font-semibold text-ink">Financeiro</h1>
         </div>
         <div class="flex items-center gap-2 flex-shrink-0">
-          <button id="configMoedasBtn" class="w-9 h-9 flex items-center justify-center rounded-md text-ink/50 hover:text-petrol hover:bg-paper transition" aria-label="Configurar moedas" title="Configurar moedas">
-            <i data-lucide="coins" class="w-5 h-5"></i>
-          </button>
           <button id="newTransactionBtn" class="btn-ticket bg-amber hover:bg-amber/90 text-ink font-semibold text-sm px-4 py-2.5 flex items-center gap-2 flex-shrink-0">
             <i data-lucide="plus" class="w-4 h-4"></i>
             <span class="hidden sm:inline">Novo lançamento</span>
@@ -95,7 +92,10 @@
 
         <!-- Evolução financeira -->
         <div class="bg-white border border-ink/10 rounded-lg p-5 mb-6">
-          <p class="text-xs font-mono-ticket text-ink/40 tracking-wider mb-0.5">EVOLUÇÃO FINANCEIRA</p>
+          <div class="flex items-center justify-between gap-3 mb-0.5 flex-wrap">
+            <p class="text-xs font-mono-ticket text-ink/40 tracking-wider">EVOLUÇÃO FINANCEIRA</p>
+            <div id="granularidadeChips" class="flex items-center gap-1.5 flex-shrink-0"></div>
+          </div>
           <p class="text-[11px] text-ink/35 mb-3">Saldo acumulado por moeda, dentro dos filtros aplicados acima.</p>
           <div id="chartEmptyState" class="hidden text-sm text-ink/35 italic text-center py-10"></div>
           <div class="relative" style="height: 240px;">
@@ -199,6 +199,28 @@
     // não lê classes Tailwind, então precisa da cor em hex direto.
     const CORES_HEX_MOEDA = { petrol: '#1F4B4C', amber: '#E8A33D', clay: '#C1573A', ink: '#14181C' };
     let evolucaoChartInstance = null;
+
+    // Granularidade do eixo de tempo do gráfico — dia, mês ou ano.
+    // Fica em memória (não precisa persistir), começa em "mês" porque é
+    // a visão mais útil quando ainda não tem filtro de período aplicado.
+    let granularidadeChart = 'mes';
+    const LABEL_GRANULARIDADE = { dia: 'Dia', mes: 'Mês', ano: 'Ano' };
+
+    function renderGranularidadeChips() {
+      const chipBase = 'px-3 py-1 rounded-full text-[11px] font-medium flex-shrink-0 transition';
+      const chipAtivo = `${chipBase} bg-petrol text-paper`;
+      const chipInativo = `${chipBase} bg-white border border-ink/15 text-ink/50 hover:border-ink/30`;
+
+      $('granularidadeChips').innerHTML = Object.entries(LABEL_GRANULARIDADE)
+        .map(([valor, label]) => `<button class="${granularidadeChart === valor ? chipAtivo : chipInativo}" onclick="selecionarGranularidade('${valor}')">${label}</button>`)
+        .join('');
+    }
+
+    function selecionarGranularidade(valor) {
+      granularidadeChart = valor;
+      renderGranularidadeChips();
+      renderEvolucaoChart();
+    }
 
     // Chips por moeda ativa — clicar troca o filtro e re-renderiza tanto os
     // próprios chips (pra destacar o selecionado) quanto a lista de lançamentos.
@@ -323,6 +345,12 @@
             const cor = receita ? 'petrol' : 'clay';
             const icone = receita ? 'arrow-down-left' : 'arrow-up-right';
             const subtitulo = cliente ? cliente.nome : (t.categoria || 'Sem categoria');
+            // Quando o lançamento tem check-in/check-out, mostra o horário de
+            // entrada (e saída, se houver) em vez da data genérica — é a
+            // informação mais precisa disponível pra esse lançamento.
+            const infoHorario = t.check_in
+              ? `entrada ${RotaDB.formatDate(t.check_in, 'datetime')}${t.check_out ? ` · saída ${RotaDB.formatDate(t.check_out, 'datetime')}` : ''}`
+              : RotaDB.formatDate(t.data, 'short');
             return `
               <li class="flex items-center justify-between px-5 py-4 group">
                 <div class="flex items-center gap-3 min-w-0">
@@ -331,7 +359,7 @@
                   </div>
                   <div class="min-w-0">
                     <p class="text-sm font-medium text-ink truncate">${t.notas || (receita ? 'Receita' : 'Despesa')}</p>
-                    <p class="text-xs text-ink/45 truncate">${subtitulo} · ${RotaDB.formatDate(t.data, 'short')}</p>
+                    <p class="text-xs text-ink/45 truncate">${subtitulo} · ${infoHorario}</p>
                   </div>
                 </div>
                 <div class="flex items-center gap-3 flex-shrink-0">
@@ -386,10 +414,32 @@
       lucide.createIcons();
     }
 
-    // Saldo acumulado por moeda, agrupado por mês — nunca soma moedas
-    // diferentes na mesma linha (mesma regra de getSaldoPorMoeda: sem câmbio).
-    // Usa o conjunto já filtrado (moeda/período/cliente/agente), então o
-    // gráfico sempre reflete exatamente o que a lista abaixo está mostrando.
+    // Chave de agrupamento no eixo X conforme a granularidade escolhida —
+    // 'dia' preserva 'YYYY-MM-DD', 'mes' corta em 'YYYY-MM', 'ano' em 'YYYY'.
+    function chavePeriodo(iso) {
+      if (granularidadeChart === 'dia') return iso.slice(0, 10);
+      if (granularidadeChart === 'ano') return iso.slice(0, 4);
+      return iso.slice(0, 7);
+    }
+
+    // Rótulo legível de uma chave de período pro eixo X do gráfico.
+    function labelPeriodo(chave) {
+      if (granularidadeChart === 'ano') return chave;
+      if (granularidadeChart === 'dia') {
+        const [ano, mes, dia] = chave.split('-');
+        return new Date(Number(ano), Number(mes) - 1, Number(dia))
+          .toLocaleDateString('pt-PT', { day: '2-digit', month: 'short' }).replace('.', '');
+      }
+      const [ano, mes] = chave.split('-');
+      return new Date(Number(ano), Number(mes) - 1, 1)
+        .toLocaleDateString('pt-PT', { month: 'short', year: '2-digit' }).replace('.', '');
+    }
+
+    // Saldo acumulado por moeda, agrupado conforme a granularidade escolhida
+    // (dia/mês/ano) — nunca soma moedas diferentes na mesma linha (mesma
+    // regra de getSaldoPorMoeda: sem câmbio). Usa o conjunto já filtrado
+    // (moeda/período/cliente/agente), então o gráfico sempre reflete
+    // exatamente o que a lista abaixo está mostrando.
     function renderEvolucaoChart() {
       const transacoes = getTransacoesFiltradas();
 
@@ -404,26 +454,22 @@
       $('evolucaoChart').classList.remove('hidden');
       $('chartEmptyState').classList.add('hidden');
 
-      // Variação líquida (receita - despesa) por moeda, por mês
-      const variacaoPorMoedaMes = {};
+      // Variação líquida (receita - despesa) por moeda, por período
+      const variacaoPorMoedaPeriodo = {};
       for (const t of transacoes) {
-        const mesChave = t.data.slice(0, 7); // 'YYYY-MM'
+        const chave = chavePeriodo(t.data);
         const sinal = t.tipo === 'receita' ? 1 : -1;
-        variacaoPorMoedaMes[t.moeda] = variacaoPorMoedaMes[t.moeda] || {};
-        variacaoPorMoedaMes[t.moeda][mesChave] = (variacaoPorMoedaMes[t.moeda][mesChave] || 0) + sinal * t.valor;
+        variacaoPorMoedaPeriodo[t.moeda] = variacaoPorMoedaPeriodo[t.moeda] || {};
+        variacaoPorMoedaPeriodo[t.moeda][chave] = (variacaoPorMoedaPeriodo[t.moeda][chave] || 0) + sinal * t.valor;
       }
 
       // Eixo X compartilhado entre todas as moedas presentes no filtro
-      const meses = [...new Set(transacoes.map(t => t.data.slice(0, 7)))].sort();
-      const labels = meses.map(m => {
-        const [ano, mes] = m.split('-');
-        return new Date(Number(ano), Number(mes) - 1, 1)
-          .toLocaleDateString('pt-PT', { month: 'short', year: '2-digit' }).replace('.', '');
-      });
+      const periodos = [...new Set(transacoes.map(t => chavePeriodo(t.data)))].sort();
+      const labels = periodos.map(labelPeriodo);
 
-      const datasets = Object.keys(variacaoPorMoedaMes).map(moeda => {
+      const datasets = Object.keys(variacaoPorMoedaPeriodo).map(moeda => {
         let acumulado = 0;
-        const pontos = meses.map(mes => (acumulado += variacaoPorMoedaMes[moeda][mes] || 0));
+        const pontos = periodos.map(p => (acumulado += variacaoPorMoedaPeriodo[moeda][p] || 0));
         const cor = CORES_HEX_MOEDA[RotaDB.corMoeda(moeda)] || CORES_HEX_MOEDA.ink;
         return {
           label: moeda,
@@ -523,6 +569,16 @@
               ${opcoesClientes}
             </select>
           </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="${ROTA_LABEL_CLASS}">Check-in <span class="text-ink/35 font-normal">(opcional)</span></label>
+              <input type="datetime-local" id="f_checkin" step="1" value="${t.check_in ? t.check_in.slice(0, 19) : ''}" class="${ROTA_INPUT_CLASS}" />
+            </div>
+            <div>
+              <label class="${ROTA_LABEL_CLASS}">Check-out <span class="text-ink/35 font-normal">(opcional)</span></label>
+              <input type="datetime-local" id="f_checkout" step="1" value="${t.check_out ? t.check_out.slice(0, 19) : ''}" class="${ROTA_INPUT_CLASS}" />
+            </div>
+          </div>
           <div>
             <label class="${ROTA_LABEL_CLASS}">Notas</label>
             <input type="text" id="f_notas" value="${t.notas || ''}" class="${ROTA_INPUT_CLASS}" placeholder="Descrição do lançamento" />
@@ -532,6 +588,15 @@
           const valor = parseFloat($('f_valor').value);
           if (!valor || valor <= 0) { $('f_valor').focus(); return; }
 
+          // Check-in/check-out são opcionais — hora de entrada/saída de um
+          // serviço com horário marcado (ex: hotel, transfer, embarque).
+          const checkinValor = $('f_checkin').value;
+          const checkoutValor = $('f_checkout').value;
+          if (checkinValor && checkoutValor && checkoutValor < checkinValor) {
+            alert('O check-out não pode ser antes do check-in.');
+            return;
+          }
+
           const dados = {
             tipo: $('f_tipo').value,
             moeda: $('f_moeda').value,
@@ -539,6 +604,8 @@
             taxa_cambio_no_momento: parseFloat($('f_cambio').value) || 1,
             categoria: $('f_categoria').value.trim(),
             client_id: $('f_cliente').value || null,
+            check_in: checkinValor ? new Date(checkinValor).toISOString() : null,
+            check_out: checkoutValor ? new Date(checkoutValor).toISOString() : null,
             notas: $('f_notas').value.trim(),
           };
 
@@ -608,7 +675,7 @@
       const transacoes = getTransacoesFiltradas().slice().sort((a, b) => new Date(b.data) - new Date(a.data));
       if (!transacoes.length) { alert('Nenhum lançamento pra exportar com esses filtros.'); return; }
 
-      const cabecalho = ['Data', 'Tipo', 'Moeda', 'Valor', 'Câmbio', 'Categoria', 'Cliente', 'Agente', 'Notas'];
+      const cabecalho = ['Data', 'Tipo', 'Moeda', 'Valor', 'Câmbio', 'Categoria', 'Cliente', 'Agente', 'Check-in', 'Check-out', 'Notas'];
       const linhas = transacoes.map(t => {
         const cliente = t.client_id ? RotaDB.getClientById(t.client_id) : null;
         const agente = RotaDB.getTeam().find(m => m.id === t.agente_id);
@@ -621,6 +688,8 @@
           t.categoria || '',
           cliente ? cliente.nome : '',
           agente ? agente.nome : '',
+          t.check_in ? RotaDB.formatDate(t.check_in, 'datetime') : '',
+          t.check_out ? RotaDB.formatDate(t.check_out, 'datetime') : '',
           t.notas || '',
         ];
       });
@@ -678,9 +747,9 @@
 
     renderSaldoCards();
     renderMoedaChips();
+    renderGranularidadeChips();
     renderTransactions();
 
-    $('configMoedasBtn').onclick = abrirConfigMoedas;
     $('newTransactionBtn').onclick = () => abrirModalTransacao();
     $('exportCsvBtn').onclick = exportarCSV;
     $('exportPdfBtn').onclick = exportarPDF;

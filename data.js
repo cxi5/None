@@ -221,6 +221,10 @@ function saveTransaction(dadosTransacao) {
     client_id: null, tipo: 'receita', valor: 0, moeda: 'AOA',
     taxa_cambio_no_momento: 1, categoria: '', agente_id: getDefaultAgenteId(),
     data: new Date().toISOString(), notas: '',
+    // hora de entrada/saída — opcional, usado quando o lançamento está
+    // ligado a um serviço com horário marcado (ex: check-in/check-out de
+    // hotel, horário de embarque). null quando não se aplica.
+    check_in: null, check_out: null,
     ...dadosTransacao,
   };
   transactions.push(nova);
@@ -435,6 +439,13 @@ function formatDate(iso, style = 'short') {
     const data = d.toLocaleDateString('pt-PT', { day: '2-digit', month: 'short' }).replace('.', '');
     const hora = d.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
     return `${dia.charAt(0).toUpperCase()}${dia.slice(1)}, ${data} · ${hora}`;
+  }
+  if (style === 'datetime') {
+    // ex: "05/07/2026 14:05:32" — usado em check-in/check-out, onde o
+    // segundo importa (registro de entrada/saída de um serviço).
+    const data = d.toLocaleDateString('pt-PT');
+    const hora = d.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    return `${data} ${hora}`;
   }
   if (style === 'relative') {
     const diffMs = Date.now() - d.getTime();

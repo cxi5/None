@@ -246,6 +246,16 @@
       });
     }
 
+    // Moedas do select vêm das moedas ativas configuradas no Financeiro —
+    // nada de lista fixa aqui. Se o item já tem uma moeda que foi desativada
+    // depois, ela ainda entra na lista (senão o valor salvo desaparece do select).
+    function moedasParaSelectItem(moedaDoItem) {
+      const ativas = RotaDB.getMoedasAtivas();
+      return moedaDoItem && !ativas.includes(moedaDoItem)
+        ? [...ativas, moedaDoItem]
+        : ativas;
+    }
+
     function camposItemHtml(item = {}) {
       return `
         <div class="grid grid-cols-2 gap-3">
@@ -274,7 +284,7 @@
           <div>
             <label class="${ROTA_LABEL_CLASS}">Moeda</label>
             <select id="f_moeda" class="${ROTA_INPUT_CLASS}">
-              ${['AOA', 'USD', 'EUR'].map(m => `<option value="${m}" ${item.moeda === m ? 'selected' : ''}>${m}</option>`).join('')}
+              ${moedasParaSelectItem(item.moeda).map(m => `<option value="${m}" ${item.moeda === m ? 'selected' : ''}>${m} — ${RotaDB.nomeMoeda(m)}</option>`).join('')}
             </select>
           </div>
         </div>
@@ -291,6 +301,13 @@
     }
 
     function abrirNovoItem() {
+      // Sem moeda ativa configurada ainda, não dá pra montar o select de moeda —
+      // manda configurar no Financeiro em vez de abrir um formulário quebrado.
+      if (!RotaDB.getMoedasAtivas().length) {
+        alert('Configure ao menos uma moeda no Financeiro antes de adicionar um item.');
+        return;
+      }
+
       RotaModal.open({
         title: 'Novo item adquirido',
         submitLabel: 'Salvar item',
