@@ -1,8 +1,8 @@
 /* ===================================================================
    ROTA — data.js
-   Camada única de dados. HOJE guarda em localStorage; QUANDO o Supabase
-   entrar, só o miolo de cada função muda (vira `await supabase...`) —
-   as páginas que chamam essas funções não mudam uma linha.
+   Camada única de dados. HOJE guarda em localStorage; QUANDO o backend
+   PHP entrar, só o miolo de cada função muda (vira `await apiRequest(...)`,
+   ver api.js) — as páginas que chamam essas funções não mudam uma linha.
 
    Nomes das funções e dos campos já seguem o schema do
    escopo-sistema-agencia-viagens.md, pra não ter que traduzir depois.
@@ -70,8 +70,8 @@ const CATALOGO_MOEDAS = {
 // dá pra ter até LIMITE_MOEDAS_ATIVAS cores distintas do design system.
 const CICLO_CORES_MOEDA = ['petrol', 'amber', 'clay', 'ink'];
 
-// Gera um id simples (suficiente pro localStorage; troca por uuid do
-// Postgres quando o Supabase entrar — o resto do código nem percebe).
+// Gera um id simples (suficiente pro localStorage; troca por id/uuid do
+// MySQL quando o backend PHP entrar — o resto do código nem percebe).
 function newId(prefix) {
   return `${prefix}_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
 }
@@ -105,6 +105,7 @@ function seedIfNeeded() {
     nome: 'Cxi',
     email: '',
     papel: 'admin',
+    avatarColor: 'petrol',
     criado_em: new Date().toISOString(),
   }]);
   localStorage.setItem(DB_KEYS.seeded, '1');
@@ -225,6 +226,7 @@ function saveTransaction(dadosTransacao) {
     // ligado a um serviço com horário marcado (ex: check-in/check-out de
     // hotel, horário de embarque). null quando não se aplica.
     check_in: null, check_out: null,
+    criado_em: new Date().toISOString(),
     ...dadosTransacao,
   };
   transactions.push(nova);
@@ -317,6 +319,7 @@ function savePost(dadosPost) {
     id: newId('p'),
     data_agendada: null, rede_social: 'instagram', status: 'ideia',
     texto: '', link_referencia: '', criado_por: 'cxi',
+    criado_em: new Date().toISOString(),
     ...dadosPost,
   };
   posts.push(novo);
@@ -470,6 +473,53 @@ function initials(nome) {
 }
 
 // ---------------------------------------------------------------------
+// Log de atividade — não é uma tabela própria, é derivado dos dados
+// reais (clientes, lançamentos, posts, equipe). Quando o backend tiver
+// auditoria de verdade, isso troca pra uma tabela `activity_log` — mas
+// pra já dar visibilidade de "quem fez o quê" sem esperar isso.
+// ---------------------------------------------------------------------
+
+function getActivityLog(limite = 15) {
+  const eventos = [];
+
+  getClients().forEach(c => {
+    if (c.criado_em) {
+      eventos.push({ tipo: 'cliente', quando: c.criado_em, texto: `Cliente cadastrado: ${c.nome}` });
+    }
+  });
+
+  getTransactions().forEach(t => {
+    const quando = t.criado_em || t.data;
+    if (quando) {
+      const sinal = t.tipo === 'receita' ? '+' : '−';
+      eventos.push({ tipo: 'financeiro', quando, texto: `Lançamento: ${sinal} ${formatCurrency(t.valor, t.moeda)}${t.categoria ? ' · ' + t.categoria : ''}` });
+    }
+  });
+
+  getPosts().forEach(p => {
+    const quando = p.criado_em || p.data_agendada;
+    if (quando) {
+      eventos.push({ tipo: 'marketing', quando, texto: `Post criado: ${(p.texto || '(sem texto)').slice(0, 40)}${(p.texto || '').length > 40 ? '…' : ''}` });
+    }
+  });
+
+  getTeam().forEach(m => {
+    if (m.criado_em) {
+      eventos.push({ tipo: 'equipe', quando: m.criado_em, texto: `${m.nome} entrou na equipe como ${m.papel === 'admin' ? 'Admin' : 'Agente'}` });
+    }
+  });
+
+  return eventos
+    .sort((a, b) => new Date(b.quando) - new Date(a.quando))
+    .slice(0, limite);
+}
+
+// Apaga TODOS os dados locais e recomeça do zero — não existe backend
+// ainda pra "desfazer" isso, então serve só pra teste/desenvolvimento.
+function resetAllData() {
+  Object.values(DB_KEYS).forEach(chave => localStorage.removeItem(chave));
+  seedIfNeeded();
+}
 
 // ---------------------------------------------------------------------
 // Sessão / Perfil — separado dos dados do negócio de propósito:
@@ -477,7 +527,7 @@ function initials(nome) {
 // ---------------------------------------------------------------------
 
 function defaultUser() {
-  return { nome: 'Cxi', papel: 'admin', email: '' };
+  return { nome: 'Cxi', papel: 'admin', email: '', avatarColor: 'petrol' };
 }
 
 function getCurrentUser() {
@@ -508,7 +558,7 @@ window.RotaDB = {
   getTransactions, saveTransaction, updateTransaction, deleteTransaction, getSaldoPorMoeda,
   getPosts, savePost, updatePostStatus, deletePost,
   getTeam, addTeamMember, updateTeamMember, removeTeamMember,
-  getDashboardMetrics,
+  getDashboardMetrics, getActivityLog, resetAllData,
   formatCurrency, formatDate, initials,
   getCurrentUser, setCurrentUser, logout,
   getMoedasAtivas, saveMoedasAtivas, nomeMoeda, corMoeda, getMoedasForaDaAtiva,

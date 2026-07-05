@@ -40,60 +40,151 @@
       display: inline-block;
       white-space: nowrap;
     }
+
+    .avatarSwatch.selected { box-shadow: 0 0 0 2px #EDEEE7, 0 0 0 4px currentColor; }
   </style>
 </head>
 <body class="min-h-screen bg-ticket-field">
 
   <div class="md:flex">
 
-    <!-- Sidebar + bottom nav agora vêm do shell.js -->
     <div id="shell"></div>
 
-    <!-- Conteúdo principal -->
     <main class="flex-1 pb-safe">
 
-      <!-- Header -->
       <header class="flex items-center justify-between px-5 md:px-8 py-5 border-b border-ink/10 bg-white md:bg-transparent">
         <div>
-          <p class="font-mono-ticket text-[11px] text-ink/40 tracking-wider mb-0.5">CONTA E EQUIPE</p>
+          <p class="font-mono-ticket text-[11px] text-ink/40 tracking-wider mb-0.5">CONTA, EQUIPE E SISTEMA</p>
           <h1 class="font-display text-2xl font-semibold text-ink">Configurações</h1>
         </div>
       </header>
 
-      <div class="px-5 md:px-8 py-6 space-y-6 max-w-2xl">
+      <div class="px-5 md:px-8 py-6 max-w-2xl">
 
-        <!-- Minha conta -->
-        <div class="bg-white border border-ink/10 rounded-lg p-5">
-          <h2 class="font-display text-lg font-semibold text-ink mb-4">Minha conta</h2>
-          <div class="flex items-center gap-4">
-            <div id="myAvatar" class="w-14 h-14 rounded-full bg-petrol text-paper flex items-center justify-center font-display text-lg font-semibold flex-shrink-0">—</div>
-            <div class="flex-1 min-w-0">
-              <p id="myName" class="font-semibold text-ink">—</p>
-              <p id="myRole" class="text-xs text-ink/50"></p>
+        <!-- Abas -->
+        <div id="tabBar" class="flex items-center gap-1 mb-6 overflow-x-auto pb-1"></div>
+
+        <!-- ==================== CONTA ==================== -->
+        <div id="tabConta" class="space-y-6">
+          <div class="bg-white border border-ink/10 rounded-lg p-5">
+            <h2 class="font-display text-lg font-semibold text-ink mb-4">Minha conta</h2>
+            <div class="flex items-center gap-4 mb-5">
+              <div id="myAvatar" class="w-14 h-14 rounded-full bg-petrol text-paper flex items-center justify-center font-display text-lg font-semibold flex-shrink-0">—</div>
+              <div class="flex-1 min-w-0">
+                <p id="myName" class="font-semibold text-ink">—</p>
+                <p id="myRole" class="text-xs text-ink/50"></p>
+              </div>
+              <button id="editAccountBtn" class="text-sm text-petrol hover:text-ink font-medium transition flex-shrink-0">Editar</button>
             </div>
-            <button id="editAccountBtn" class="text-sm text-petrol hover:text-ink font-medium transition flex-shrink-0">Editar</button>
+
+            <p class="text-xs font-mono-ticket text-ink/40 tracking-wider mb-2">COR DO AVATAR</p>
+            <div id="avatarSwatches" class="flex items-center gap-3"></div>
+          </div>
+
+          <div class="bg-white border border-ink/10 rounded-lg overflow-hidden">
+            <div class="px-5 py-4">
+              <h2 class="font-display text-lg font-semibold text-ink">Atividade recente</h2>
+              <p class="text-xs text-ink/40 font-mono-ticket tracking-wider mt-0.5">DA AGÊNCIA, NÃO SÓ SUA</p>
+            </div>
+            <ul id="activityList" class="divide-y divide-ink/10"></ul>
           </div>
         </div>
 
-        <!-- Equipe -->
-        <div class="bg-white border border-ink/10 rounded-lg overflow-hidden">
-          <div class="flex items-center justify-between px-5 py-4">
+        <!-- ==================== EQUIPE (admin) ==================== -->
+        <div id="tabEquipe" class="space-y-6 hidden">
+          <div class="bg-white border border-ink/10 rounded-lg overflow-hidden">
+            <div class="flex items-center justify-between px-5 py-4">
+              <div>
+                <h2 class="font-display text-lg font-semibold text-ink">Equipe</h2>
+                <p id="teamCount" class="text-xs text-ink/40 font-mono-ticket tracking-wider mt-0.5">—</p>
+              </div>
+              <button id="inviteBtn" class="btn-ticket bg-amber hover:bg-amber/90 text-ink font-semibold text-sm px-4 py-2.5 flex items-center gap-2 flex-shrink-0">
+                <i data-lucide="user-plus" class="w-4 h-4"></i>
+                <span class="hidden sm:inline">Convidar</span>
+              </button>
+            </div>
+            <ul id="teamList" class="divide-y divide-ink/10"></ul>
+          </div>
+
+          <!-- Matriz de permissões -->
+          <div class="bg-white border border-ink/10 rounded-lg p-5">
+            <h2 class="font-display text-lg font-semibold text-ink mb-1">O que cada papel pode fazer</h2>
+            <p class="text-xs text-ink/40 mb-4">Reflete o que já está implementado hoje — não uma promessa futura.</p>
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead>
+                  <tr class="text-left text-ink/40 text-xs font-mono-ticket tracking-wider">
+                    <th class="py-2 pr-3">Módulo</th>
+                    <th class="py-2 px-2 text-center">Admin</th>
+                    <th class="py-2 px-2 text-center">Agente</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-ink/10" id="permissionMatrix"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==================== SEGURANÇA ==================== -->
+        <div id="tabSeguranca" class="space-y-6 hidden">
+          <div class="bg-white border border-ink/10 rounded-lg p-5">
+            <h2 class="font-display text-lg font-semibold text-ink mb-1">Senha</h2>
+            <p class="text-xs text-ink/40 mb-4">A troca ainda não é salva de verdade — isso passa a funcionar quando o backend estiver no ar.</p>
+            <button id="changePasswordBtn" class="text-sm text-petrol hover:text-ink font-medium transition">Trocar senha</button>
+          </div>
+
+          <div class="bg-white border border-ink/10 rounded-lg p-5">
+            <h2 class="font-display text-lg font-semibold text-ink mb-1">Sessões</h2>
+            <p class="text-sm text-ink/60">Hoje cada navegador guarda sua própria sessão local. Gestão de sessões por dispositivo chega junto com o backend.</p>
+          </div>
+
+          <!-- Zona de perigo -->
+          <div class="bg-white border-2 border-clay/30 rounded-lg p-5">
+            <h2 class="font-display text-lg font-semibold text-clay mb-1">Zona de perigo</h2>
+            <p class="text-xs text-ink/45 mb-4">Ações que afetam todo o sistema neste navegador.</p>
+
+            <div class="flex items-center justify-between py-3 border-t border-ink/10">
+              <div>
+                <p class="text-sm font-medium text-ink">Sair de todos os dispositivos</p>
+                <p class="text-xs text-ink/45">Equivalente a "Sair" por enquanto — ganha efeito real por dispositivo com o backend.</p>
+              </div>
+              <button id="logoutAllBtn" class="text-sm text-clay hover:text-ink font-medium transition flex-shrink-0 ml-3">Sair</button>
+            </div>
+
+            <div class="flex items-center justify-between py-3 border-t border-ink/10">
+              <div>
+                <p class="text-sm font-medium text-ink">Limpar todos os dados locais</p>
+                <p class="text-xs text-ink/45">Apaga clientes, lançamentos, posts e equipe deste navegador. Útil pra testar do zero.</p>
+              </div>
+              <button id="resetDataBtn" class="text-sm text-clay hover:text-ink font-medium transition flex-shrink-0 ml-3">Limpar</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==================== PREFERÊNCIAS ==================== -->
+        <div id="tabPreferencias" class="space-y-6 hidden">
+          <div class="bg-white border border-ink/10 rounded-lg p-5">
+            <h2 class="font-display text-lg font-semibold text-ink mb-4">Idioma e região</h2>
+
+            <div class="mb-4">
+              <label class="text-xs font-mono-ticket text-ink/40 tracking-wider block mb-1.5">IDIOMA</label>
+              <select disabled class="w-full bg-paper border border-ink/15 rounded-md px-3.5 py-2.5 text-sm text-ink/60">
+                <option>Português (Brasil) — ativo</option>
+              </select>
+              <p class="text-xs text-ink/35 mt-1.5">Mais idiomas em breve.</p>
+            </div>
+
             <div>
-              <h2 class="font-display text-lg font-semibold text-ink">Equipe</h2>
-              <p id="teamCount" class="text-xs text-ink/40 font-mono-ticket tracking-wider mt-0.5">—</p>
+              <label class="text-xs font-mono-ticket text-ink/40 tracking-wider block mb-1.5">FUSO HORÁRIO DETECTADO</label>
+              <p id="timezoneDisplay" class="text-sm text-ink/70">—</p>
             </div>
-            <button id="inviteBtn" class="btn-ticket bg-amber hover:bg-amber/90 text-ink font-semibold text-sm px-4 py-2.5 flex items-center gap-2 flex-shrink-0">
-              <i data-lucide="user-plus" class="w-4 h-4"></i>
-              <span class="hidden sm:inline">Convidar</span>
-            </button>
           </div>
 
-          <ul id="teamList" class="divide-y divide-ink/10"></ul>
+          <div class="bg-white border border-ink/10 rounded-lg p-5">
+            <h2 class="font-display text-lg font-semibold text-ink mb-1">Moedas</h2>
+            <p class="text-sm text-ink/60">As moedas ativas do sistema (as que aparecem nos saldos e filtros) se gerenciam direto em <a href="financeiro.html" class="text-petrol hover:text-ink font-medium transition">Financeiro</a>.</p>
+          </div>
         </div>
-
-        <p class="text-xs text-ink/35 leading-relaxed">
-          Convites ainda não enviam email de verdade — o membro aparece direto na lista, pronto pra quando o backend existir. Papel <strong>Admin</strong> vê tudo; <strong>Agente</strong> só os próprios clientes e lançamentos.
-        </p>
 
       </div>
     </main>
@@ -107,24 +198,96 @@
 
     const LABEL_PAPEL = { admin: 'Admin', agente: 'Agente' };
     const COR_PAPEL = { admin: 'petrol', agente: 'amber' };
+    const CORES_AVATAR = ['petrol', 'amber', 'clay', 'ink'];
+    const ICONE_ATIVIDADE = { cliente: 'user-plus', financeiro: 'wallet', marketing: 'megaphone', equipe: 'users' };
+
+    const usuarioAtual = RotaDB.getCurrentUser();
+    const souAdmin = usuarioAtual.papel === 'admin';
+
+    // --- Abas -------------------------------------------------------
+
+    const ABAS = [
+      { id: 'conta', label: 'Conta', icone: 'user' },
+      ...(souAdmin ? [{ id: 'equipe', label: 'Equipe', icone: 'users' }] : []),
+      { id: 'seguranca', label: 'Segurança', icone: 'shield' },
+      { id: 'preferencias', label: 'Preferências', icone: 'sliders-horizontal' },
+    ];
+    let abaAtiva = 'conta';
+
+    function renderTabBar() {
+      const base = 'flex items-center gap-1.5 px-3.5 py-2 rounded-md text-sm font-medium transition flex-shrink-0';
+      $('tabBar').innerHTML = ABAS.map(aba => `
+        <button data-aba="${aba.id}" class="${base} ${abaAtiva === aba.id ? 'bg-petrol text-paper' : 'text-ink/60 hover:bg-white'}">
+          <i data-lucide="${aba.icone}" class="w-4 h-4"></i> ${aba.label}
+        </button>`).join('');
+      lucide.createIcons();
+
+      document.querySelectorAll('#tabBar button').forEach(btn => {
+        btn.onclick = () => { abaAtiva = btn.dataset.aba; aplicarAba(); };
+      });
+    }
+
+    function aplicarAba() {
+      renderTabBar();
+      ['conta', 'equipe', 'seguranca', 'preferencias'].forEach(id => {
+        $(`tab${id.charAt(0).toUpperCase()}${id.slice(1)}`).classList.toggle('hidden', abaAtiva !== id);
+      });
+    }
+
+    // --- Conta --------------------------------------------------------
 
     function renderMyAccount() {
       const user = RotaDB.getCurrentUser();
+      $('myAvatar').className = `w-14 h-14 rounded-full bg-${user.avatarColor || 'petrol'} ${user.avatarColor === 'amber' ? 'text-ink' : 'text-paper'} flex items-center justify-center font-display text-lg font-semibold flex-shrink-0`;
       $('myAvatar').textContent = RotaDB.initials(user.nome) || '—';
       $('myName').textContent = user.nome;
       $('myRole').textContent = user.papel === 'admin' ? 'Administrador' : 'Agente';
     }
 
+    function renderAvatarSwatches() {
+      const user = RotaDB.getCurrentUser();
+      $('avatarSwatches').innerHTML = CORES_AVATAR.map(cor => `
+        <button data-cor="${cor}" class="avatarSwatch text-${cor} ${user.avatarColor === cor ? 'selected' : ''} w-8 h-8 rounded-full bg-${cor} transition"></button>`).join('');
+
+      document.querySelectorAll('.avatarSwatch').forEach(btn => {
+        btn.onclick = () => {
+          RotaDB.setCurrentUser({ avatarColor: btn.dataset.cor });
+          renderMyAccount();
+          renderAvatarSwatches();
+        };
+      });
+    }
+
+    function renderActivity() {
+      const eventos = RotaDB.getActivityLog(15);
+      $('activityList').innerHTML = eventos.length
+        ? eventos.map(ev => `
+          <li class="flex items-center gap-3 px-5 py-3">
+            <div class="w-8 h-8 rounded-full bg-ink/5 flex items-center justify-center flex-shrink-0">
+              <i data-lucide="${ICONE_ATIVIDADE[ev.tipo] || 'circle'}" class="w-4 h-4 text-ink/50"></i>
+            </div>
+            <div class="min-w-0 flex-1">
+              <p class="text-sm text-ink truncate">${ev.texto}</p>
+              <p class="text-xs text-ink/40">${RotaDB.formatDate(ev.quando, 'relative')}</p>
+            </div>
+          </li>`).join('')
+        : `<li class="py-8 text-center text-sm text-ink/35 italic">Nenhuma atividade ainda.</li>`;
+      lucide.createIcons();
+    }
+
+    // --- Equipe ---------------------------------------------------------
+
     function renderTeamRow(membro) {
-      const souEu = membro.nome === RotaDB.getCurrentUser().nome; // heurística simples até termos login real
+      const souEu = membro.nome === usuarioAtual.nome;
+      const cor = membro.avatarColor || COR_PAPEL[membro.papel];
       return `
         <li class="flex items-center justify-between px-5 py-4 gap-3">
           <div class="flex items-center gap-3 min-w-0">
-            <div class="w-10 h-10 rounded-full bg-${COR_PAPEL[membro.papel]} ${membro.papel === 'agente' ? 'text-ink' : 'text-paper'} flex items-center justify-center font-display font-semibold flex-shrink-0">
+            <div class="w-10 h-10 rounded-full bg-${cor} ${cor === 'amber' ? 'text-ink' : 'text-paper'} flex items-center justify-center font-display font-semibold flex-shrink-0">
               ${RotaDB.initials(membro.nome) || '?'}
             </div>
             <div class="min-w-0">
-              <p class="text-sm font-medium text-ink truncate">${membro.nome}${souEu ? ' <span class=\"text-ink/40\">(você)</span>' : ''}</p>
+              <p class="text-sm font-medium text-ink truncate">${membro.nome}${souEu ? ' <span class="text-ink/40">(você)</span>' : ''}</p>
               <p class="text-xs text-ink/45 truncate">${membro.email || 'sem email cadastrado'}</p>
             </div>
           </div>
@@ -159,8 +322,51 @@
       });
     }
 
+    // Só o que já está implementado de fato — ver pendências no roadmap
+    // pros módulos que ainda não distinguem Admin de Agente.
+    const MATRIZ_PERMISSOES = [
+      { modulo: 'Clientes',   admin: true, agente: 'proprio' },
+      { modulo: 'Financeiro', admin: true, agente: 'aviso' },
+      { modulo: 'Marketing',  admin: true, agente: true },
+      { modulo: 'Equipe',     admin: true, agente: false },
+    ];
+
+    function celulaPermissao(valor) {
+      if (valor === true) return `<i data-lucide="check" class="w-4 h-4 text-petrol mx-auto"></i>`;
+      if (valor === false) return `<i data-lucide="x" class="w-4 h-4 text-ink/25 mx-auto"></i>`;
+      if (valor === 'proprio') return `<span class="text-xs text-amber font-medium">Só os próprios</span>`;
+      if (valor === 'aviso') return `<span class="text-xs text-ink/40" title="Ainda vê tudo — filtro por agente é uma pendência do roadmap">Vê tudo (por ora)</span>`;
+      return '—';
+    }
+
+    function renderPermissionMatrix() {
+      $('permissionMatrix').innerHTML = MATRIZ_PERMISSOES.map(linha => `
+        <tr>
+          <td class="py-2.5 pr-3 text-ink/80">${linha.modulo}</td>
+          <td class="py-2.5 px-2 text-center">${celulaPermissao(linha.admin)}</td>
+          <td class="py-2.5 px-2 text-center">${celulaPermissao(linha.agente)}</td>
+        </tr>`).join('');
+      lucide.createIcons();
+    }
+
+    // --- Preferências -----------------------------------------------
+
+    function renderPreferencias() {
+      try {
+        $('timezoneDisplay').textContent = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      } catch {
+        $('timezoneDisplay').textContent = 'não detectado';
+      }
+    }
+
+    // --- Inicialização -----------------------------------------------
+
+    aplicarAba();
     renderMyAccount();
-    renderTeam();
+    renderAvatarSwatches();
+    renderActivity();
+    if (souAdmin) { renderTeam(); renderPermissionMatrix(); }
+    renderPreferencias();
 
     $('editAccountBtn').onclick = () => {
       const user = RotaDB.getCurrentUser();
@@ -186,41 +392,77 @@
       });
     };
 
-    $('inviteBtn').onclick = () => {
+    if (souAdmin) {
+      $('inviteBtn').onclick = () => {
+        RotaModal.open({
+          title: 'Convidar membro',
+          submitLabel: 'Convidar',
+          bodyHtml: `
+            <div>
+              <label class="${ROTA_LABEL_CLASS}">Nome *</label>
+              <input type="text" id="f_nome" required class="${ROTA_INPUT_CLASS}" placeholder="Nome completo" />
+            </div>
+            <div>
+              <label class="${ROTA_LABEL_CLASS}">Email</label>
+              <input type="email" id="f_email" class="${ROTA_INPUT_CLASS}" placeholder="email@agencia.com" />
+            </div>
+            <div>
+              <label class="${ROTA_LABEL_CLASS}">Papel *</label>
+              <select id="f_papel" class="${ROTA_INPUT_CLASS}">
+                <option value="agente">Agente — vê só os próprios clientes</option>
+                <option value="admin">Admin — vê tudo</option>
+              </select>
+            </div>
+          `,
+          onSubmit: () => {
+            const nome = $('f_nome').value.trim();
+            if (!nome) { $('f_nome').focus(); return; }
+
+            RotaDB.addTeamMember({
+              nome,
+              email: $('f_email').value.trim(),
+              papel: $('f_papel').value,
+            });
+
+            RotaModal.close();
+            renderTeam();
+          },
+        });
+      };
+    }
+
+    $('changePasswordBtn').onclick = () => {
       RotaModal.open({
-        title: 'Convidar membro',
-        submitLabel: 'Convidar',
+        title: 'Trocar senha',
+        submitLabel: 'Salvar',
         bodyHtml: `
           <div>
-            <label class="${ROTA_LABEL_CLASS}">Nome *</label>
-            <input type="text" id="f_nome" required class="${ROTA_INPUT_CLASS}" placeholder="Nome completo" />
+            <label class="${ROTA_LABEL_CLASS}">Senha atual</label>
+            <input type="password" id="f_atual" class="${ROTA_INPUT_CLASS}" />
           </div>
           <div>
-            <label class="${ROTA_LABEL_CLASS}">Email</label>
-            <input type="email" id="f_email" class="${ROTA_INPUT_CLASS}" placeholder="email@agencia.com" />
+            <label class="${ROTA_LABEL_CLASS}">Nova senha</label>
+            <input type="password" id="f_nova" class="${ROTA_INPUT_CLASS}" />
           </div>
-          <div>
-            <label class="${ROTA_LABEL_CLASS}">Papel *</label>
-            <select id="f_papel" class="${ROTA_INPUT_CLASS}">
-              <option value="agente">Agente — vê só os próprios clientes</option>
-              <option value="admin">Admin — vê tudo</option>
-            </select>
-          </div>
+          <p class="text-xs text-ink/40">Isso ainda não é salvo de verdade — a interface já está pronta pra quando o backend existir.</p>
         `,
         onSubmit: () => {
-          const nome = $('f_nome').value.trim();
-          if (!nome) { $('f_nome').focus(); return; }
-
-          RotaDB.addTeamMember({
-            nome,
-            email: $('f_email').value.trim(),
-            papel: $('f_papel').value,
-          });
-
           RotaModal.close();
-          renderTeam();
+          alert('Interface pronta! Isso vai salvar de verdade quando o backend PHP estiver no ar.');
         },
       });
+    };
+
+    $('logoutAllBtn').onclick = () => {
+      if (!confirm('Sair da sua sessão neste navegador?')) return;
+      RotaDB.logout();
+      window.location.href = 'index.html';
+    };
+
+    $('resetDataBtn').onclick = () => {
+      if (!confirm('Isso apaga TODOS os clientes, lançamentos, posts e a equipe deste navegador. Não pode ser desfeito. Continuar?')) return;
+      RotaDB.resetAllData();
+      window.location.href = 'index.html';
     };
   </script>
 </body>
