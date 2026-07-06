@@ -30,6 +30,12 @@ body {
   background-image: repeating-linear-gradient(135deg, rgba(31,75,76,0.035) 0px, rgba(31,75,76,0.035) 1px, transparent 1px, transparent 14px);
 }
 
+/* mesma textura, versão clara sobre fundo petróleo — usada no painel
+   institucional das telas de autenticação em telas grandes */
+.bg-ticket-field-dark {
+  background-image: repeating-linear-gradient(135deg, rgba(237,238,231,0.06) 0px, rgba(237,238,231,0.06) 1px, transparent 1px, transparent 14px);
+}
+
 .input-focus:focus {
   box-shadow: 0 0 0 3px rgba(31,75,76,0.15);
   border-color: var(--petrol);
@@ -53,22 +59,10 @@ input:-webkit-autofill {
   clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 0 100%);
 }
 
-/* linha picotada com "furos" nas pontas — separa seções tipo talão/corpo */
+/* linha tracejada simples — separa seções tipo talão/corpo */
 .ticket-divider {
-  position: relative;
   border-top: 2px dashed rgba(31,75,76,0.3);
 }
-.ticket-divider::before, .ticket-divider::after {
-  content: '';
-  position: absolute;
-  top: -10px;
-  width: 20px;
-  height: 20px;
-  background: var(--paper);
-  border-radius: 50%;
-}
-.ticket-divider::before { left: -34px; }
-.ticket-divider::after  { right: -34px; }
 
 /* código de barras decorativo — usado em cartões e rodapés */
 .barcode {

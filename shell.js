@@ -97,7 +97,7 @@ function renderShell(activePage) {
       <a href="settings.html" class="flex items-center gap-3 px-3 py-2.5 rounded-md ${activePage === 'settings' ? 'bg-petrol text-paper' : 'text-ink/70 hover:bg-paper'} font-medium text-sm transition mb-1">
         <i data-lucide="settings" class="w-4.5 h-4.5"></i> ${t('shell.settings')}
       </a>
-      <a href="index.html" onclick="if (window.RotaDB) RotaDB.logout();" class="flex items-center gap-3 px-3 py-2.5 rounded-md text-ink/50 hover:bg-paper hover:text-clay font-medium text-sm transition">
+      <a href="index.html" id="shellLogoutBtn" class="flex items-center gap-3 px-3 py-2.5 rounded-md text-ink/50 hover:bg-paper hover:text-clay font-medium text-sm transition">
         <i data-lucide="log-out" class="w-4.5 h-4.5"></i> ${t('shell.logout')}
       </a>
     </aside>
@@ -111,6 +111,18 @@ function renderShell(activePage) {
   `;
 
   lucide.createIcons();
+
+  // Logout real: espera o supabase.auth.signOut() terminar antes de navegar,
+  // pra não deixar a sessão "meio encerrada" se a navegação for mais rápida
+  // que a chamada de rede.
+  const logoutBtn = document.getElementById('shellLogoutBtn');
+  if (logoutBtn) {
+    logoutBtn.onclick = async (e) => {
+      e.preventDefault();
+      if (window.RotaDB) await RotaDB.logout();
+      window.location.href = 'index.html';
+    };
+  }
 
   // --- Alternância de tema — claro é o automático, escuro é a opção ---
   // Fica aqui porque o shell existe em toda página logada; settings.html

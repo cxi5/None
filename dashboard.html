@@ -23,6 +23,8 @@
     }
   </script>
   <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
   <link rel="stylesheet" href="style.css">
   <script src="data.js"></script>
   <script src="modal.js"></script>
@@ -30,11 +32,13 @@
     /* pequeno ajuste local: dá espaço no fim da página pra barra inferior no mobile não cobrir conteúdo */
     .pb-safe { padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
     @media (min-width: 768px) { .pb-safe { padding-bottom: 2rem; } }
+    /* evita "flash" de conteúdo vazio enquanto a sessão é verificada */
+    #dashboardShell { visibility: hidden; }
   </style>
 </head>
 <body class="min-h-screen bg-ticket-field">
 
-  <div class="md:flex">
+  <div id="dashboardShell" class="md:flex">
 
     <!-- Sidebar + bottom nav agora vêm do shell.js -->
     <div id="shell"></div>
@@ -136,6 +140,7 @@
         'dashboard.name': 'Name',
         'dashboard.role': 'Role',
         'dashboard.logoutAccount': 'Log out',
+        'dashboard.loadError': 'Could not load your dashboard data. Please refresh.',
       },
       pt: {
         'dashboard.title': 'Dashboard',
@@ -163,15 +168,22 @@
         'dashboard.name': 'Nome',
         'dashboard.role': 'Papel',
         'dashboard.logoutAccount': 'Sair da conta',
+        'dashboard.loadError': 'Não foi possível carregar os dados do painel. Atualize a página.',
       },
     });
 
-    renderShell('dashboard');
-
-    RotaI18n.apply();
     const $ = (id) => document.getElementById(id);
 
-    // Data do header — dinâmica, no formato "TER, 5 JUL 2026"
+    // Escapa qualquer texto antes de injetar via innerHTML — protege contra
+    // XSS quando o texto vem de dados reais (nome de cliente, notas, posts
+    // etc.) digitados por um usuário, e não mais de um mock estático.
+    function escapeHtml(str) {
+      return String(str ?? '').replace(/[&<>"']/g, (c) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+      }[c]));
+    }
+
+    // Data do header — dinâmica
     function renderHeaderDate() {
       const hoje = new Date();
       const locale = RotaI18n.get() === 'en' ? 'en-US' : 'pt-PT';
@@ -179,34 +191,42 @@
         .replace('.', '').toUpperCase();
       $('headerDate').textContent = dataFormatada;
     }
-    renderHeaderDate();
 
-    function renderDashboard() {
-      const m = RotaDB.getDashboardMetrics();
+    async function renderDashboard() {
+      let m, clients, transactions;
+      try {
+        [m, clients, transactions] = await Promise.all([
+          RotaDB.getDashboardMetrics(),
+          RotaDB.getClients(),
+          RotaDB.getTransactions(),
+        ]);
+      } catch (err) {
+        console.error('[Dashboard] falha ao carregar dados:', err);
+        $('activityList').innerHTML = `<li class="py-6 text-center text-sm text-clay italic">${escapeHtml(RotaI18n.t('dashboard.loadError'))}</li>`;
+        return;
+      }
 
       $('metricClientes').textContent = m.clientesAtivos;
       $('metricPendentes').textContent = m.itensPendentes;
 
-      // Saldo por moeda — só mostra moedas com transação registrada
       const locale = RotaI18n.get() === 'en' ? 'en-US' : 'pt-PT';
       const moedas = Object.entries(m.saldoPorMoeda).filter(([, valor]) => valor !== 0);
       $('saldoList').innerHTML = moedas.length
-        ? moedas.map(([moeda, valor]) => `<p>${moeda} <span class="float-right">${valor.toLocaleString(locale)}</span></p>`).join('')
-        : `<p class="text-ink/35 text-xs font-sans italic">${RotaI18n.t('dashboard.noEntries')}</p>`;
+        ? moedas.map(([moeda, valor]) => `<p>${escapeHtml(moeda)} <span class="float-right">${escapeHtml(valor.toLocaleString(locale))}</span></p>`).join('')
+        : `<p class="text-ink/35 text-xs font-sans italic">${escapeHtml(RotaI18n.t('dashboard.noEntries'))}</p>`;
 
-      // Próximo post agendado
       $('proximoPostBox').innerHTML = m.proximoPost
-        ? `<p class="text-sm font-semibold text-ink">${RotaDB.formatDate(m.proximoPost.data_agendada, 'short')}</p>
-           <p class="text-xs text-ink/50">${m.proximoPost.rede_social} · ${m.proximoPost.texto}</p>`
-        : `<p class="text-sm text-ink/35 italic">${RotaI18n.t('dashboard.noPostScheduled')}</p>`;
+        ? `<p class="text-sm font-semibold text-ink">${escapeHtml(RotaDB.formatDate(m.proximoPost.data_agendada, 'short'))}</p>
+           <p class="text-xs text-ink/50">${escapeHtml(m.proximoPost.rede_social)} · ${escapeHtml(m.proximoPost.texto)}</p>`
+        : `<p class="text-sm text-ink/35 italic">${escapeHtml(RotaI18n.t('dashboard.noPostScheduled'))}</p>`;
 
       // Atividade recente — junta clientes cadastrados + lançamentos, ordenado por data
       const atividades = [
-        ...RotaDB.getClients().map(c => ({
+        ...clients.map(c => ({
           tipo: 'cliente', data: c.criado_em,
           titulo: RotaI18n.t('dashboard.newClientRegistered', { nome: c.nome }), valor: null,
         })),
-        ...RotaDB.getTransactions().map(t => ({
+        ...transactions.map(t => ({
           tipo: t.tipo, data: t.data,
           titulo: t.notas || RotaI18n.t(t.tipo === 'receita' ? 'dashboard.incomeRegistered' : 'dashboard.expenseRegistered'),
           valor: `${t.tipo === 'receita' ? '+' : '−'} ${RotaDB.formatCurrency(t.valor, t.moeda)}`,
@@ -224,33 +244,37 @@
                 <i data-lucide="${iconePorTipo[a.tipo]}" class="w-4 h-4 text-${corPorTipo[a.tipo]}"></i>
               </div>
               <div>
-                <p class="text-sm font-medium text-ink">${a.titulo}</p>
-                <p class="text-xs text-ink/45">${RotaDB.formatDate(a.data, 'relative')}</p>
+                <p class="text-sm font-medium text-ink">${escapeHtml(a.titulo)}</p>
+                <p class="text-xs text-ink/45">${escapeHtml(RotaDB.formatDate(a.data, 'relative'))}</p>
               </div>
             </div>
-            <span class="text-xs font-mono-ticket text-ink/40">${a.valor || '—'}</span>
+            <span class="text-xs font-mono-ticket text-ink/40">${escapeHtml(a.valor || '—')}</span>
           </li>`).join('')
-        : `<li class="py-6 text-center text-sm text-ink/35 italic">${RotaI18n.t('dashboard.noActivity')}</li>`;
+        : `<li class="py-6 text-center text-sm text-ink/35 italic">${escapeHtml(RotaI18n.t('dashboard.noActivity'))}</li>`;
 
       lucide.createIcons();
+
+      // dados de posts e clientes já buscados acima; reaproveita pra notificações
+      renderNotifPanel(clients);
     }
 
-    renderDashboard();
-
-    function renderProfileBadge() {
-      const user = RotaDB.getCurrentUser();
+    async function renderProfileBadge() {
+      const user = await RotaDB.getCurrentUser();
       $('profileBtn').textContent = RotaDB.initials(user.nome) || '—';
+      return user;
     }
-    renderProfileBadge();
 
     // Notificações — geradas a partir de dados reais, sem nada inventado:
     // itens pendentes, posts agendados nas próximas 48h, clientes novos hoje.
-    function gerarNotificacoes() {
+    async function gerarNotificacoes(clientsJaCarregados) {
       const notifs = [];
       const agora = new Date();
       const em48h = new Date(agora.getTime() + 48 * 60 * 60 * 1000);
 
-      const pendentes = RotaDB.getClients().flatMap(c => c.itens.filter(i => i.status === 'pendente'));
+      const clients = clientsJaCarregados || await RotaDB.getClients();
+      const posts = await RotaDB.getPosts();
+
+      const pendentes = clients.flatMap(c => c.itens.filter(i => i.status === 'pendente'));
       if (pendentes.length) {
         notifs.push({
           icone: 'clock', cor: 'amber',
@@ -259,7 +283,7 @@
         });
       }
 
-      RotaDB.getPosts()
+      posts
         .filter(p => p.data_agendada && new Date(p.data_agendada) >= agora && new Date(p.data_agendada) <= em48h)
         .forEach(p => notifs.push({
           icone: 'megaphone', cor: 'clay',
@@ -267,7 +291,7 @@
           href: 'marketing.html?status=agendado',
         }));
 
-      RotaDB.getClients()
+      clients
         .filter(c => new Date(c.criado_em).toDateString() === agora.toDateString())
         .forEach(c => notifs.push({
           icone: 'user-plus', cor: 'petrol',
@@ -278,8 +302,8 @@
       return notifs;
     }
 
-    function renderNotifPanel() {
-      const notifs = gerarNotificacoes();
+    async function renderNotifPanel(clientsJaCarregados) {
+      const notifs = await gerarNotificacoes(clientsJaCarregados);
       $('notifDot').classList.toggle('hidden', notifs.length === 0);
 
       $('notifList').innerHTML = notifs.length
@@ -289,14 +313,13 @@
               <div class="w-8 h-8 rounded-full bg-${n.cor}/10 flex items-center justify-center flex-shrink-0">
                 <i data-lucide="${n.icone}" class="w-4 h-4 text-${n.cor}"></i>
               </div>
-              <span class="text-sm text-ink">${n.texto}</span>
+              <span class="text-sm text-ink">${escapeHtml(n.texto)}</span>
             </a>
           </li>`).join('')
-        : `<li class="px-4 py-6 text-center text-sm text-ink/35 italic">${RotaI18n.t('dashboard.noNotifications')}</li>`;
+        : `<li class="px-4 py-6 text-center text-sm text-ink/35 italic">${escapeHtml(RotaI18n.t('dashboard.noNotifications'))}</li>`;
 
       lucide.createIcons();
     }
-    renderNotifPanel();
 
     $('notifBtn').onclick = (e) => {
       e.stopPropagation();
@@ -308,46 +331,63 @@
       }
     });
 
-    $('profileBtn').onclick = () => {
-      const user = RotaDB.getCurrentUser();
+    $('profileBtn').onclick = async () => {
+      const user = await RotaDB.getCurrentUser();
       RotaModal.open({
         title: RotaI18n.t('dashboard.profileModalTitle'),
         submitLabel: RotaI18n.t('common.save'),
         bodyHtml: `
           <div>
             <label class="${ROTA_LABEL_CLASS}">${RotaI18n.t('dashboard.name')}</label>
-            <input type="text" id="f_perfil_nome" class="${ROTA_INPUT_CLASS}" value="${user.nome}" />
+            <input type="text" id="f_perfil_nome" class="${ROTA_INPUT_CLASS}" value="${escapeHtml(user.nome)}" />
           </div>
           <div>
             <label class="${ROTA_LABEL_CLASS}">${RotaI18n.t('dashboard.role')}</label>
-            <input type="text" class="${ROTA_INPUT_CLASS} bg-paper text-ink/60" value="${RotaI18n.t(user.papel === 'admin' ? 'role.admin' : 'role.agente')}" disabled />
+            <input type="text" class="${ROTA_INPUT_CLASS} bg-paper text-ink/60" value="${escapeHtml(RotaI18n.t(user.papel === 'admin' ? 'role.admin' : 'role.agente'))}" disabled />
           </div>
           <button type="button" id="logoutBtn" class="text-clay text-sm font-medium hover:text-clay/80 transition flex items-center gap-1.5 pt-1">
             <i data-lucide="log-out" class="w-4 h-4"></i> ${RotaI18n.t('dashboard.logoutAccount')}
           </button>
         `,
-        onSubmit: () => {
+        onSubmit: async () => {
           const nome = $('f_perfil_nome').value.trim() || user.nome;
-          RotaDB.setCurrentUser({ nome });
+          await RotaDB.setCurrentUser({ nome });
           RotaModal.close();
           renderProfileBadge();
         },
       });
 
-      document.getElementById('logoutBtn').onclick = () => {
-        RotaDB.logout();
+      document.getElementById('logoutBtn').onclick = async () => {
+        await RotaDB.logout();
         window.location.href = 'index.html';
       };
     };
 
-    document.title = RotaI18n.t('dashboard.pageTitle');
-    RotaI18n.onChange(() => {
+    // ------------------------------------------------------------------
+    // Boot: exige sessão real antes de mostrar qualquer dado. Sem isso,
+    // dava pra abrir o dashboard direto pela URL sem estar logado.
+    // ------------------------------------------------------------------
+    (async function boot() {
+      const session = await RotaDB.requireSession();
+      if (!session) return; // requireSession já redireciona pro login
+
+      renderShell('dashboard');
       RotaI18n.apply();
       document.title = RotaI18n.t('dashboard.pageTitle');
+
       renderHeaderDate();
-      renderDashboard();
-      renderNotifPanel();
-    });
+      await renderProfileBadge();
+      await renderDashboard();
+
+      $('dashboardShell').style.visibility = 'visible';
+
+      RotaI18n.onChange(async () => {
+        RotaI18n.apply();
+        document.title = RotaI18n.t('dashboard.pageTitle');
+        renderHeaderDate();
+        await renderDashboard();
+      });
+    })();
   </script>
 </body>
 </html>

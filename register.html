@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <script src="theme.js"></script>
-  <script src="i18n.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Create account — ROTA</title>
+  <script src="theme.js"></script>
+  <script src="i18n.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -23,9 +23,11 @@
     }
   </script>
   <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
   <link rel="stylesheet" href="style.css">
 </head>
-<body class="min-h-screen w-full flex items-center justify-center bg-ticket-field p-4">
+<body class="min-h-screen w-full">
 
   <!-- Toast -->
   <div id="toast" class="fixed top-5 right-5 z-50 hidden items-center gap-3 bg-petrol text-paper px-4 py-3 rounded-md shadow-xl transition-all duration-300 translate-x-full">
@@ -33,119 +35,183 @@
     <span id="toastText" class="text-sm font-medium"></span>
   </div>
 
-  <div class="w-full max-w-[420px] relative">
-    <div class="bg-white border border-ink/10 rounded-lg shadow-[0_8px_28px_rgba(20,24,28,0.12)] p-8 pt-9 relative overflow-hidden">
+  <div class="lg:grid lg:grid-cols-2 min-h-screen">
 
-      <!-- carimbo de sucesso -->
-      <div id="stampSuccess" class="stamp-pop absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
-        <div class="border-[3px] border-clay text-clay font-display text-xl uppercase tracking-widest px-6 py-2 rounded-sm rotate-[-8deg] bg-white/90" data-i18n="common.approved">
-          Approved
+    <!-- Painel institucional — só em telas grandes, consistente com o login -->
+    <div class="hidden lg:flex flex-col justify-between bg-petrol text-paper p-14 relative overflow-hidden bg-ticket-field-dark">
+      <div class="flex items-center gap-3">
+        <div class="w-11 h-11 stamp-mark rounded-full flex items-center justify-center">
+          <i data-lucide="compass" class="w-5 h-5 text-paper"></i>
         </div>
+        <span class="font-display text-xl tracking-tight">ROTA</span>
       </div>
 
-      <!-- alternância de idioma -->
-      <button id="langToggle" type="button" class="absolute top-3 left-4 font-mono-ticket text-[11px] text-ink/40 hover:text-ink tracking-wider transition px-2 py-1 rounded border border-ink/15" aria-label="Switch language"></button>
-
-      <!-- Nº do bilhete, detalhe decorativo — gerado por sessão, não é dado real -->
-      <div class="absolute top-3 right-4 font-mono-ticket text-[11px] text-ink/40 tracking-wider">
-        <span data-i18n="common.ticketPrefix">No.</span> <span id="ticketNumber"></span>
+      <div class="max-w-md">
+        <p class="font-display text-4xl leading-tight tracking-tight mb-4" data-i18n="register.panelTitle">
+          Set up your agency in minutes.
+        </p>
+        <p class="text-paper/60 text-base" data-i18n="register.panelSubtitle">
+          Create your account and start organizing bookings, clients and agents today.
+        </p>
       </div>
 
-      <!-- Logo / carimbo -->
-      <div class="text-center mb-7">
-        <div class="w-14 h-14 bg-paper stamp-mark rounded-full mx-auto mb-4 flex items-center justify-center">
-          <i data-lucide="compass" class="w-6 h-6 text-petrol"></i>
-        </div>
-        <h1 class="text-3xl font-display font-semibold text-ink tracking-tight">ROTA</h1>
-        <p class="text-ink/50 text-sm mt-1" data-i18n="register.subtitle">Create your agency's account</p>
-      </div>
-
-      <!-- SSO (visual apenas, sem função ainda) -->
-      <button id="googleBtn" type="button" class="group w-full flex items-center justify-center gap-3 bg-white hover:bg-paper text-ink font-medium py-3 px-4 rounded-md border border-ink/15 transition-all duration-200 mb-6">
-        <svg class="w-5 h-5 transition-transform group-hover:scale-110" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-        <span data-i18n="login.google">Continue with Google</span>
-      </button>
-
-      <div class="relative mb-6 ticket-divider mx-4">
-        <span class="absolute -top-3 left-1/2 -translate-x-1/2 bg-white px-3 text-xs uppercase text-ink/40 font-medium" data-i18n="common.or">or</span>
-      </div>
-
-      <!-- Form: só validação de formato, sem checagem contra backend -->
-      <form id="signupForm" novalidate class="space-y-5">
-        <div>
-          <label for="agencyName" class="text-sm font-medium text-ink/70 mb-2 block" data-i18n="register.agencyNameLabel">Agency name</label>
-          <div class="relative">
-            <i data-lucide="briefcase" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-ink/35 pointer-events-none"></i>
-            <input type="text" id="agencyName" required autocomplete="organization" aria-describedby="agencyNameError"
-              class="w-full bg-white border border-ink/15 rounded-md pl-11 pr-4 py-3.5 text-ink placeholder-ink/35 focus:outline-none input-focus transition-all text-base" />
-          </div>
-          <p id="agencyNameError" class="text-clay text-xs mt-1.5 h-4"></p>
-        </div>
-
-        <div>
-          <label for="fullName" class="text-sm font-medium text-ink/70 mb-2 block" data-i18n="register.fullNameLabel">Your name</label>
-          <div class="relative">
-            <i data-lucide="user" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-ink/35 pointer-events-none"></i>
-            <input type="text" id="fullName" required autocomplete="name" aria-describedby="fullNameError"
-              class="w-full bg-white border border-ink/15 rounded-md pl-11 pr-4 py-3.5 text-ink placeholder-ink/35 focus:outline-none input-focus transition-all text-base" />
-          </div>
-          <p id="fullNameError" class="text-clay text-xs mt-1.5 h-4"></p>
-        </div>
-
-        <div>
-          <label for="email" class="text-sm font-medium text-ink/70 mb-2 block" data-i18n="login.emailLabel">Email</label>
-          <div class="relative">
-            <i data-lucide="mail" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-ink/35 pointer-events-none"></i>
-            <input type="email" id="email" required autocomplete="email" aria-describedby="emailError"
-              class="w-full bg-white border border-ink/15 rounded-md pl-11 pr-4 py-3.5 text-ink placeholder-ink/35 focus:outline-none input-focus transition-all text-base" />
-          </div>
-          <p id="emailError" class="text-clay text-xs mt-1.5 h-4"></p>
-        </div>
-
-        <div>
-          <label for="password" class="text-sm font-medium text-ink/70 mb-2 block" data-i18n="login.passwordLabel">Password</label>
-          <div class="relative">
-            <i data-lucide="lock" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-ink/35 pointer-events-none"></i>
-            <input type="password" id="password" required autocomplete="new-password" aria-describedby="passwordError"
-              class="w-full bg-white border border-ink/15 rounded-md pl-11 pr-12 py-3.5 text-ink placeholder-ink/35 focus:outline-none input-focus transition-all text-base" />
-            <button type="button" id="togglePassword" data-i18n-aria-label="login.showPassword" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-ink/35 hover:text-ink transition">
-              <i data-lucide="eye" class="w-5 h-5"></i>
-            </button>
-          </div>
-          <p id="capsWarning" class="text-amber text-xs mt-1.5 h-4"></p>
-          <p id="passwordError" class="text-clay text-xs mt-1.5 h-4"></p>
-        </div>
-
-        <div class="flex items-start gap-2.5">
-          <input type="checkbox" id="terms" class="w-4 h-4 mt-0.5 rounded border-ink/25 text-petrol focus:ring-2 focus:ring-petrol/40 focus:ring-offset-0" />
-          <label for="terms" class="text-sm text-ink/70 select-none">
-            <span data-i18n="register.acceptPrefix">I accept the</span> <a href="#" class="text-petrol hover:text-ink font-medium transition" data-i18n="register.terms">terms of use</a>
-          </label>
-        </div>
-        <p id="termsError" class="text-clay text-xs -mt-3 h-4"></p>
-
-        <button type="submit" id="submitBtn"
-          class="btn-ticket w-full bg-amber hover:bg-amber/90 text-ink font-semibold py-3.5 px-4 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2">
-          <span id="btnText" data-i18n="register.submit">Create account</span>
-          <i data-lucide="loader-2" id="loader" class="w-5 h-5 animate-spin hidden"></i>
-        </button>
-      </form>
-
-      <p class="text-center text-sm text-ink/50 mt-8">
-        <span data-i18n="register.hasAccount">Already have an account?</span>
-        <a href="index.html" class="text-petrol hover:text-ink font-semibold transition" data-i18n="login.submit">Sign in</a>
-      </p>
-
-      <div class="barcode mt-7 -mx-8"></div>
+      <div class="barcode opacity-30"></div>
     </div>
-    <p class="text-center text-xs text-ink/40 mt-6" data-i18n="register.prototypeNotice">Prototype — sign-up not yet connected to the backend</p>
+
+    <!-- Painel do formulário -->
+    <div class="flex items-center justify-center p-4 bg-ticket-field">
+      <div class="w-full max-w-[420px] relative">
+        <div class="bg-white border border-ink/10 rounded-lg shadow-[0_8px_28px_rgba(20,24,28,0.12)] p-8 pt-9 relative overflow-hidden">
+
+          <!-- carimbo de sucesso -->
+          <div id="stampSuccess" class="stamp-pop absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
+            <div class="border-[3px] border-clay text-clay font-display text-xl uppercase tracking-widest px-6 py-2 rounded-sm rotate-[-8deg] bg-white/90" data-i18n="common.approved">
+              Approved
+            </div>
+          </div>
+
+          <!-- alternância de idioma -->
+          <button id="langToggle" type="button" class="absolute top-3 left-4 font-mono-ticket text-[11px] text-ink/40 hover:text-ink tracking-wider transition px-2 py-1 rounded border border-ink/15" aria-label="Switch language"></button>
+
+          <!-- ESTADO 1: formulário -->
+          <div id="formState">
+            <!-- Logo / carimbo -->
+            <div class="text-center mb-7">
+              <div class="w-14 h-14 bg-paper stamp-mark rounded-full mx-auto mb-4 flex items-center justify-center lg:hidden">
+                <i data-lucide="compass" class="w-6 h-6 text-petrol"></i>
+              </div>
+              <h1 class="text-3xl font-display font-semibold text-ink tracking-tight lg:hidden">ROTA</h1>
+              <p class="text-ink/50 text-sm mt-1" data-i18n="register.subtitle">Create your agency's account</p>
+            </div>
+
+            <!-- SSO via Supabase (provider Google) -->
+            <button id="googleBtn" type="button" class="group w-full flex items-center justify-center gap-3 bg-white hover:bg-paper text-ink font-medium py-3 px-4 rounded-md border border-ink/15 transition-all duration-200 mb-6">
+              <svg class="w-5 h-5 transition-transform group-hover:scale-110" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+              <span data-i18n="login.google">Continue with Google</span>
+            </button>
+
+            <div class="relative mb-6 ticket-divider mx-4">
+              <span class="absolute -top-3 left-1/2 -translate-x-1/2 bg-white px-3 text-xs uppercase text-ink/40 font-medium" data-i18n="common.or">or</span>
+            </div>
+
+            <!-- Form: validação de formato + cadastro real via Supabase -->
+            <form id="signupForm" novalidate class="space-y-5">
+            <div>
+              <label for="agencyName" class="text-sm font-medium text-ink/70 mb-2 block" data-i18n="register.agencyNameLabel">Agency name</label>
+              <div class="relative">
+                <i data-lucide="briefcase" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-ink/35 pointer-events-none"></i>
+                <input type="text" id="agencyName" required autocomplete="organization" aria-describedby="agencyNameError"
+                  class="w-full bg-white border border-ink/15 rounded-md pl-11 pr-4 py-3.5 text-ink placeholder-ink/35 focus:outline-none input-focus transition-all text-base" />
+              </div>
+              <p id="agencyNameError" class="text-clay text-xs mt-1.5 h-4"></p>
+            </div>
+
+            <div>
+              <label for="fullName" class="text-sm font-medium text-ink/70 mb-2 block" data-i18n="register.fullNameLabel">Your name</label>
+              <div class="relative">
+                <i data-lucide="user" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-ink/35 pointer-events-none"></i>
+                <input type="text" id="fullName" required autocomplete="name" aria-describedby="fullNameError"
+                  class="w-full bg-white border border-ink/15 rounded-md pl-11 pr-4 py-3.5 text-ink placeholder-ink/35 focus:outline-none input-focus transition-all text-base" />
+              </div>
+              <p id="fullNameError" class="text-clay text-xs mt-1.5 h-4"></p>
+            </div>
+
+            <div>
+              <label for="birthDate" class="text-sm font-medium text-ink/70 mb-2 block" data-i18n="register.birthDateLabel">Date of birth</label>
+              <div class="relative">
+                <i data-lucide="calendar" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-ink/35 pointer-events-none"></i>
+                <input type="date" id="birthDate" required autocomplete="bday" aria-describedby="birthDateError"
+                  class="w-full bg-white border border-ink/15 rounded-md pl-11 pr-4 py-3.5 text-ink placeholder-ink/35 focus:outline-none input-focus transition-all text-base" />
+              </div>
+              <p id="birthDateError" class="text-clay text-xs mt-1.5 h-4"></p>
+            </div>
+
+            <div>
+              <label for="email" class="text-sm font-medium text-ink/70 mb-2 block" data-i18n="login.emailLabel">Email</label>
+              <div class="relative">
+                <i data-lucide="mail" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-ink/35 pointer-events-none"></i>
+                <input type="email" id="email" required autocomplete="email" aria-describedby="emailError"
+                  class="w-full bg-white border border-ink/15 rounded-md pl-11 pr-4 py-3.5 text-ink placeholder-ink/35 focus:outline-none input-focus transition-all text-base" />
+              </div>
+              <p id="emailError" class="text-clay text-xs mt-1.5 h-4"></p>
+            </div>
+
+            <div>
+              <label for="password" class="text-sm font-medium text-ink/70 mb-2 block" data-i18n="login.passwordLabel">Password</label>
+              <div class="relative">
+                <i data-lucide="lock" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-ink/35 pointer-events-none"></i>
+                <input type="password" id="password" required autocomplete="new-password" aria-describedby="passwordError"
+                  class="w-full bg-white border border-ink/15 rounded-md pl-11 pr-12 py-3.5 text-ink placeholder-ink/35 focus:outline-none input-focus transition-all text-base" />
+                <button type="button" id="togglePassword" data-i18n-aria-label="login.showPassword" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-ink/35 hover:text-ink transition">
+                  <i data-lucide="eye" class="w-5 h-5"></i>
+                </button>
+              </div>
+              <p id="capsWarning" class="text-amber text-xs mt-1.5 h-4"></p>
+              <p id="passwordError" class="text-clay text-xs mt-1.5 h-4"></p>
+            </div>
+
+            <div>
+              <label for="confirmPassword" class="text-sm font-medium text-ink/70 mb-2 block" data-i18n="register.confirmPasswordLabel">Confirm password</label>
+              <div class="relative">
+                <i data-lucide="lock" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-ink/35 pointer-events-none"></i>
+                <input type="password" id="confirmPassword" required autocomplete="new-password" aria-describedby="confirmPasswordError"
+                  class="w-full bg-white border border-ink/15 rounded-md pl-11 pr-12 py-3.5 text-ink placeholder-ink/35 focus:outline-none input-focus transition-all text-base" />
+                <button type="button" id="toggleConfirmPassword" data-i18n-aria-label="login.showPassword" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-ink/35 hover:text-ink transition">
+                  <i data-lucide="eye" class="w-5 h-5"></i>
+                </button>
+              </div>
+              <p id="confirmPasswordError" class="text-clay text-xs mt-1.5 h-4"></p>
+            </div>
+
+            <div class="flex items-start gap-2.5">
+              <input type="checkbox" id="terms" class="w-4 h-4 mt-0.5 rounded border-ink/25 text-petrol focus:ring-2 focus:ring-petrol/40 focus:ring-offset-0" />
+              <label for="terms" class="text-sm text-ink/70 select-none">
+                <span data-i18n="register.acceptPrefix">I accept the</span> <a href="#" class="text-petrol hover:text-ink font-medium transition" data-i18n="register.terms">terms of use</a>
+              </label>
+            </div>
+            <p id="termsError" class="text-clay text-xs -mt-3 h-4"></p>
+
+            <button type="submit" id="submitBtn"
+              class="btn-ticket w-full bg-amber hover:bg-amber/90 text-ink font-semibold py-3.5 px-4 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+              <span id="btnText" data-i18n="register.submit">Create account</span>
+              <i data-lucide="loader-2" id="loader" class="w-5 h-5 animate-spin hidden"></i>
+            </button>
+          </form>
+
+            <p class="text-center text-sm text-ink/50 mt-8">
+              <span data-i18n="register.hasAccount">Already have an account?</span>
+              <a href="index.html" class="text-petrol hover:text-ink font-semibold transition" data-i18n="login.submit">Sign in</a>
+            </p>
+          </div>
+
+          <!-- ESTADO 2: confirmação, depois do cadastro (Supabase manda o email) -->
+          <div id="sentState" class="hidden text-center">
+            <div class="w-14 h-14 bg-paper stamp-mark rounded-full mx-auto mb-4 flex items-center justify-center">
+              <i data-lucide="mail-check" class="w-6 h-6 text-petrol"></i>
+            </div>
+            <h1 class="text-2xl font-display font-semibold text-ink tracking-tight" data-i18n="register.checkEmail">Confirm your email</h1>
+            <p class="text-ink/50 text-sm mt-2 leading-relaxed">
+              <span data-i18n="register.confirmEmailPrefix">We sent a confirmation link to</span> <span id="sentEmail" class="font-medium text-ink/70"></span>.
+              <span data-i18n="register.confirmEmailSuffix">Click it to activate your account.</span>
+            </p>
+            <button id="resendBtn" type="button" class="text-sm text-petrol hover:text-ink transition font-medium mt-5 disabled:opacity-50 disabled:cursor-not-allowed" data-i18n="register.resend">
+              Didn't get it? Resend
+            </button>
+            <p class="text-center text-sm text-ink/50 mt-6">
+              <a href="index.html" class="text-petrol hover:text-ink font-semibold transition" data-i18n="register.goToLogin">Go to sign in</a>
+            </p>
+          </div>
+
+          <div class="barcode mt-7 -mx-8"></div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
     RotaI18n.register({
       en: {
         'common.approved': 'Approved',
-        'common.ticketPrefix': 'No.',
         'common.or': 'or',
         'login.google': 'Continue with Google',
         'login.emailLabel': 'Email',
@@ -154,26 +220,41 @@
         'login.hidePassword': 'Hide password',
         'login.submit': 'Sign in',
         'register.subtitle': "Create your agency's account",
+        'register.panelTitle': 'Set up your agency in minutes.',
+        'register.panelSubtitle': 'Create your account and start organizing bookings, clients and agents today.',
         'register.agencyNameLabel': 'Agency name',
         'register.fullNameLabel': 'Your name',
+        'register.birthDateLabel': 'Date of birth',
+        'register.confirmPasswordLabel': 'Confirm password',
         'register.acceptPrefix': 'I accept the',
         'register.terms': 'terms of use',
         'register.submit': 'Create account',
         'register.submitting': 'Creating account...',
         'register.hasAccount': 'Already have an account?',
-        'register.prototypeNotice': 'Prototype — sign-up not yet connected to the backend',
         'register.pageTitle': 'Create account — ROTA',
         'register.errorAgencyName': 'Enter the agency name',
         'register.errorFullName': 'Enter your name',
+        'register.errorBirthDate': 'Enter your date of birth',
+        'register.errorBirthDateFuture': 'Date of birth cannot be in the future',
+        'register.errorBirthDateAge': 'You must be at least 18 years old',
+        'register.errorConfirmPassword': 'Passwords do not match',
         'login.errorEmail': 'Enter a valid email',
         'login.errorPasswordLength': 'Password needs 8+ characters',
         'register.errorTerms': 'You need to accept the terms to continue',
         'login.capsLockOn': 'Caps Lock is on',
         'register.toastSuccess': 'Account created successfully!',
+        'register.checkEmail': 'Confirm your email',
+        'register.confirmEmailPrefix': 'We sent a confirmation link to',
+        'register.confirmEmailSuffix': 'Click it to activate your account.',
+        'register.resend': "Didn't get it? Resend",
+        'register.resending': 'Resending...',
+        'register.toastResent': 'Confirmation email resent.',
+        'register.goToLogin': 'Go to sign in',
+        'register.errorAuth': 'Could not create your account',
+        'register.errorGoogle': 'Could not sign up with Google',
       },
       pt: {
         'common.approved': 'Aprovado',
-        'common.ticketPrefix': 'Nº',
         'common.or': 'ou',
         'login.google': 'Continuar com Google',
         'login.emailLabel': 'Email',
@@ -182,28 +263,45 @@
         'login.hidePassword': 'Ocultar senha',
         'login.submit': 'Entrar',
         'register.subtitle': 'Cria a conta da tua agência',
+        'register.panelTitle': 'Configure a tua agência em minutos.',
+        'register.panelSubtitle': 'Cria a tua conta e comece a organizar reservas, clientes e agentes hoje.',
         'register.agencyNameLabel': 'Nome da agência',
         'register.fullNameLabel': 'Teu nome',
+        'register.birthDateLabel': 'Data de nascimento',
+        'register.confirmPasswordLabel': 'Confirmar senha',
         'register.acceptPrefix': 'Aceito os',
         'register.terms': 'termos de uso',
         'register.submit': 'Criar conta',
         'register.submitting': 'Criando conta...',
         'register.hasAccount': 'Já tens uma conta?',
-        'register.prototypeNotice': 'Protótipo — cadastro ainda não conectado ao backend',
         'register.pageTitle': 'Criar conta — ROTA',
         'register.errorAgencyName': 'Digite o nome da agência',
         'register.errorFullName': 'Digite teu nome',
+        'register.errorBirthDate': 'Digite tua data de nascimento',
+        'register.errorBirthDateFuture': 'A data de nascimento não pode ser no futuro',
+        'register.errorBirthDateAge': 'É preciso ter pelo menos 18 anos',
+        'register.errorConfirmPassword': 'As senhas não coincidem',
         'login.errorEmail': 'Digite um email válido',
         'login.errorPasswordLength': 'Senha precisa ter 8+ caracteres',
         'register.errorTerms': 'Precisa aceitar os termos pra continuar',
         'login.capsLockOn': 'Caps Lock está ativado',
         'register.toastSuccess': 'Conta criada com sucesso!',
+        'register.checkEmail': 'Confirma teu email',
+        'register.confirmEmailPrefix': 'Enviamos um link de confirmação para',
+        'register.confirmEmailSuffix': 'Clica nele pra ativar tua conta.',
+        'register.resend': 'Não recebeu? Reenviar',
+        'register.resending': 'Reenviando...',
+        'register.toastResent': 'Email de confirmação reenviado.',
+        'register.goToLogin': 'Ir para o login',
+        'register.errorAuth': 'Não foi possível criar a conta',
+        'register.errorGoogle': 'Não foi possível entrar com o Google',
       },
     });
 
     function aplicarIdioma() {
       RotaI18n.apply();
       document.title = RotaI18n.t('register.pageTitle');
+      document.documentElement.lang = RotaI18n.get();
       $('langToggle').textContent = RotaI18n.get() === 'pt' ? 'EN' : 'PT';
     }
 
@@ -213,19 +311,11 @@
     const $ = (id) => document.getElementById(id);
     const agencyName = $('agencyName');
     const fullName = $('fullName');
+    const birthDate = $('birthDate');
     const email = $('email');
     const password = $('password');
+    const confirmPassword = $('confirmPassword');
     const terms = $('terms');
-
-    // Número de bilhete decorativo — gerado a cada carregamento, não é
-    // dado de verdade.
-    function gerarNumeroBilhete() {
-      const letras = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
-      const l = () => letras[Math.floor(Math.random() * letras.length)];
-      const n = Math.floor(1000 + Math.random() * 9000);
-      return `AO-${n}-${l()}${l()}`;
-    }
-    $('ticketNumber').textContent = gerarNumeroBilhete();
 
     aplicarIdioma();
     $('langToggle').onclick = () => { RotaI18n.toggle(); };
@@ -248,8 +338,10 @@
 
     agencyName.addEventListener('input', () => { if (agencyName.value) clearError(agencyName, $('agencyNameError')); });
     fullName.addEventListener('input', () => { if (fullName.value) clearError(fullName, $('fullNameError')); });
+    birthDate.addEventListener('input', () => { if (birthDate.value) clearError(birthDate, $('birthDateError')); });
     email.addEventListener('input', () => { if (email.value) clearError(email, $('emailError')); });
     password.addEventListener('input', () => { if (password.value) clearError(password, $('passwordError')); });
+    confirmPassword.addEventListener('input', () => { if (confirmPassword.value) clearError(confirmPassword, $('confirmPasswordError')); });
 
     password.addEventListener('keyup', (e) => {
       $('capsWarning').textContent = e.getModifierState('CapsLock') ? RotaI18n.t('login.capsLockOn') : '';
@@ -260,6 +352,14 @@
       password.type = type;
       $('togglePassword').setAttribute('aria-label', RotaI18n.t(type === 'text' ? 'login.hidePassword' : 'login.showPassword'));
       $('togglePassword').innerHTML = type === 'text' ? '<i data-lucide="eye-off" class="w-5 h-5"></i>' : '<i data-lucide="eye" class="w-5 h-5"></i>';
+      lucide.createIcons();
+    }
+
+    $('toggleConfirmPassword').onclick = () => {
+      const type = confirmPassword.type === 'password' ? 'text' : 'password';
+      confirmPassword.type = type;
+      $('toggleConfirmPassword').setAttribute('aria-label', RotaI18n.t(type === 'text' ? 'login.hidePassword' : 'login.showPassword'));
+      $('toggleConfirmPassword').innerHTML = type === 'text' ? '<i data-lucide="eye-off" class="w-5 h-5"></i>' : '<i data-lucide="eye" class="w-5 h-5"></i>';
       lucide.createIcons();
     }
 
@@ -276,8 +376,28 @@
       lucide.createIcons();
     }
 
-    // SEM CHAMADA AO BACKEND: só valida formato e segue pro dashboard,
-    // pra você conseguir ver o fluxo funcionando antes do backend existir.
+    const validateBirthDate = (val) => {
+      if (!val) return 'empty';
+      const date = new Date(val + 'T00:00:00');
+      const now = new Date();
+      if (date > now) return 'future';
+      const age = (now - date) / (1000 * 60 * 60 * 24 * 365.25);
+      if (age < 18) return 'underage';
+      return null;
+    };
+
+    // Cadastro com Google via Supabase Auth (OAuth real, sem simulação)
+    $('googleBtn').onclick = async () => {
+      const { error } = await supabaseClient.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: `${window.location.origin}/dashboard.html` }
+      });
+      if (error) showToast(RotaI18n.t('register.errorGoogle'), 'error');
+    };
+
+    // Cadastro real via Supabase — sem simulação. Depois de criar a conta,
+    // manda para a página de autenticação (login) em vez de ir direto pro
+    // dashboard, já que o Supabase pode exigir confirmação de email.
     $('signupForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       if (isSubmitting) return;
@@ -285,8 +405,15 @@
       let valid = true;
       if (!agencyName.value.trim()) { showError(agencyName, $('agencyNameError'), RotaI18n.t('register.errorAgencyName')); valid = false; }
       if (!fullName.value.trim()) { showError(fullName, $('fullNameError'), RotaI18n.t('register.errorFullName')); valid = false; }
+
+      const birthDateStatus = validateBirthDate(birthDate.value);
+      if (birthDateStatus === 'empty') { showError(birthDate, $('birthDateError'), RotaI18n.t('register.errorBirthDate')); valid = false; }
+      else if (birthDateStatus === 'future') { showError(birthDate, $('birthDateError'), RotaI18n.t('register.errorBirthDateFuture')); valid = false; }
+      else if (birthDateStatus === 'underage') { showError(birthDate, $('birthDateError'), RotaI18n.t('register.errorBirthDateAge')); valid = false; }
+
       if (!validateEmail(email.value)) { showError(email, $('emailError'), RotaI18n.t('login.errorEmail')); valid = false; }
       if (password.value.length < 8) { showError(password, $('passwordError'), RotaI18n.t('login.errorPasswordLength')); valid = false; }
+      if (confirmPassword.value !== password.value) { showError(confirmPassword, $('confirmPasswordError'), RotaI18n.t('register.errorConfirmPassword')); valid = false; }
       if (!terms.checked) { $('termsError').textContent = RotaI18n.t('register.errorTerms'); valid = false; }
       else { $('termsError').textContent = ''; }
       if (!valid) return;
@@ -296,14 +423,69 @@
       $('btnText').textContent = RotaI18n.t('register.submitting');
       $('loader').classList.remove('hidden');
 
-      await new Promise(res => setTimeout(res, 800)); // só pra simular uma espera real
+      const { data, error } = await supabaseClient.auth.signUp({
+        email: email.value,
+        password: password.value,
+        options: {
+          data: {
+            agency_name: agencyName.value.trim(),
+            full_name: fullName.value.trim(),
+            birth_date: birthDate.value,
+          },
+        },
+      });
 
+      if (error) {
+        isSubmitting = false;
+        $('submitBtn').disabled = false;
+        $('btnText').textContent = RotaI18n.t('register.submit');
+        $('loader').classList.add('hidden');
+        showToast(RotaI18n.t('register.errorAuth'), 'error');
+        return;
+      }
+
+      // Se o Supabase exige confirmação de email, `data.session` vem vazio
+      // (o usuário existe, mas ainda não pode entrar). Nesse caso mostramos
+      // a tela de "confirma teu email" em vez de mandar direto pro login.
+      if (!data.session) {
+        $('stampSuccess').classList.add('show');
+        $('sentEmail').textContent = email.value;
+        setTimeout(() => {
+          $('formState').classList.add('hidden');
+          $('sentState').classList.remove('hidden');
+          showToast(RotaI18n.t('register.toastSuccess'));
+        }, 250);
+        return;
+      }
+
+      // Confirmação de email desativada no projeto: o Supabase já retorna
+      // sessão ativa, então só avisamos e seguimos pro login.
       $('stampSuccess').classList.add('show');
       setTimeout(() => {
         showToast(RotaI18n.t('register.toastSuccess'));
-        setTimeout(() => { window.location.href = 'dashboard.html'; }, 900);
+        setTimeout(() => { window.location.href = 'index.html'; }, 900);
       }, 250);
     });
+
+    let isResendingSignup = false;
+    $('resendBtn').onclick = async () => {
+      if (isResendingSignup) return;
+      isResendingSignup = true;
+      $('resendBtn').disabled = true;
+      const originalText = $('resendBtn').textContent;
+      $('resendBtn').textContent = RotaI18n.t('register.resending');
+
+      const { error } = await supabaseClient.auth.resend({
+        type: 'signup',
+        email: email.value,
+      });
+
+      isResendingSignup = false;
+      $('resendBtn').disabled = false;
+      $('resendBtn').textContent = originalText;
+
+      showToast(error ? RotaI18n.t('register.errorAuth') : RotaI18n.t('register.toastResent'), error ? 'error' : 'success');
+    };
   </script>
 </body>
 </html>
