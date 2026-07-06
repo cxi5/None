@@ -106,7 +106,83 @@ window.RotaModal = {
   close: closeModal,
   // Atalho pros ícones "i" — só título + texto, sem formulário nenhum.
   info: (title, bodyHtml) => openModal({ title, bodyHtml, info: true }),
+  openPicker: openPicker,
+  closePicker: closePicker,
 };
+
+/* -------------------------------------------------------------------
+   Picker de escolha única (idioma, e qualquer outra lista curta no
+   futuro). Vira bottom sheet no mobile e modal centralizado no desktop
+   — ao contrário do <select> nativo, mantém a identidade visual do
+   app. Item selecionado ganha um check à direita.
+
+   USO:
+     RotaModal.openPicker({
+       title: 'Language',
+       items: [{ value: 'en', label: 'English' }, { value: 'pt', label: 'Português' }],
+       selected: 'en',
+       onSelect: (value) => { ... },
+     });
+   ------------------------------------------------------------------- */
+
+function ensurePickerRoot() {
+  if (document.getElementById('rotaPickerRoot')) return;
+
+  const root = document.createElement('div');
+  root.id = 'rotaPickerRoot';
+  root.className = 'hidden fixed inset-0 z-50 items-end md:items-center justify-center';
+  root.innerHTML = `
+    <div id="rotaPickerBackdrop" class="absolute inset-0 bg-ink/40"></div>
+    <div class="relative bg-white w-full md:max-w-sm rounded-t-2xl md:rounded-lg shadow-2xl max-h-[80vh] flex flex-col pb-[env(safe-area-inset-bottom)] md:pb-0">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-ink/10 flex-shrink-0">
+        <h2 id="rotaPickerTitle" class="font-display text-lg font-semibold text-ink"></h2>
+        <button type="button" id="rotaPickerClose" class="text-ink/40 hover:text-ink transition">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <div id="rotaPickerList" class="overflow-y-auto py-2"></div>
+    </div>
+  `;
+  document.body.appendChild(root);
+
+  document.getElementById('rotaPickerClose').onclick = closePicker;
+  document.getElementById('rotaPickerBackdrop').onclick = closePicker;
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closePicker(); });
+}
+
+function openPicker({ title, items, selected, onSelect }) {
+  ensurePickerRoot();
+
+  document.getElementById('rotaPickerTitle').textContent = title;
+
+  const list = document.getElementById('rotaPickerList');
+  list.innerHTML = items.map((item) => `
+    <button type="button" data-value="${item.value}" class="rotaPickerItem w-full flex items-center justify-between px-5 py-3 hover:bg-paper transition text-left">
+      <span class="text-sm text-ink">${item.label}</span>
+      ${item.value === selected ? '<i data-lucide="check" class="w-4 h-4 text-petrol flex-shrink-0"></i>' : ''}
+    </button>
+  `).join('');
+
+  list.querySelectorAll('.rotaPickerItem').forEach((btn) => {
+    btn.onclick = () => {
+      closePicker();
+      onSelect(btn.dataset.value);
+    };
+  });
+
+  const root = document.getElementById('rotaPickerRoot');
+  root.classList.remove('hidden');
+  root.classList.add('flex');
+
+  if (window.lucide) lucide.createIcons();
+}
+
+function closePicker() {
+  const root = document.getElementById('rotaPickerRoot');
+  if (!root) return;
+  root.classList.add('hidden');
+  root.classList.remove('flex');
+}
 
 // Classe de input compartilhada — pra manter a mesma cara do resto do app
 window.ROTA_INPUT_CLASS = 'w-full bg-white border border-ink/15 rounded-md px-3.5 py-2.5 text-ink placeholder-ink/35 focus:outline-none input-focus text-sm transition-all';
