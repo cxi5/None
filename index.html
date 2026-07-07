@@ -25,6 +25,7 @@
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js"></script>
+  <script src="api.js"></script>
   <link rel="stylesheet" href="style.css">
 </head>
 <body class="min-h-screen w-full">
@@ -281,11 +282,8 @@
 
     // Login com Google via Supabase Auth (OAuth real, sem simulação)
     $('googleBtn').onclick = async () => {
-      const { error } = await supabaseClient.auth.signInWithOAuth({
-        provider: 'google',
-        options: { redirectTo: `${window.location.origin}/dashboard.html` }
-      });
-      if (error) showToast(RotaI18n.t('login.errorGoogle'), 'error');
+      const resultado = await RotaAuth.loginComGoogle(`${window.location.origin}/dashboard.html`);
+      if (!resultado.ok) showToast(RotaI18n.t('login.errorGoogle'), 'error');
     };
 
     // Autenticação real via Supabase — sem login simulado.
@@ -303,12 +301,9 @@
       $('btnText').textContent = RotaI18n.t('login.submitting');
       $('loader').classList.remove('hidden');
 
-      const { data, error } = await supabaseClient.auth.signInWithPassword({
-        email: email.value,
-        password: password.value,
-      });
+      const resultado = await RotaAuth.login(email.value, password.value);
 
-      if (error) {
+      if (!resultado.ok) {
         isSubmitting = false;
         $('submitBtn').disabled = false;
         $('btnText').textContent = RotaI18n.t('login.submit');

@@ -23,12 +23,16 @@
     }
   </script>
   <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
   <link rel="stylesheet" href="style.css">
   <script src="data.js"></script>
   <script src="modal.js"></script>
   <style>
     .pb-safe { padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
     @media (min-width: 768px) { .pb-safe { padding-bottom: 2rem; } }
+    /* evita "flash" de conteúdo vazio enquanto a sessão é verificada */
+    #settingsShell { visibility: hidden; }
 
     .status-stamp {
       font-family: 'Oswald', sans-serif;
@@ -56,7 +60,7 @@
 </head>
 <body class="min-h-screen bg-ticket-field">
 
-  <div class="md:flex">
+  <div id="settingsShell" class="md:flex">
 
     <div id="shell"></div>
 
@@ -141,9 +145,15 @@
               <div class="flex-1 min-w-0">
                 <p id="myName" class="font-semibold text-ink">—</p>
                 <p id="myRole" class="text-xs text-ink/50"></p>
+                <p class="text-xs text-ink/40 mt-0.5 truncate">
+                  <span id="myEmail">—</span>
+                  <button id="changeEmailBtn" class="text-petrol hover:text-ink font-medium ml-1" data-i18n="settings.changeEmail">Change</button>
+                </p>
               </div>
               <button id="editAccountBtn" class="text-sm text-petrol hover:text-ink font-medium transition flex-shrink-0" data-i18n="settings.edit">Edit</button>
             </div>
+
+            <div id="myDetails" class="space-y-2.5 mb-5 pt-1"></div>
 
             <p class="text-xs font-mono-ticket text-ink/40 tracking-wider mb-2 uppercase" data-i18n="settings.avatarColor">Avatar color</p>
             <div id="avatarSwatches" class="flex items-center gap-3"></div>
@@ -366,9 +376,26 @@
         'settings.fullNamePlaceholder': 'Full name',
         'settings.email': 'Email',
         'settings.emailPlaceholder': 'email@agency.com',
+        'settings.changeEmail': 'Change',
+        'settings.changeEmailTitle': 'Change email',
+        'settings.newEmail': 'New email',
+        'settings.emailChangeSentAlert': 'Confirmation link sent to the new address. The change only takes effect after you click it.',
+        'settings.emailChangeError': 'Could not change email: {{erro}}',
         'settings.roleRequired': 'Role *',
         'settings.roleAgentOption': 'Agent — sees only their own clients',
         'settings.roleAdminOption': 'Admin — sees everything',
+        'settings.fieldJobTitle': 'Job title',
+        'settings.fieldJobTitlePlaceholder': 'e.g. Sales consultant',
+        'settings.fieldPhone': 'Phone',
+        'settings.fieldWhatsapp': 'WhatsApp',
+        'settings.fieldLanguages': 'Languages spoken',
+        'settings.fieldLanguagesPlaceholder': 'e.g. Portuguese, English, French',
+        'settings.fieldSpecialty': 'Specialty / destinations',
+        'settings.fieldSpecialtyPlaceholder': 'e.g. Honeymoons, Europe, Groups',
+        'settings.fieldSocialNetwork': 'Social network',
+        'settings.fieldBirthDate': 'Birth date',
+        'settings.fieldBio': 'Short bio',
+        'settings.fieldBioPlaceholder': 'A couple of lines about you',
         'settings.password': 'Password',
         'settings.changePassword': 'Change password',
         'settings.sessions': 'Sessions',
@@ -447,9 +474,26 @@
         'settings.fullNamePlaceholder': 'Nome completo',
         'settings.email': 'Email',
         'settings.emailPlaceholder': 'email@agencia.com',
+        'settings.changeEmail': 'Alterar',
+        'settings.changeEmailTitle': 'Alterar e-mail',
+        'settings.newEmail': 'Novo e-mail',
+        'settings.emailChangeSentAlert': 'Link de confirmação enviado pro novo endereço. A troca só vale depois que você clicar nele.',
+        'settings.emailChangeError': 'Não deu pra trocar o e-mail: {{erro}}',
         'settings.roleRequired': 'Papel *',
         'settings.roleAgentOption': 'Agente — vê só os próprios clientes',
         'settings.roleAdminOption': 'Admin — vê tudo',
+        'settings.fieldJobTitle': 'Cargo',
+        'settings.fieldJobTitlePlaceholder': 'ex.: Consultora de vendas',
+        'settings.fieldPhone': 'Telefone',
+        'settings.fieldWhatsapp': 'WhatsApp',
+        'settings.fieldLanguages': 'Idiomas que atende',
+        'settings.fieldLanguagesPlaceholder': 'ex.: Português, Inglês, Francês',
+        'settings.fieldSpecialty': 'Especialidade / destinos',
+        'settings.fieldSpecialtyPlaceholder': 'ex.: Lua de mel, Europa, Grupos',
+        'settings.fieldSocialNetwork': 'Rede social',
+        'settings.fieldBirthDate': 'Data de nascimento',
+        'settings.fieldBio': 'Bio curta',
+        'settings.fieldBioPlaceholder': 'Algumas linhas sobre você',
         'settings.password': 'Senha',
         'settings.changePassword': 'Trocar senha',
         'settings.sessions': 'Sessões',
@@ -490,11 +534,32 @@
       },
     });
 
-    renderShell('settings');
-
-    RotaI18n.apply();
-
     const $ = (id) => document.getElementById(id);
+
+    // Evita XSS quando o texto vem de campo livre digitado pela pessoa
+    // (cargo, bio, especialidade etc.), e não mais de um mock estático.
+    function escapeHtml(str) {
+      return String(str ?? '').replace(/[&<>"']/g, (c) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+      }[c]));
+    }
+
+    let usuarioAtual = null;
+    let souAdmin = false;
+
+    // ------------------------------------------------------------------
+    // Boot: exige sessão real antes de mostrar qualquer dado. Sem isso,
+    // dava pra abrir Configurações direto pela URL sem estar logado.
+    // ------------------------------------------------------------------
+    (async function boot() {
+      const session = await RotaDB.requireSession();
+      if (!session) return; // requireSession já redireciona pro login
+
+      renderShell('settings');
+      RotaI18n.apply();
+
+      usuarioAtual = await RotaDB.getCurrentUser();
+      souAdmin = usuarioAtual.papel === 'admin';
 
     // --- Aparência --------------------------------------------------
 
@@ -537,16 +602,9 @@
     const CORES_AVATAR = ['petrol', 'amber', 'clay', 'ink'];
     const ICONE_ATIVIDADE = { cliente: 'user-plus', financeiro: 'wallet', marketing: 'megaphone', equipe: 'users' };
 
-    const usuarioAtual = RotaDB.getCurrentUser();
-    const souAdmin = usuarioAtual.papel === 'admin';
-
     // --- Painel de configurações: Conta/Equipe/Segurança/Preferências ---
     // moram na gaveta lateral. Pode abrir "seca" (ícone (i) do header) ou
     // já mirando numa seção (cards do dashboard abaixo).
-
-    // Some pra quem não é admin — não é "aba escondida", é seção que
-    // nem existe pra esse papel.
-    if (!souAdmin) $('secaoEquipe').classList.add('hidden');
 
     function abrirPainelConfiguracoes(idSecao) {
       $('settingsOverlay').classList.remove('hidden');
@@ -573,7 +631,6 @@
 
     // --- Dashboard de configurações: cards que abrem a gaveta já na
     // seção certa, em vez de forçar todo mundo a passar pelo ícone (i) ---
-    if (!souAdmin) $('teamDashCard').classList.add('hidden');
     document.querySelectorAll('.settingsDashCard').forEach(btn => {
       btn.onclick = () => abrirPainelConfiguracoes(btn.dataset.section);
     });
@@ -607,30 +664,62 @@
 
     // --- Conta --------------------------------------------------------
 
-    function renderMyAccount() {
-      const user = RotaDB.getCurrentUser();
+    async function renderMyAccount() {
+      const user = await RotaDB.getCurrentUser();
+      const session = await RotaDB.getSession();
       $('myAvatar').className = `w-14 h-14 rounded-full bg-${user.avatarColor || 'petrol'} ${user.avatarColor === 'amber' ? 'text-ink' : 'text-paper'} flex items-center justify-center font-display text-lg font-semibold flex-shrink-0`;
       $('myAvatar').textContent = RotaDB.initials(user.nome) || '—';
       $('myName').textContent = user.nome;
-      $('myRole').textContent = RotaI18n.t(user.papel === 'admin' ? 'settings.roleAdmin' : 'settings.roleAgent');
+      $('myRole').textContent = user.cargo
+        ? `${RotaI18n.t(user.papel === 'admin' ? 'settings.roleAdmin' : 'settings.roleAgent')} · ${escapeHtml(user.cargo)}`
+        : RotaI18n.t(user.papel === 'admin' ? 'settings.roleAdmin' : 'settings.roleAgent');
+      $('myEmail').textContent = session?.user?.email || '';
+      renderMyDetails(user);
     }
 
-    function renderAvatarSwatches() {
-      const user = RotaDB.getCurrentUser();
+    // Só aparece o que a pessoa de fato preencheu — campo vazio não vira
+    // "linha em branco" no card, some completamente.
+    function renderMyDetails(user) {
+      const linhas = [
+        { icone: 'message-circle', valor: user.whatsapp, chaveLabel: 'settings.fieldWhatsapp' },
+        { icone: 'languages', valor: user.idiomas, chaveLabel: 'settings.fieldLanguages' },
+        { icone: 'compass', valor: user.especialidade, chaveLabel: 'settings.fieldSpecialty' },
+      ].filter(l => l.valor);
+
+      let html = linhas.map(l => `
+        <div class="flex items-start gap-2 text-sm">
+          <i data-lucide="${l.icone}" class="w-4 h-4 text-ink/35 mt-0.5 flex-shrink-0"></i>
+          <p class="text-ink/70 min-w-0"><span class="text-ink/40">${RotaI18n.t(l.chaveLabel)}:</span> ${escapeHtml(l.valor)}</p>
+        </div>`).join('');
+
+      if (user.bio) {
+        html += `
+        <div class="flex items-start gap-2 text-sm pt-1">
+          <i data-lucide="quote" class="w-4 h-4 text-ink/35 mt-0.5 flex-shrink-0"></i>
+          <p class="text-ink/60 italic min-w-0">${escapeHtml(user.bio)}</p>
+        </div>`;
+      }
+
+      $('myDetails').innerHTML = html;
+      lucide.createIcons();
+    }
+
+    async function renderAvatarSwatches() {
+      const user = await RotaDB.getCurrentUser();
       $('avatarSwatches').innerHTML = CORES_AVATAR.map(cor => `
         <button data-cor="${cor}" class="avatarSwatch text-${cor} ${user.avatarColor === cor ? 'selected' : ''} w-8 h-8 rounded-full bg-${cor} transition"></button>`).join('');
 
       document.querySelectorAll('.avatarSwatch').forEach(btn => {
-        btn.onclick = () => {
-          RotaDB.setCurrentUser({ avatarColor: btn.dataset.cor });
-          renderMyAccount();
-          renderAvatarSwatches();
+        btn.onclick = async () => {
+          await RotaDB.setCurrentUser({ avatarColor: btn.dataset.cor });
+          await renderMyAccount();
+          await renderAvatarSwatches();
         };
       });
     }
 
-    function renderActivity() {
-      const eventos = RotaDB.getActivityLog(15);
+    async function renderActivity() {
+      const eventos = await RotaDB.getActivityLog(15);
       $('activityList').innerHTML = eventos.length
         ? eventos.map(ev => `
           <li class="flex items-center gap-3 px-5 py-3">
@@ -638,7 +727,7 @@
               <i data-lucide="${ICONE_ATIVIDADE[ev.tipo] || 'circle'}" class="w-4 h-4 text-ink/50"></i>
             </div>
             <div class="min-w-0 flex-1">
-              <p class="text-sm text-ink truncate">${ev.texto}</p>
+              <p class="text-sm text-ink truncate">${escapeHtml(ev.texto)}</p>
               <p class="text-xs text-ink/40">${RotaDB.formatDate(ev.quando, 'relative')}</p>
             </div>
           </li>`).join('')
@@ -658,8 +747,8 @@
               ${RotaDB.initials(membro.nome) || '?'}
             </div>
             <div class="min-w-0">
-              <p class="text-sm font-medium text-ink truncate">${membro.nome}${souEu ? ` <span class="text-ink/40">${RotaI18n.t('settings.you')}</span>` : ''}</p>
-              <p class="text-xs text-ink/45 truncate">${membro.email || RotaI18n.t('settings.noEmailRegistered')}</p>
+              <p class="text-sm font-medium text-ink truncate">${escapeHtml(membro.nome)}${souEu ? ` <span class="text-ink/40">${RotaI18n.t('settings.you')}</span>` : ''}</p>
+              <p class="text-xs text-ink/45 truncate">${membro.email ? escapeHtml(membro.email) : RotaI18n.t('settings.noEmailRegistered')}</p>
             </div>
           </div>
           <div class="flex items-center gap-2 flex-shrink-0">
@@ -671,24 +760,24 @@
         </li>`;
     }
 
-    function renderTeam() {
-      const team = RotaDB.getTeam();
+    async function renderTeam() {
+      const team = await RotaDB.getTeam();
       $('teamCount').textContent = RotaI18n.t(team.length === 1 ? 'settings.memberCount' : 'settings.memberCount_plural', { n: team.length });
       $('teamList').innerHTML = team.map(renderTeamRow).join('');
       lucide.createIcons();
 
       document.querySelectorAll('.removeMemberBtn').forEach(btn => {
-        btn.onclick = () => {
+        btn.onclick = async () => {
           const id = btn.dataset.id;
           const membro = team.find(m => m.id === id);
           if (!confirm(RotaI18n.t('settings.confirmRemoveMember', { nome: membro.nome }))) return;
 
-          const resultado = RotaDB.removeTeamMember(id);
+          const resultado = await RotaDB.removeTeamMember(id);
           if (resultado?.erro === 'ultimo_admin') {
             alert(RotaI18n.t('settings.cannotRemoveLastAdmin'));
             return;
           }
-          renderTeam();
+          await renderTeam();
         };
       });
     }
@@ -735,32 +824,111 @@
 
     // --- Inicialização -----------------------------------------------
 
-    renderMyAccount();
-    renderAvatarSwatches();
-    renderActivity();
-    if (souAdmin) { renderTeam(); renderPermissionMatrix(); }
+    // Some pra quem não é admin, agora que souAdmin já é conhecido — não é
+    // "aba escondida", é seção que nem existe pra esse papel.
+    if (!souAdmin) $('secaoEquipe').classList.add('hidden');
+    if (!souAdmin) $('teamDashCard').classList.add('hidden');
+
+    await renderMyAccount();
+    await renderAvatarSwatches();
+    await renderActivity();
+    if (souAdmin) { await renderTeam(); renderPermissionMatrix(); }
     renderPreferencias();
 
-    $('editAccountBtn').onclick = () => {
-      const user = RotaDB.getCurrentUser();
+    $('editAccountBtn').onclick = async () => {
+      const user = await RotaDB.getCurrentUser();
       RotaModal.open({
         title: RotaI18n.t('settings.editAccount'),
         submitLabel: RotaI18n.t('common.save'),
         bodyHtml: `
           <div>
-            <label class="${ROTA_LABEL_CLASS}">${RotaI18n.t('settings.name')}</label>
-            <input type="text" id="f_nome" class="${ROTA_INPUT_CLASS}" value="${user.nome}" />
+            <label class="${ROTA_LABEL_CLASS}">${RotaI18n.t('settings.nameRequired')}</label>
+            <input type="text" id="f_nome" required class="${ROTA_INPUT_CLASS}" value="${escapeHtml(user.nome)}" />
           </div>
           <div>
-            <label class="${ROTA_LABEL_CLASS}">${RotaI18n.t('settings.email')}</label>
-            <input type="email" id="f_email" class="${ROTA_INPUT_CLASS}" value="${user.email || ''}" />
+            <label class="${ROTA_LABEL_CLASS}">${RotaI18n.t('settings.fieldJobTitle')}</label>
+            <input type="text" id="f_cargo" class="${ROTA_INPUT_CLASS}" placeholder="${RotaI18n.t('settings.fieldJobTitlePlaceholder')}" value="${escapeHtml(user.cargo)}" />
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="${ROTA_LABEL_CLASS}">${RotaI18n.t('settings.fieldPhone')}</label>
+              <input type="text" id="f_telefone" class="${ROTA_INPUT_CLASS}" placeholder="+244 900 000 000" value="${escapeHtml(user.telefone)}" />
+            </div>
+            <div>
+              <label class="${ROTA_LABEL_CLASS}">${RotaI18n.t('settings.fieldWhatsapp')}</label>
+              <input type="text" id="f_whatsapp" class="${ROTA_INPUT_CLASS}" placeholder="+244 900 000 000" value="${escapeHtml(user.whatsapp)}" />
+            </div>
+          </div>
+          <div>
+            <label class="${ROTA_LABEL_CLASS}">${RotaI18n.t('settings.fieldLanguages')}</label>
+            <input type="text" id="f_idiomas" class="${ROTA_INPUT_CLASS}" placeholder="${RotaI18n.t('settings.fieldLanguagesPlaceholder')}" value="${escapeHtml(user.idiomas)}" />
+          </div>
+          <div>
+            <label class="${ROTA_LABEL_CLASS}">${RotaI18n.t('settings.fieldSpecialty')}</label>
+            <input type="text" id="f_especialidade" class="${ROTA_INPUT_CLASS}" placeholder="${RotaI18n.t('settings.fieldSpecialtyPlaceholder')}" value="${escapeHtml(user.especialidade)}" />
+          </div>
+          <div>
+            <label class="${ROTA_LABEL_CLASS}">${RotaI18n.t('settings.fieldSocialNetwork')}</label>
+            <input type="text" id="f_redeSocial" class="${ROTA_INPUT_CLASS}" placeholder="@instagram" value="${escapeHtml(user.redeSocial)}" />
+          </div>
+          <div>
+            <label class="${ROTA_LABEL_CLASS}">${RotaI18n.t('settings.fieldBirthDate')}</label>
+            <input type="date" id="f_dataNascimento" class="${ROTA_INPUT_CLASS}" value="${user.dataNascimento ? user.dataNascimento.slice(0, 10) : ''}" />
+          </div>
+          <div>
+            <label class="${ROTA_LABEL_CLASS}">${RotaI18n.t('settings.fieldBio')}</label>
+            <textarea id="f_bio" rows="3" maxlength="240" class="${ROTA_INPUT_CLASS}" placeholder="${RotaI18n.t('settings.fieldBioPlaceholder')}">${escapeHtml(user.bio)}</textarea>
           </div>
         `,
-        onSubmit: () => {
-          const nome = $('f_nome').value.trim() || user.nome;
-          RotaDB.setCurrentUser({ nome, email: $('f_email').value.trim() });
+        onSubmit: async () => {
+          const nome = $('f_nome').value.trim();
+          if (!nome) { $('f_nome').focus(); return; }
+
+          await RotaDB.setCurrentUser({
+            nome,
+            cargo: $('f_cargo').value.trim(),
+            telefone: $('f_telefone').value.trim(),
+            whatsapp: $('f_whatsapp').value.trim(),
+            idiomas: $('f_idiomas').value.trim(),
+            especialidade: $('f_especialidade').value.trim(),
+            redeSocial: $('f_redeSocial').value.trim(),
+            dataNascimento: $('f_dataNascimento').value,
+            bio: $('f_bio').value.trim(),
+          });
+
           RotaModal.close();
-          renderMyAccount();
+          await renderMyAccount();
+        },
+      });
+    };
+
+    // --- Trocar e-mail de login (Supabase Auth, funcional de verdade) ---
+    // Diferente de nome/avatar, o e-mail não mora em profiles — é o e-mail
+    // com que a pessoa faz login. Supabase manda um link de confirmação
+    // pro endereço novo; só troca de verdade depois que a pessoa clica nele.
+    $('changeEmailBtn').onclick = async () => {
+      const session = await RotaDB.getSession();
+      const emailAtual = session?.user?.email || '';
+      RotaModal.open({
+        title: RotaI18n.t('settings.changeEmailTitle'),
+        submitLabel: RotaI18n.t('common.save'),
+        bodyHtml: `
+          <div>
+            <label class="${ROTA_LABEL_CLASS}">${RotaI18n.t('settings.newEmail')}</label>
+            <input type="email" id="f_novoEmail" class="${ROTA_INPUT_CLASS}" value="${emailAtual}" />
+          </div>
+        `,
+        onSubmit: async () => {
+          const novoEmail = $('f_novoEmail').value.trim();
+          if (!novoEmail || novoEmail === emailAtual) { RotaModal.close(); return; }
+
+          const { error } = await supabaseClient.auth.updateUser({ email: novoEmail });
+          if (error) {
+            alert(RotaI18n.t('settings.emailChangeError', { erro: error.message }));
+            return;
+          }
+          RotaModal.close();
+          alert(RotaI18n.t('settings.emailChangeSentAlert'));
         },
       });
     };
@@ -787,18 +955,18 @@
               </select>
             </div>
           `,
-          onSubmit: () => {
+          onSubmit: async () => {
             const nome = $('f_nome').value.trim();
             if (!nome) { $('f_nome').focus(); return; }
 
-            RotaDB.addTeamMember({
+            await RotaDB.addTeamMember({
               nome,
               email: $('f_email').value.trim(),
               papel: $('f_papel').value,
             });
 
             RotaModal.close();
-            renderTeam();
+            await renderTeam();
           },
         });
       };
@@ -826,12 +994,15 @@
       });
     };
 
-    $('logoutAllBtn').onclick = () => {
+    $('logoutAllBtn').onclick = async () => {
       if (!confirm(RotaI18n.t('settings.confirmLogoutBrowser'))) return;
-      RotaDB.logout();
+      await RotaDB.logout();
       window.location.href = 'index.html';
     };
 
+    // NOTA: RotaDB.resetAllData() não existe mais na versão Supabase de
+    // data.js — este botão fica sem efeito até decidirmos o que ele faz
+    // agora (ver observações à parte).
     $('resetDataBtn').onclick = () => {
       if (!confirm(RotaI18n.t('settings.confirmResetData'))) return;
       RotaDB.resetAllData();
@@ -841,16 +1012,19 @@
     // --- Idioma: re-renderiza tudo que tem texto gerado por JS ----------
 
     document.title = RotaI18n.t('settings.pageTitle');
-    RotaI18n.onChange(() => {
+    RotaI18n.onChange(async () => {
       RotaI18n.apply();
       document.title = RotaI18n.t('settings.pageTitle');
       renderLanguageSelect();
       renderTheme();
-      renderMyAccount();
-      renderActivity();
-      if (souAdmin) { renderTeam(); renderPermissionMatrix(); }
+      await renderMyAccount();
+      await renderActivity();
+      if (souAdmin) { await renderTeam(); renderPermissionMatrix(); }
       renderPreferencias();
     });
+
+      $('settingsShell').style.visibility = 'visible';
+    })();
   </script>
 </body>
 </html>

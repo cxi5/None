@@ -1,62 +1,155 @@
 /* ===================================================================
-   ROTA — api.js
-   Ponto único de comunicação com o backend (api.php no InfinityFree).
-   Toda página (dashboard, clients, financeiro, marketing) chama
-   apiRequest() em vez de usar fetch() direto — assim, se o endereço
-   do backend mudar ou a forma de autenticar mudar, só se ajusta aqui.
+   ROTA — api.js (edição Supabase)
+   Ponto único de comunicação com o Supabase Auth — login, cadastro,
+   login social, confirmação de e-mail e recuperação de senha.
 
-   AINDA NÃO ESTÁ EM USO — o index.html de login por enquanto não faz
-   chamada real. Isso já fica pronto pra quando o backend existir.
+   Por que isso é separado de data.js? data.js pressupõe uma sessão já
+   ativa (getCurrentUser, getSession, requireSession...). Este arquivo
+   é usado justamente ANTES de existir sessão — em index.html (login),
+   register.html (cadastro) e forgot-password.html (recuperação) —
+   então fica isolado pra não misturar os dois papéis num arquivo só.
+
+   Padrão de retorno: toda função aqui devolve { ok: true, ... } em
+   caso de sucesso ou { ok: false, erro } em caso de falha — nunca
+   lança exceção. Isso deixa quem chama livre de try/catch e mantém o
+   mesmo estilo já usado em RotaDB (ex: removeTeamMember devolvendo
+   { erro: 'ultimo_admin' }).
+
+   Sobre mensagens de erro: este arquivo NÃO traduz o erro do Supabase
+   — só devolve error.message cru em `erro`. Quem decide o texto que a
+   pessoa vê é a própria página, via RotaI18n (ex: login.errorAuth),
+   porque as páginas já sabem qual mensagem bilíngue mostrar pra cada
+   caso esperado. `erro` aqui existe só de fallback/log pros casos que
+   a página não previu.
+
+   Requer que supabase-config.js (que cria `supabaseClient`) já tenha
+   sido carregado antes deste script.
    =================================================================== */
 
-// Ajustar quando o backend estiver no ar (ex: "https://seudominio.com/backend/api.php")
-const API_BASE_URL = 'https://SEU-DOMINIO-AQUI/backend/api.php';
+// ---------------------------------------------------------------------
+// Login
+// ---------------------------------------------------------------------
 
 /**
- * Faz uma chamada ao backend.
- *
- * @param {string} action  - nome da ação, ex: 'login', 'clients.list', 'financeiro.create'
- * @param {object} options
- * @param {string} [options.method='GET'] - 'GET' | 'POST' | 'PUT' | 'DELETE'
- * @param {object} [options.data=null]    - corpo da requisição (POST/PUT)
- * @returns {Promise<any>} dados retornados pelo backend (já parseados de JSON)
- * @throws {Error} com mensagem legível se a chamada falhar
+ * Login por e-mail e senha.
+ * @returns {Promise<{ok: true, session: object, user: object} | {ok: false, erro: string}>}
  */
-async function apiRequest(action, { method = 'GET', data = null } = {}) {
-  const url = `${API_BASE_URL}?action=${encodeURIComponent(action)}`;
-
-  const config = {
-    method,
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    credentials: 'include' // manda o cookie de sessão do PHP em toda chamada
-  };
-
-  if (data && method !== 'GET') {
-    config.body = JSON.stringify(data);
+async function login(email, senha) {
+  const { data, error } = await supabaseClient.auth.signInWithPassword({
+    email: (email || '').trim(),
+    password: senha,
+  });
+  if (error) {
+    console.error('[RotaAuth] login:', error.message);
+    return { ok: false, erro: error.message };
   }
-
-  let response;
-  try {
-    response = await fetch(url, config);
-  } catch (networkErr) {
-    throw new Error('Não foi possível conectar ao servidor. Verifique sua internet.');
-  }
-
-  let payload;
-  try {
-    payload = await response.json();
-  } catch (parseErr) {
-    throw new Error('Resposta inválida do servidor.');
-  }
-
-  if (!response.ok || payload.success === false) {
-    throw new Error(payload.message || 'Ocorreu um erro ao processar a solicitação.');
-  }
-
-  return payload.data ?? payload;
+  return { ok: true, session: data.session, user: data.user };
 }
 
-// Disponibiliza globalmente pra qualquer página incluir <script src="api.js"> e usar direto
-window.apiRequest = apiRequest;
+/**
+ * Login social (Google). O próprio navegador é redirecionado pro
+ * provedor — não há "dado de retorno" aqui, só sucesso em disparar
+ * o redirecionamento ou erro antes disso acontecer.
+ * @param {string} redirectTo URL de volta após autenticar (ex: `${location.origin}/dashboard.html`)
+ */
+async function loginComGoogle(redirectTo) {
+  const { error } = await supabaseClient.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo },
+  });
+  if (error) {
+    console.error('[RotaAuth] loginComGoogle:', error.message);
+    return { ok: false, erro: error.message };
+  }
+  return { ok: true };
+}
+
+// ---------------------------------------------------------------------
+// Cadastro
+// ---------------------------------------------------------------------
+
+/**
+ * Cria a conta no Supabase Auth. agencyName/fullName/birthDate vão como
+ * metadata (agency_name, full_name, birth_date) — quem lê isso e cria
+ * de fato as linhas em `agencies` e `profiles` é um trigger no banco
+ * (on auth.users insert), não este arquivo.
+ * @param {{agencyName: string, fullName: string, birthDate: string, email: string, senha: string}} dados
+ * @returns {Promise<{ok: true, user: object, precisaConfirmarEmail: boolean} | {ok: false, erro: string}>}
+ */
+async function cadastrar({ agencyName, fullName, birthDate, email, senha }) {
+  const { data, error } = await supabaseClient.auth.signUp({
+    email: (email || '').trim(),
+    password: senha,
+    options: {
+      data: {
+        agency_name: (agencyName || '').trim(),
+        full_name: (fullName || '').trim(),
+        birth_date: birthDate || null,
+      },
+    },
+  });
+  if (error) {
+    console.error('[RotaAuth] cadastrar:', error.message);
+    return { ok: false, erro: error.message };
+  }
+  // Se o projeto exige confirmação de e-mail, o Supabase cria o usuário
+  // mas não devolve sessão ainda — é assim que a página sabe se deve
+  // mandar pra tela de "confirme seu e-mail" ou já pro login/dashboard.
+  return { ok: true, user: data.user, precisaConfirmarEmail: !data.session };
+}
+
+/** Reenvia o e-mail de confirmação de cadastro. */
+async function reenviarConfirmacao(email) {
+  const { error } = await supabaseClient.auth.resend({
+    type: 'signup',
+    email: (email || '').trim(),
+  });
+  if (error) {
+    console.error('[RotaAuth] reenviarConfirmacao:', error.message);
+    return { ok: false, erro: error.message };
+  }
+  return { ok: true };
+}
+
+// ---------------------------------------------------------------------
+// Recuperação de senha
+// ---------------------------------------------------------------------
+
+/**
+ * Dispara o e-mail de recuperação. redirectTo deve apontar pra uma
+ * página que trate a sessão de recuperação e chame redefinirSenha().
+ * Por design do Supabase, não revela se o e-mail existe ou não — a
+ * página deve mostrar sempre a mesma mensagem genérica de sucesso.
+ */
+async function solicitarRecuperacaoSenha(email, redirectTo) {
+  const { error } = await supabaseClient.auth.resetPasswordForEmail(
+    (email || '').trim(),
+    { redirectTo },
+  );
+  if (error) {
+    console.error('[RotaAuth] solicitarRecuperacaoSenha:', error.message);
+    return { ok: false, erro: error.message };
+  }
+  return { ok: true };
+}
+
+/**
+ * Define a nova senha. Só funciona dentro da sessão temporária que o
+ * Supabase cria quando a pessoa clica no link do e-mail de recuperação.
+ */
+async function redefinirSenha(novaSenha) {
+  const { error } = await supabaseClient.auth.updateUser({ password: novaSenha });
+  if (error) {
+    console.error('[RotaAuth] redefinirSenha:', error.message);
+    return { ok: false, erro: error.message };
+  }
+  return { ok: true };
+}
+
+// ---------------------------------------------------------------------
+
+window.RotaAuth = {
+  login, loginComGoogle,
+  cadastrar, reenviarConfirmacao,
+  solicitarRecuperacaoSenha, redefinirSenha,
+};

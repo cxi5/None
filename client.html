@@ -23,12 +23,16 @@
     }
   </script>
   <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
   <link rel="stylesheet" href="style.css">
   <script src="data.js"></script>
   <script src="modal.js"></script>
   <style>
     .pb-safe { padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
     @media (min-width: 768px) { .pb-safe { padding-bottom: 2rem; } }
+    /* evita "flash" de conteúdo vazio enquanto a sessão é verificada */
+    #clientShell { visibility: hidden; }
 
     .status-stamp {
       font-family: 'Oswald', sans-serif;
@@ -47,7 +51,7 @@
 </head>
 <body class="min-h-screen bg-ticket-field">
 
-  <div class="md:flex">
+  <div id="clientShell" class="md:flex">
 
     <div id="shell"></div>
 
@@ -254,10 +258,13 @@
       },
     });
 
-    renderShell('clients');
-
-    RotaI18n.apply();
     const $ = (id) => document.getElementById(id);
+
+    function escapeHtml(str) {
+      return String(str ?? '').replace(/[&<>"']/g, (c) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+      }[c]));
+    }
 
     const ICONE_TIPO = { roteiro: 'map', ingresso: 'ticket', transfer: 'plane', reserva: 'bed', outro: 'package' };
     const COR_STATUS = { confirmado: 'petrol', pendente: 'amber', concluido: 'ink', cancelado: 'clay' };
@@ -265,32 +272,34 @@
     const LABEL_TIPO = () => ({ roteiro: RotaI18n.t('itemType.roteiro'), ingresso: RotaI18n.t('itemType.ingresso'), transfer: RotaI18n.t('itemType.transfer'), reserva: RotaI18n.t('itemType.reserva'), outro: RotaI18n.t('itemType.outro') });
     const LABEL_STATUS = () => ({ confirmado: RotaI18n.t('status.confirmado'), pendente: RotaI18n.t('status.pendente'), concluido: RotaI18n.t('status.concluido'), cancelado: RotaI18n.t('status.cancelado') });
 
-    const clientId = new URLSearchParams(window.location.search).get('id');
-    let cliente = clientId ? RotaDB.getClientById(clientId) : null;
+    let cliente = null;
 
-    if (!cliente) {
-      $('notFoundState').classList.remove('hidden');
-      $('profileContent').remove();
-      $('pageTitle').textContent = RotaI18n.t('client.notFoundTitle');
-    } else {
-      iniciar();
-    }
+    async function iniciar() {
+      const clientId = new URLSearchParams(window.location.search).get('id');
+      cliente = clientId ? await RotaDB.getClientById(clientId) : null;
 
-    function iniciar() {
-      renderPerfil();
-      renderItens();
+      if (!cliente) {
+        $('notFoundState').classList.remove('hidden');
+        $('profileContent').remove();
+        $('pageTitle').textContent = RotaI18n.t('client.notFoundTitle');
+        return;
+      }
+
+      await renderPerfil();
+      await renderItens();
 
       $('editClientBtn').onclick = abrirEdicaoCliente;
       $('deleteClientBtn').onclick = excluirCliente;
       $('addItemBtn').onclick = abrirNovoItem;
     }
 
-    function renderPerfil() {
+    async function renderPerfil() {
       $('pageTitle').textContent = cliente.nome;
       $('clientAvatar').textContent = RotaDB.initials(cliente.nome);
       $('clientName').textContent = cliente.nome;
 
-      const membro = RotaDB.getTeam().find(m => m.id === cliente.agente_id);
+      const equipe = await RotaDB.getTeam();
+      const membro = equipe.find(m => m.id === cliente.agente_id);
       $('clientAgente').textContent = RotaI18n.t('client.agentPrefix', { nome: membro ? membro.nome : cliente.agente_id });
 
       $('clientContato').textContent = cliente.contato || RotaI18n.t('client.noContact');
@@ -305,7 +314,7 @@
       }
     }
 
-    function renderItens() {
+    async function renderItens() {
       const itens = cliente.itens || [];
       $('itemCount').textContent = RotaI18n.t(itens.length === 1 ? 'client.itemCount' : 'client.itemCount_plural', { n: itens.length });
 
@@ -317,11 +326,11 @@
                 <i data-lucide="${ICONE_TIPO[item.tipo] || 'package'}" class="w-4 h-4 text-ink/50"></i>
               </div>
               <div class="min-w-0">
-                <p class="text-sm font-medium text-ink truncate">${item.descricao || LABEL_TIPO()[item.tipo] || RotaI18n.t('client.noDescription')}</p>
+                <p class="text-sm font-medium text-ink truncate">${escapeHtml(item.descricao) || LABEL_TIPO()[item.tipo] || RotaI18n.t('client.noDescription')}</p>
                 <p class="text-xs text-ink/45">
                   ${item.valor ? RotaDB.formatCurrency(item.valor, item.moeda) : RotaI18n.t('client.noValue')}
                   ${item.data_servico ? ' · ' + RotaDB.formatDate(item.data_servico, 'short') : ''}
-                  ${item.fornecedor ? ' · ' + item.fornecedor : ''}
+                  ${item.fornecedor ? ' · ' + escapeHtml(item.fornecedor) : ''}
                 </p>
               </div>
             </div>
@@ -338,14 +347,14 @@
       // Clicar no selo avança pro próximo status do fluxo — jeito rápido
       // de atualizar sem abrir modal, já que é a ação mais comum aqui.
       document.querySelectorAll('.statusBtn').forEach(el => {
-        el.onclick = () => {
+        el.onclick = async () => {
           const id = el.dataset.itemId;
           const item = cliente.itens.find(i => i.id === id);
           const posAtual = ORDEM_STATUS.indexOf(item.status);
           const proximo = ORDEM_STATUS[(posAtual + 1) % ORDEM_STATUS.length];
-          RotaDB.updateClientItem(cliente.id, id, { status: proximo });
-          cliente = RotaDB.getClientById(cliente.id);
-          renderItens();
+          await RotaDB.updateClientItem(cliente.id, id, { status: proximo });
+          cliente = await RotaDB.getClientById(cliente.id);
+          await renderItens();
         };
       });
 
@@ -354,12 +363,12 @@
       });
 
       document.querySelectorAll('.deleteItemBtn').forEach(btn => {
-        btn.onclick = () => {
+        btn.onclick = async () => {
           const item = cliente.itens.find(i => i.id === btn.dataset.itemId);
           if (!confirm(RotaI18n.t('client.confirmRemoveItem', { desc: item.descricao || RotaI18n.t('client.thisItem') }))) return;
-          RotaDB.deleteClientItem(cliente.id, btn.dataset.itemId);
-          cliente = RotaDB.getClientById(cliente.id);
-          renderItens();
+          await RotaDB.deleteClientItem(cliente.id, btn.dataset.itemId);
+          cliente = await RotaDB.getClientById(cliente.id);
+          await renderItens();
         };
       });
     }
@@ -367,14 +376,15 @@
     // Moedas do select vêm das moedas ativas configuradas no Financeiro —
     // nada de lista fixa aqui. Se o item já tem uma moeda que foi desativada
     // depois, ela ainda entra na lista (senão o valor salvo desaparece do select).
-    function moedasParaSelectItem(moedaDoItem) {
-      const ativas = RotaDB.getMoedasAtivas();
+    async function moedasParaSelectItem(moedaDoItem) {
+      const ativas = await RotaDB.getMoedasAtivas();
       return moedaDoItem && !ativas.includes(moedaDoItem)
         ? [...ativas, moedaDoItem]
         : ativas;
     }
 
-    function camposItemHtml(item = {}) {
+    async function camposItemHtml(item = {}) {
+      const moedas = await moedasParaSelectItem(item.moeda);
       return `
         <div class="grid grid-cols-2 gap-3">
           <div>
@@ -392,7 +402,7 @@
         </div>
         <div>
           <label class="${ROTA_LABEL_CLASS}">${RotaI18n.t('client.fieldDescription')}</label>
-          <input type="text" id="f_descricao" required class="${ROTA_INPUT_CLASS}" placeholder="${RotaI18n.t('client.fieldDescriptionPlaceholder')}" value="${item.descricao || ''}" />
+          <input type="text" id="f_descricao" required class="${ROTA_INPUT_CLASS}" placeholder="${RotaI18n.t('client.fieldDescriptionPlaceholder')}" value="${escapeHtml(item.descricao)}" />
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div>
@@ -402,7 +412,7 @@
           <div>
             <label class="${ROTA_LABEL_CLASS}">${RotaI18n.t('client.fieldCurrency')}</label>
             <select id="f_moeda" class="${ROTA_INPUT_CLASS}">
-              ${moedasParaSelectItem(item.moeda).map(m => `<option value="${m}" ${item.moeda === m ? 'selected' : ''}>${m} — ${RotaDB.nomeMoeda(m)}</option>`).join('')}
+              ${moedas.map(m => `<option value="${m}" ${item.moeda === m ? 'selected' : ''}>${m} — ${RotaDB.nomeMoeda(m)}</option>`).join('')}
             </select>
           </div>
         </div>
@@ -413,15 +423,16 @@
           </div>
           <div>
             <label class="${ROTA_LABEL_CLASS}">${RotaI18n.t('client.fieldSupplier')}</label>
-            <input type="text" id="f_fornecedor" class="${ROTA_INPUT_CLASS}" value="${item.fornecedor || ''}" />
+            <input type="text" id="f_fornecedor" class="${ROTA_INPUT_CLASS}" value="${escapeHtml(item.fornecedor)}" />
           </div>
         </div>`;
     }
 
-    function abrirNovoItem() {
+    async function abrirNovoItem() {
       // Sem moeda ativa configurada ainda, não dá pra montar o select de moeda —
       // manda configurar no Financeiro em vez de abrir um formulário quebrado.
-      if (!RotaDB.getMoedasAtivas().length) {
+      const ativas = await RotaDB.getMoedasAtivas();
+      if (!ativas.length) {
         alert(RotaI18n.t('client.alertNoCurrency'));
         return;
       }
@@ -429,12 +440,12 @@
       RotaModal.open({
         title: RotaI18n.t('client.modalNewItemTitle'),
         submitLabel: RotaI18n.t('client.modalSaveItem'),
-        bodyHtml: camposItemHtml(),
-        onSubmit: () => {
+        bodyHtml: await camposItemHtml(),
+        onSubmit: async () => {
           const descricao = $('f_descricao').value.trim();
           if (!descricao) { $('f_descricao').focus(); return; }
 
-          RotaDB.addItemToClient(cliente.id, {
+          await RotaDB.addItemToClient(cliente.id, {
             tipo: $('f_tipo').value,
             status: $('f_status').value,
             descricao,
@@ -444,24 +455,24 @@
             fornecedor: $('f_fornecedor').value.trim(),
           });
 
-          cliente = RotaDB.getClientById(cliente.id);
+          cliente = await RotaDB.getClientById(cliente.id);
           RotaModal.close();
-          renderItens();
+          await renderItens();
         },
       });
     }
 
-    function abrirEdicaoItem(itemId) {
+    async function abrirEdicaoItem(itemId) {
       const item = cliente.itens.find(i => i.id === itemId);
       RotaModal.open({
         title: RotaI18n.t('client.modalEditItemTitle'),
         submitLabel: RotaI18n.t('client.modalSaveChanges'),
-        bodyHtml: camposItemHtml(item),
-        onSubmit: () => {
+        bodyHtml: await camposItemHtml(item),
+        onSubmit: async () => {
           const descricao = $('f_descricao').value.trim();
           if (!descricao) { $('f_descricao').focus(); return; }
 
-          RotaDB.updateClientItem(cliente.id, itemId, {
+          await RotaDB.updateClientItem(cliente.id, itemId, {
             tipo: $('f_tipo').value,
             status: $('f_status').value,
             descricao,
@@ -471,16 +482,17 @@
             fornecedor: $('f_fornecedor').value.trim(),
           });
 
-          cliente = RotaDB.getClientById(cliente.id);
+          cliente = await RotaDB.getClientById(cliente.id);
           RotaModal.close();
-          renderItens();
+          await renderItens();
         },
       });
     }
 
-    function abrirEdicaoCliente() {
-      const opcoesAgente = RotaDB.getTeam()
-        .map(m => `<option value="${m.id}" ${cliente.agente_id === m.id ? 'selected' : ''}>${m.nome}</option>`).join('');
+    async function abrirEdicaoCliente() {
+      const equipe = await RotaDB.getTeam();
+      const opcoesAgente = equipe
+        .map(m => `<option value="${m.id}" ${cliente.agente_id === m.id ? 'selected' : ''}>${escapeHtml(m.nome)}</option>`).join('');
 
       RotaModal.open({
         title: RotaI18n.t('client.modalEditClientTitle'),
@@ -488,19 +500,19 @@
         bodyHtml: `
           <div>
             <label class="${ROTA_LABEL_CLASS}">${RotaI18n.t('client.fieldName')}</label>
-            <input type="text" id="f_nome" required class="${ROTA_INPUT_CLASS}" value="${cliente.nome}" />
+            <input type="text" id="f_nome" required class="${ROTA_INPUT_CLASS}" value="${escapeHtml(cliente.nome)}" />
           </div>
           <div>
             <label class="${ROTA_LABEL_CLASS}">${RotaI18n.t('client.fieldContact')}</label>
-            <input type="text" id="f_contato" class="${ROTA_INPUT_CLASS}" value="${cliente.contato || ''}" />
+            <input type="text" id="f_contato" class="${ROTA_INPUT_CLASS}" value="${escapeHtml(cliente.contato)}" />
           </div>
           <div>
             <label class="${ROTA_LABEL_CLASS}">${RotaI18n.t('client.fieldDocument')}</label>
-            <input type="text" id="f_documento" class="${ROTA_INPUT_CLASS}" value="${cliente.documento || ''}" />
+            <input type="text" id="f_documento" class="${ROTA_INPUT_CLASS}" value="${escapeHtml(cliente.documento)}" />
           </div>
           <div>
             <label class="${ROTA_LABEL_CLASS}">${RotaI18n.t('client.fieldLeadOrigin')}</label>
-            <input type="text" id="f_origem" class="${ROTA_INPUT_CLASS}" value="${cliente.origem_lead || ''}" />
+            <input type="text" id="f_origem" class="${ROTA_INPUT_CLASS}" value="${escapeHtml(cliente.origem_lead)}" />
           </div>
           <div>
             <label class="${ROTA_LABEL_CLASS}">${RotaI18n.t('client.fieldResponsibleAgent')}</label>
@@ -508,14 +520,14 @@
           </div>
           <div>
             <label class="${ROTA_LABEL_CLASS}">${RotaI18n.t('client.fieldNotes')}</label>
-            <textarea id="f_notas" rows="3" class="${ROTA_INPUT_CLASS}">${cliente.notas || ''}</textarea>
+            <textarea id="f_notas" rows="3" class="${ROTA_INPUT_CLASS}">${escapeHtml(cliente.notas)}</textarea>
           </div>
         `,
-        onSubmit: () => {
+        onSubmit: async () => {
           const nome = $('f_nome').value.trim();
           if (!nome) { $('f_nome').focus(); return; }
 
-          RotaDB.updateClient(cliente.id, {
+          await RotaDB.updateClient(cliente.id, {
             nome,
             contato: $('f_contato').value.trim(),
             documento: $('f_documento').value.trim(),
@@ -524,30 +536,46 @@
             notas: $('f_notas').value.trim(),
           });
 
-          cliente = RotaDB.getClientById(cliente.id);
+          cliente = await RotaDB.getClientById(cliente.id);
           RotaModal.close();
-          renderPerfil();
+          await renderPerfil();
         },
       });
     }
 
-    function excluirCliente() {
+    async function excluirCliente() {
       if (!confirm(RotaI18n.t('client.confirmDeleteClient', { nome: cliente.nome }))) return;
-      RotaDB.deleteClient(cliente.id);
+      await RotaDB.deleteClient(cliente.id);
       window.location.href = 'clients.html';
     }
 
-    document.title = cliente ? RotaI18n.t('client.pageTitle') : RotaI18n.t('client.pageTitleNotFound');
-    RotaI18n.onChange(() => {
+    // ------------------------------------------------------------------
+    // Boot: exige sessão real antes de mostrar qualquer dado. Sem isso,
+    // dava pra abrir a página direto pela URL sem estar logado.
+    // ------------------------------------------------------------------
+    (async function boot() {
+      const session = await RotaDB.requireSession();
+      if (!session) return; // requireSession já redireciona pro login
+
+      renderShell('clients');
       RotaI18n.apply();
+
+      await iniciar();
       document.title = cliente ? RotaI18n.t('client.pageTitle') : RotaI18n.t('client.pageTitleNotFound');
-      if (cliente) {
-        renderPerfil();
-        renderItens();
-      } else {
-        $('pageTitle').textContent = RotaI18n.t('client.notFoundTitle');
-      }
-    });
+
+      $('clientShell').style.visibility = 'visible';
+
+      RotaI18n.onChange(async () => {
+        RotaI18n.apply();
+        document.title = cliente ? RotaI18n.t('client.pageTitle') : RotaI18n.t('client.pageTitleNotFound');
+        if (cliente) {
+          await renderPerfil();
+          await renderItens();
+        } else {
+          $('pageTitle').textContent = RotaI18n.t('client.notFoundTitle');
+        }
+      });
+    })();
   </script>
 </body>
 </html>

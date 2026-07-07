@@ -81,7 +81,7 @@ async function getProfile(forceRefresh = false) {
 
   const { data, error } = await supabaseClient
     .from('profiles')
-    .select('id, agency_id, nome, papel, avatar_color, agencies(nome, moedas_ativas)')
+    .select('id, agency_id, nome, papel, avatar_color, telefone, cargo, data_nascimento, whatsapp, idiomas, especialidade, rede_social, bio, foto_url, agencies(nome, moedas_ativas)')
     .eq('id', session.user.id)
     .single();
 
@@ -92,13 +92,28 @@ async function getProfile(forceRefresh = false) {
 
 async function getCurrentUser() {
   const profile = await getProfile();
-  if (!profile) return { nome: '', papel: 'agente', avatarColor: 'petrol', agencyId: null };
+  if (!profile) {
+    return {
+      nome: '', papel: 'agente', avatarColor: 'petrol', agencyId: null,
+      telefone: '', cargo: '', dataNascimento: '', whatsapp: '',
+      idiomas: '', especialidade: '', redeSocial: '', bio: '', fotoUrl: '',
+    };
+  }
   return {
     nome: profile.nome,
     papel: profile.papel,
     avatarColor: profile.avatar_color,
     agencyId: profile.agency_id,
     agenciaNome: profile.agencies?.nome || '',
+    telefone: profile.telefone || '',
+    cargo: profile.cargo || '',
+    dataNascimento: profile.data_nascimento || '',
+    whatsapp: profile.whatsapp || '',
+    idiomas: profile.idiomas || '',
+    especialidade: profile.especialidade || '',
+    redeSocial: profile.rede_social || '',
+    bio: profile.bio || '',
+    fotoUrl: profile.foto_url || '',
   };
 }
 
@@ -109,12 +124,21 @@ async function setCurrentUser(dadosParciais) {
   const patch = {};
   if (dadosParciais.nome !== undefined) patch.nome = dadosParciais.nome;
   if (dadosParciais.avatarColor !== undefined) patch.avatar_color = dadosParciais.avatarColor;
+  if (dadosParciais.telefone !== undefined) patch.telefone = dadosParciais.telefone;
+  if (dadosParciais.cargo !== undefined) patch.cargo = dadosParciais.cargo;
+  if (dadosParciais.dataNascimento !== undefined) patch.data_nascimento = dadosParciais.dataNascimento || null;
+  if (dadosParciais.whatsapp !== undefined) patch.whatsapp = dadosParciais.whatsapp;
+  if (dadosParciais.idiomas !== undefined) patch.idiomas = dadosParciais.idiomas;
+  if (dadosParciais.especialidade !== undefined) patch.especialidade = dadosParciais.especialidade;
+  if (dadosParciais.redeSocial !== undefined) patch.rede_social = dadosParciais.redeSocial;
+  if (dadosParciais.bio !== undefined) patch.bio = dadosParciais.bio;
+  if (dadosParciais.fotoUrl !== undefined) patch.foto_url = dadosParciais.fotoUrl;
 
   const { data, error } = await supabaseClient
     .from('profiles')
     .update(patch)
     .eq('id', profile.id)
-    .select('id, agency_id, nome, papel, avatar_color, agencies(nome, moedas_ativas)')
+    .select('id, agency_id, nome, papel, avatar_color, telefone, cargo, data_nascimento, whatsapp, idiomas, especialidade, rede_social, bio, foto_url, agencies(nome, moedas_ativas)')
     .single();
 
   if (error) { console.error('[RotaDB] setCurrentUser:', error.message); return null; }
@@ -125,6 +149,34 @@ async function setCurrentUser(dadosParciais) {
 async function logout() {
   await supabaseClient.auth.signOut();
   _cachedProfile = null;
+}
+
+// Sobe a foto de perfil pro bucket "avatars", dentro da "pasta" do próprio
+// usuário (é o que a policy de Storage exige), e já grava a URL pública
+// resultante em profiles.foto_url. Aceita um File/Blob vindo de <input type="file">.
+async function uploadAvatar(arquivo) {
+  const profile = await getProfile();
+  if (!profile) return { ok: false, erro: 'sem_sessao' };
+
+  const extensao = (arquivo.name?.split('.').pop() || 'jpg').toLowerCase();
+  const caminho = `${profile.id}/avatar.${extensao}`;
+
+  const { error: erroUpload } = await supabaseClient.storage
+    .from('avatars')
+    .upload(caminho, arquivo, { upsert: true, cacheControl: '3600' });
+
+  if (erroUpload) {
+    console.error('[RotaDB] uploadAvatar:', erroUpload.message);
+    return { ok: false, erro: erroUpload.message };
+  }
+
+  const { data: { publicUrl } } = supabaseClient.storage.from('avatars').getPublicUrl(caminho);
+  // adiciona um "cache buster" pra a mesma URL não ficar presa no cache do
+  // navegador quando a pessoa troca de foto (o caminho não muda, só o conteúdo)
+  const urlComVersao = `${publicUrl}?v=${Date.now()}`;
+
+  await setCurrentUser({ fotoUrl: urlComVersao });
+  return { ok: true, url: urlComVersao };
 }
 
 // ---------------------------------------------------------------------
@@ -503,7 +555,7 @@ window.RotaDB = {
   getTeam, addTeamMember, updateTeamMember, removeTeamMember,
   getDashboardMetrics, getActivityLog,
   formatCurrency, formatDate, initials,
-  getCurrentUser, setCurrentUser, logout,
+  getCurrentUser, setCurrentUser, logout, uploadAvatar,
   getMoedasAtivas, saveMoedasAtivas, nomeMoeda, corMoeda, getMoedasForaDaAtiva,
   CATALOGO_MOEDAS, CATALOGO_MOEDAS_EN, LIMITE_MOEDAS_ATIVAS,
   getCatalogoMoedas: () => (window.RotaI18n && RotaI18n.get() === 'en') ? CATALOGO_MOEDAS_EN : CATALOGO_MOEDAS_PT,

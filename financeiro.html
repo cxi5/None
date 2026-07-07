@@ -23,6 +23,8 @@
     }
   </script>
   <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
@@ -33,13 +35,16 @@
     .pb-safe { padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
     @media (min-width: 768px) { .pb-safe { padding-bottom: 2rem; } }
 
+    /* evita "flash" de conteúdo vazio enquanto a sessão é verificada */
+    #financeiroShell { visibility: hidden; }
+
     /* faixa colorida no topo dos cartões de saldo — como a faixa de classe num cartão de embarque */
     .currency-card { border-top: 4px solid; }
   </style>
 </head>
 <body class="min-h-screen bg-ticket-field">
 
-  <div class="md:flex">
+  <div id="financeiroShell" class="md:flex">
 
     <!-- Sidebar + bottom nav agora vêm do shell.js -->
     <div id="shell"></div>
@@ -288,33 +293,39 @@
       });
     }
 
-    renderShell('financeiro');
-    RotaI18n.apply();
-    document.title = RotaI18n.t('financeiro.pageTitle');
-
     const $ = (id) => document.getElementById(id);
+
+    // Evita XSS quando o texto vem de campo livre digitado pela pessoa
+    // (notas de lançamento, nome de cliente/agente etc.).
+    function escapeHtml(str) {
+      return String(str ?? '').replace(/[&<>"']/g, (c) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+      }[c]));
+    }
 
     // Redesenha o gráfico quando o tema muda (cor de texto/grade do Chart.js
     // não é CSS, então precisa disso além da troca de classe .dark).
     RotaTheme.onChange(() => { if (evolucaoChartInstance) renderEvolucaoChart(); });
 
-    // Quem está "logado" agora e se é admin — mesmo padrão de clients.html:
-    // agente só vê os próprios lançamentos, admin vê tudo (ou filtra por agente).
-    const usuarioAtual = RotaDB.getCurrentUser();
-    const meuMembro = RotaDB.getTeam().find(m => m.nome === usuarioAtual.nome);
-    const souAdmin = usuarioAtual.papel === 'admin';
+    // Quem está logado (via sessão real do Supabase) e se é admin — mesmo
+    // padrão de clients.html: agente só vê os próprios lançamentos, admin
+    // vê tudo (ou filtra por agente). Preenchidos no boot().
+    let usuarioAtual = null;
+    let meuMembro = null;
+    let souAdmin = false;
+    let equipeCache = [];   // evita rebuscar a equipe em todo render
+    let clientesCache = []; // idem para clientes (nome, lookup por id)
 
     // Cabeçalho do mês — dinâmico, no formato "JUL 2026" / "JUL 2026"
     const hoje = new Date();
     const localeFinanceiro = () => (RotaI18n.get() === 'en' ? 'en-US' : 'pt-PT');
-    $('headerMonth').textContent = hoje.toLocaleDateString(localeFinanceiro(), { month: 'short', year: 'numeric' }).replace('.', '').toUpperCase();
 
     // Renderiza os cards de saldo com base nas moedas que o usuário ativou —
     // nada de moeda fixa. Se não houver nenhuma ativa, mostra um estado
     // vazio guiando pra configuração em vez de simplesmente não mostrar nada.
-    function renderSaldoCards() {
-      const ativas = RotaDB.getMoedasAtivas();
-      const saldo = RotaDB.getSaldoPorMoeda();
+    async function renderSaldoCards() {
+      const ativas = await RotaDB.getMoedasAtivas();
+      const saldo = await RotaDB.getSaldoPorMoeda();
 
       $('saldoCards').innerHTML = ativas.length
         ? ativas.map(moeda => `
@@ -334,7 +345,7 @@
 
       // Moedas com lançamento mas fora da lista ativa (ex.: foram desativadas
       // depois de já ter dado com elas) — mostra num rodapé discreto, nunca some.
-      const fora = RotaDB.getMoedasForaDaAtiva();
+      const fora = await RotaDB.getMoedasForaDaAtiva();
       if (fora.length) {
         $('saldoForaAtiva').classList.remove('hidden');
         $('saldoForaAtiva').innerHTML = `
@@ -398,8 +409,8 @@
 
     // Chips por moeda ativa — clicar troca o filtro e re-renderiza tanto os
     // próprios chips (pra destacar o selecionado) quanto a lista de lançamentos.
-    function renderMoedaChips() {
-      const ativas = RotaDB.getMoedasAtivas();
+    async function renderMoedaChips() {
+      const ativas = await RotaDB.getMoedasAtivas();
       const chipBase = 'px-3.5 py-1.5 rounded-full text-xs font-medium flex-shrink-0 transition';
       const chipAtivo = `${chipBase} bg-petrol text-paper`;
       const chipInativo = `${chipBase} bg-white border border-ink/15 text-ink/60 hover:border-ink/30`;
@@ -417,8 +428,8 @@
       renderTransactions();
     }
 
-    function abrirConfigMoedas() {
-      const ativas = new Set(RotaDB.getMoedasAtivas());
+    async function abrirConfigMoedas() {
+      const ativas = new Set(await RotaDB.getMoedasAtivas());
       const opcoesHtml = Object.entries(RotaDB.CATALOGO_MOEDAS)
         .map(([codigo, nome]) => `
           <label class="flex items-center gap-2.5 py-1.5 cursor-pointer select-none">
@@ -434,21 +445,27 @@
           <p id="limiteAviso" class="hidden text-clay text-xs -mt-1"></p>
           <div class="max-h-72 overflow-y-auto divide-y divide-ink/5 -mx-1 px-1">${opcoesHtml}</div>
         `,
-        onSubmit: () => {
+        onSubmit: async () => {
           const escolhidas = Array.from(document.querySelectorAll('.moedaCheckbox:checked')).map(el => el.value);
-          const resultado = RotaDB.saveMoedasAtivas(escolhidas);
 
-          if (resultado.erro === 'limite_excedido') {
-            $('limiteAviso').textContent = RotaI18n.t('financeiro.maxCurrencies', { limite: resultado.limite });
+          // O checkbox já trava a marcação além do limite (ver atualizarLimite
+          // abaixo), mas essa validação fica como segunda linha de defesa —
+          // caso contrário um valor acima do limite seria silenciosamente
+          // cortado pelo saveMoedasAtivas, sem avisar o usuário.
+          if (escolhidas.length > RotaDB.LIMITE_MOEDAS_ATIVAS) {
+            $('limiteAviso').textContent = RotaI18n.t('financeiro.maxCurrencies', { limite: RotaDB.LIMITE_MOEDAS_ATIVAS });
             $('limiteAviso').classList.remove('hidden');
             return;
           }
 
+          const resultado = await RotaDB.saveMoedasAtivas(escolhidas);
+          if (!resultado) return; // erro já logado dentro de RotaDB
+
           RotaModal.close();
-          if (moedaFiltro && !resultado.lista.includes(moedaFiltro)) moedaFiltro = null;
-          renderSaldoCards();
-          renderMoedaChips();
-          renderTransactions();
+          if (moedaFiltro && !resultado.includes(moedaFiltro)) moedaFiltro = null;
+          await renderSaldoCards();
+          await renderMoedaChips();
+          await renderTransactions();
         },
       });
 
@@ -478,8 +495,8 @@
     // Aplica os 4 filtros (moeda, período, cliente, agente/visibilidade) e
     // devolve em ordem cronológica — tanto a lista quanto o gráfico partem
     // daqui, cada um decidindo depois como ordenar/agrupar o resultado.
-    function getTransacoesFiltradas() {
-      let transacoes = RotaDB.getTransactions().slice();
+    async function getTransacoesFiltradas() {
+      let transacoes = (await RotaDB.getTransactions()).slice();
 
       if (moedaFiltro) {
         transacoes = transacoes.filter(t => t.moeda === moedaFiltro);
@@ -501,8 +518,8 @@
       return transacoes.sort((a, b) => new Date(a.data) - new Date(b.data));
     }
 
-    function renderTransactions() {
-      const transacoes = getTransacoesFiltradas().slice().sort((a, b) => new Date(b.data) - new Date(a.data));
+    async function renderTransactions() {
+      const transacoes = (await getTransacoesFiltradas()).slice().sort((a, b) => new Date(b.data) - new Date(a.data));
 
       const semPeriodo = !$('dataInicio').value && !$('dataFim').value;
 
@@ -514,7 +531,7 @@
 
       $('transactionList').innerHTML = transacoes.length
         ? transacoesPagina.map(t => {
-            const cliente = t.client_id ? RotaDB.getClientById(t.client_id) : null;
+            const cliente = t.client_id ? clientesCache.find(c => c.id === t.client_id) : null;
             const receita = t.tipo === 'receita';
             const cor = receita ? 'petrol' : 'clay';
             const icone = receita ? 'arrow-down-left' : 'arrow-up-right';
@@ -532,7 +549,7 @@
                     <i data-lucide="${icone}" class="w-4 h-4 text-${cor}"></i>
                   </div>
                   <div class="min-w-0">
-                    <p class="text-sm font-medium text-ink truncate">${t.notas || (receita ? RotaI18n.t('financeiro.income') : RotaI18n.t('financeiro.expense'))}</p>
+                    <p class="text-sm font-medium text-ink truncate">${t.notas ? escapeHtml(t.notas) : (receita ? RotaI18n.t('financeiro.income') : RotaI18n.t('financeiro.expense'))}</p>
                     <p class="text-xs text-ink/45 truncate">${subtitulo} · ${infoHorario}</p>
                   </div>
                 </div>
@@ -559,7 +576,7 @@
           }</li>`;
 
       renderPagination(totalPaginas);
-      renderEvolucaoChart();
+      await renderEvolucaoChart();
       lucide.createIcons();
     }
 
@@ -615,8 +632,8 @@
     // regra de getSaldoPorMoeda: sem câmbio). Usa o conjunto já filtrado
     // (moeda/período/cliente/agente), então o gráfico sempre reflete
     // exatamente o que a lista abaixo está mostrando.
-    function renderEvolucaoChart() {
-      const transacoes = getTransacoesFiltradas();
+    async function renderEvolucaoChart() {
+      const transacoes = await getTransacoesFiltradas();
 
       if (!transacoes.length) {
         $('evolucaoChart').classList.add('hidden');
@@ -682,21 +699,21 @@
       });
     }
 
-    function abrirModalTransacao(transacaoExistente = null) {
-      const moedasAtivas = RotaDB.getMoedasAtivas();
+    async function abrirModalTransacao(transacaoExistente = null) {
+      const moedasAtivas = await RotaDB.getMoedasAtivas();
 
       // Sem moeda configurada ainda, não dá pra montar o select de moeda —
       // manda configurar primeiro em vez de abrir um formulário quebrado.
       if (!moedasAtivas.length) {
-        abrirConfigMoedas();
+        await abrirConfigMoedas();
         return;
       }
 
       const editando = !!transacaoExistente;
       const t = transacaoExistente || {};
 
-      const opcoesClientes = RotaDB.getClients()
-        .map(c => `<option value="${c.id}" ${t.client_id === c.id ? 'selected' : ''}>${c.nome}</option>`).join('');
+      const opcoesClientes = clientesCache
+        .map(c => `<option value="${c.id}" ${t.client_id === c.id ? 'selected' : ''}>${escapeHtml(c.nome)}</option>`).join('');
 
       // Ao editar, a moeda do lançamento pode ter sido desativada depois —
       // garante que ela apareça no select mesmo assim, senão o valor some.
@@ -756,10 +773,10 @@
           </div>
           <div>
             <label class="${ROTA_LABEL_CLASS}">${RotaI18n.t('financeiro.fieldNotes')}</label>
-            <input type="text" id="f_notas" value="${t.notas || ''}" class="${ROTA_INPUT_CLASS}" placeholder="${RotaI18n.t('financeiro.fieldNotesPlaceholder')}" />
+            <input type="text" id="f_notas" value="${escapeHtml(t.notas || '')}" class="${ROTA_INPUT_CLASS}" placeholder="${RotaI18n.t('financeiro.fieldNotesPlaceholder')}" />
           </div>
         `,
-        onSubmit: () => {
+        onSubmit: async () => {
           const valor = parseFloat($('f_valor').value);
           if (!valor || valor <= 0) { $('f_valor').focus(); return; }
 
@@ -785,33 +802,33 @@
           };
 
           if (editando) {
-            RotaDB.updateTransaction(t.id, dados);
+            await RotaDB.updateTransaction(t.id, dados);
           } else {
-            RotaDB.saveTransaction({ ...dados, data: new Date().toISOString() });
+            await RotaDB.saveTransaction({ ...dados, data: new Date().toISOString() });
           }
 
           RotaModal.close();
-          renderSaldoCards();
-          renderTransactions();
+          await renderSaldoCards();
+          await renderTransactions();
         },
       });
     }
 
-    function editarTransacao(id) {
-      const transacao = RotaDB.getTransactions().find(t => t.id === id);
+    async function editarTransacao(id) {
+      const transacao = (await RotaDB.getTransactions()).find(t => t.id === id);
       if (!transacao) return;
-      abrirModalTransacao(transacao);
+      await abrirModalTransacao(transacao);
     }
 
-    function excluirTransacao(id) {
-      const transacao = RotaDB.getTransactions().find(t => t.id === id);
+    async function excluirTransacao(id) {
+      const transacao = (await RotaDB.getTransactions()).find(t => t.id === id);
       if (!transacao) return;
       const rotulo = transacao.notas || (transacao.tipo === 'receita' ? RotaI18n.t('financeiro.thisIncome') : RotaI18n.t('financeiro.thisExpense'));
       if (!confirm(RotaI18n.t('financeiro.deleteConfirm', { rotulo }))) return;
 
-      RotaDB.deleteTransaction(id);
-      renderSaldoCards();
-      renderTransactions();
+      await RotaDB.deleteTransaction(id);
+      await renderSaldoCards();
+      await renderTransactions();
     }
 
     // Resumo textual dos filtros ativos — usado no topo do PDF exportado,
@@ -823,11 +840,11 @@
         partes.push(RotaI18n.t('financeiro.filterPeriod', { inicio: $('dataInicio').value || RotaI18n.t('financeiro.noneDash'), fim: $('dataFim').value || RotaI18n.t('financeiro.noneDash') }));
       }
       if ($('clienteFiltro').value) {
-        const cliente = RotaDB.getClientById($('clienteFiltro').value);
+        const cliente = clientesCache.find(c => c.id === $('clienteFiltro').value);
         if (cliente) partes.push(RotaI18n.t('financeiro.filterClient', { nome: cliente.nome }));
       }
       if (souAdmin && $('agenteFiltro').value) {
-        const agente = RotaDB.getTeam().find(m => m.id === $('agenteFiltro').value);
+        const agente = equipeCache.find(m => m.id === $('agenteFiltro').value);
         if (agente) partes.push(RotaI18n.t('financeiro.filterAgent', { nome: agente.nome }));
       }
       return partes.length ? partes.join(' · ') : RotaI18n.t('financeiro.noFilters');
@@ -846,14 +863,14 @@
 
     // Exporta exatamente o que está filtrado (moeda/período/cliente/agente),
     // ignorando a paginação — quem exporta quer os dados completos do recorte, não só a página visível.
-    function exportarCSV() {
-      const transacoes = getTransacoesFiltradas().slice().sort((a, b) => new Date(b.data) - new Date(a.data));
+    async function exportarCSV() {
+      const transacoes = (await getTransacoesFiltradas()).slice().sort((a, b) => new Date(b.data) - new Date(a.data));
       if (!transacoes.length) { alert(RotaI18n.t('financeiro.noTransactionsToExport')); return; }
 
       const cabecalho = RotaI18n.t('financeiro.csvHeaders').split(',');
       const linhas = transacoes.map(t => {
-        const cliente = t.client_id ? RotaDB.getClientById(t.client_id) : null;
-        const agente = RotaDB.getTeam().find(m => m.id === t.agente_id);
+        const cliente = t.client_id ? clientesCache.find(c => c.id === t.client_id) : null;
+        const agente = equipeCache.find(m => m.id === t.agente_id);
         return [
           t.data.slice(0, 10),
           t.tipo === 'receita' ? RotaI18n.t('financeiro.income') : RotaI18n.t('financeiro.expense'),
@@ -881,8 +898,8 @@
       baixarBlob(blob, `financeiro_${new Date().toISOString().slice(0, 10)}.csv`);
     }
 
-    function exportarPDF() {
-      const transacoes = getTransacoesFiltradas().slice().sort((a, b) => new Date(b.data) - new Date(a.data));
+    async function exportarPDF() {
+      const transacoes = (await getTransacoesFiltradas()).slice().sort((a, b) => new Date(b.data) - new Date(a.data));
       if (!transacoes.length) { alert(RotaI18n.t('financeiro.noTransactionsToExport')); return; }
 
       const { jsPDF } = window.jspdf;
@@ -898,7 +915,7 @@
       doc.text(RotaI18n.t('financeiro.generatedOn', { data: new Date().toLocaleDateString(localeFinanceiro()) }), 14, 27);
 
       const linhas = transacoes.map(t => {
-        const cliente = t.client_id ? RotaDB.getClientById(t.client_id) : null;
+        const cliente = t.client_id ? clientesCache.find(c => c.id === t.client_id) : null;
         return [
           t.data.slice(0, 10),
           t.tipo === 'receita' ? RotaI18n.t('financeiro.income') : RotaI18n.t('financeiro.expense'),
@@ -921,58 +938,90 @@
       doc.save(`financeiro_${new Date().toISOString().slice(0, 10)}.pdf`);
     }
 
-    renderSaldoCards();
-    renderMoedaChips();
-    renderGranularidadeChips();
-    renderTransactions();
-
-    $('newTransactionBtn').onclick = () => abrirModalTransacao();
-    $('exportCsvBtn').onclick = exportarCSV;
-    $('exportPdfBtn').onclick = exportarPDF;
-
     function atualizarVisibilidadeLimparPeriodo() {
       const ativo = $('dataInicio').value || $('dataFim').value;
       $('limparPeriodo').classList.toggle('hidden', !ativo);
     }
 
-    $('dataInicio').addEventListener('change', () => {
-      // não deixa "de" ficar depois de "até"
-      if ($('dataFim').value && $('dataInicio').value > $('dataFim').value) {
-        $('dataFim').value = $('dataInicio').value;
+    // ------------------------------------------------------------------
+    // Boot: exige sessão real antes de mostrar qualquer dado. Sem isso,
+    // dava pra abrir o financeiro direto pela URL sem estar logado.
+    // ------------------------------------------------------------------
+    (async function boot() {
+      const session = await RotaDB.requireSession();
+      if (!session) return; // requireSession já redireciona pro login
+
+      renderShell('financeiro');
+      RotaI18n.apply();
+      document.title = RotaI18n.t('financeiro.pageTitle');
+      $('headerMonth').textContent = hoje.toLocaleDateString(localeFinanceiro(), { month: 'short', year: 'numeric' }).replace('.', '').toUpperCase();
+
+      usuarioAtual = await RotaDB.getCurrentUser();
+      equipeCache = await RotaDB.getTeam();
+      meuMembro = equipeCache.find(m => m.nome === usuarioAtual.nome);
+      souAdmin = usuarioAtual.papel === 'admin';
+      clientesCache = await RotaDB.getClients();
+
+      await renderSaldoCards();
+      await renderMoedaChips();
+      renderGranularidadeChips();
+      await renderTransactions();
+
+      $('newTransactionBtn').onclick = () => abrirModalTransacao();
+      $('exportCsvBtn').onclick = exportarCSV;
+      $('exportPdfBtn').onclick = exportarPDF;
+
+      $('dataInicio').addEventListener('change', () => {
+        // não deixa "de" ficar depois de "até"
+        if ($('dataFim').value && $('dataInicio').value > $('dataFim').value) {
+          $('dataFim').value = $('dataInicio').value;
+        }
+        atualizarVisibilidadeLimparPeriodo();
+        paginaAtual = 1;
+        renderTransactions();
+      });
+
+      $('dataFim').addEventListener('change', () => {
+        if ($('dataInicio').value && $('dataFim').value < $('dataInicio').value) {
+          $('dataInicio').value = $('dataFim').value;
+        }
+        atualizarVisibilidadeLimparPeriodo();
+        paginaAtual = 1;
+        renderTransactions();
+      });
+
+      $('limparPeriodo').onclick = () => {
+        $('dataInicio').value = '';
+        $('dataFim').value = '';
+        atualizarVisibilidadeLimparPeriodo();
+        paginaAtual = 1;
+        renderTransactions();
+      };
+
+      // Popula o select de clientes pra todo mundo, e o de agentes só pra admin
+      $('clienteFiltro').insertAdjacentHTML('beforeend',
+        clientesCache.map(c => `<option value="${c.id}">${escapeHtml(c.nome)}</option>`).join(''));
+      $('clienteFiltro').addEventListener('change', () => { paginaAtual = 1; renderTransactions(); });
+
+      if (souAdmin) {
+        $('agenteFiltro').insertAdjacentHTML('beforeend',
+          equipeCache.map(m => `<option value="${m.id}">${escapeHtml(m.nome)}</option>`).join(''));
+        $('agenteFiltro').classList.remove('hidden');
+        $('agenteFiltro').addEventListener('change', () => { paginaAtual = 1; renderTransactions(); });
       }
-      atualizarVisibilidadeLimparPeriodo();
-      paginaAtual = 1;
-      renderTransactions();
-    });
 
-    $('dataFim').addEventListener('change', () => {
-      if ($('dataInicio').value && $('dataFim').value < $('dataInicio').value) {
-        $('dataInicio').value = $('dataFim').value;
-      }
-      atualizarVisibilidadeLimparPeriodo();
-      paginaAtual = 1;
-      renderTransactions();
-    });
+      $('financeiroShell').style.visibility = 'visible';
 
-    $('limparPeriodo').onclick = () => {
-      $('dataInicio').value = '';
-      $('dataFim').value = '';
-      atualizarVisibilidadeLimparPeriodo();
-      paginaAtual = 1;
-      renderTransactions();
-    };
-
-    // Popula o select de clientes pra todo mundo, e o de agentes só pra admin
-    $('clienteFiltro').insertAdjacentHTML('beforeend',
-      RotaDB.getClients().map(c => `<option value="${c.id}">${c.nome}</option>`).join(''));
-    $('clienteFiltro').addEventListener('change', () => { paginaAtual = 1; renderTransactions(); });
-
-    if (souAdmin) {
-      $('agenteFiltro').insertAdjacentHTML('beforeend',
-        RotaDB.getTeam().map(m => `<option value="${m.id}">${m.nome}</option>`).join(''));
-      $('agenteFiltro').classList.remove('hidden');
-      $('agenteFiltro').addEventListener('change', () => { paginaAtual = 1; renderTransactions(); });
-    }
+      RotaI18n.onChange(async () => {
+        RotaI18n.apply();
+        document.title = RotaI18n.t('financeiro.pageTitle');
+        $('headerMonth').textContent = hoje.toLocaleDateString(localeFinanceiro(), { month: 'short', year: 'numeric' }).replace('.', '').toUpperCase();
+        await renderSaldoCards();
+        await renderMoedaChips();
+        renderGranularidadeChips();
+        await renderTransactions();
+      });
+    })();
   </script>
 </body>
 </html>

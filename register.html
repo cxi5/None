@@ -25,6 +25,7 @@
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js"></script>
+  <script src="api.js"></script>
   <link rel="stylesheet" href="style.css">
 </head>
 <body class="min-h-screen w-full">
@@ -388,11 +389,8 @@
 
     // Cadastro com Google via Supabase Auth (OAuth real, sem simulação)
     $('googleBtn').onclick = async () => {
-      const { error } = await supabaseClient.auth.signInWithOAuth({
-        provider: 'google',
-        options: { redirectTo: `${window.location.origin}/dashboard.html` }
-      });
-      if (error) showToast(RotaI18n.t('register.errorGoogle'), 'error');
+      const resultado = await RotaAuth.loginComGoogle(`${window.location.origin}/dashboard.html`);
+      if (!resultado.ok) showToast(RotaI18n.t('register.errorGoogle'), 'error');
     };
 
     // Cadastro real via Supabase — sem simulação. Depois de criar a conta,
@@ -423,19 +421,15 @@
       $('btnText').textContent = RotaI18n.t('register.submitting');
       $('loader').classList.remove('hidden');
 
-      const { data, error } = await supabaseClient.auth.signUp({
+      const resultado = await RotaAuth.cadastrar({
+        agencyName: agencyName.value.trim(),
+        fullName: fullName.value.trim(),
+        birthDate: birthDate.value,
         email: email.value,
-        password: password.value,
-        options: {
-          data: {
-            agency_name: agencyName.value.trim(),
-            full_name: fullName.value.trim(),
-            birth_date: birthDate.value,
-          },
-        },
+        senha: password.value,
       });
 
-      if (error) {
+      if (!resultado.ok) {
         isSubmitting = false;
         $('submitBtn').disabled = false;
         $('btnText').textContent = RotaI18n.t('register.submit');
@@ -444,10 +438,10 @@
         return;
       }
 
-      // Se o Supabase exige confirmação de email, `data.session` vem vazio
-      // (o usuário existe, mas ainda não pode entrar). Nesse caso mostramos
-      // a tela de "confirma teu email" em vez de mandar direto pro login.
-      if (!data.session) {
+      // Se o Supabase exige confirmação de email, `precisaConfirmarEmail`
+      // vem true (o usuário existe, mas ainda não pode entrar). Nesse caso
+      // mostramos a tela de "confirma teu email" em vez de mandar direto pro login.
+      if (resultado.precisaConfirmarEmail) {
         $('stampSuccess').classList.add('show');
         $('sentEmail').textContent = email.value;
         setTimeout(() => {
@@ -475,16 +469,13 @@
       const originalText = $('resendBtn').textContent;
       $('resendBtn').textContent = RotaI18n.t('register.resending');
 
-      const { error } = await supabaseClient.auth.resend({
-        type: 'signup',
-        email: email.value,
-      });
+      const resultado = await RotaAuth.reenviarConfirmacao(email.value);
 
       isResendingSignup = false;
       $('resendBtn').disabled = false;
       $('resendBtn').textContent = originalText;
 
-      showToast(error ? RotaI18n.t('register.errorAuth') : RotaI18n.t('register.toastResent'), error ? 'error' : 'success');
+      showToast(resultado.ok ? RotaI18n.t('register.toastResent') : RotaI18n.t('register.errorAuth'), resultado.ok ? 'success' : 'error');
     };
   </script>
 </body>

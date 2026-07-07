@@ -23,12 +23,17 @@
     }
   </script>
   <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
   <link rel="stylesheet" href="style.css">
   <script src="data.js"></script>
   <script src="modal.js"></script>
   <style>
     .pb-safe { padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
     @media (min-width: 768px) { .pb-safe { padding-bottom: 2rem; } }
+
+    /* evita "flash" de conteúdo vazio enquanto a sessão é verificada */
+    #marketingShell { visibility: hidden; }
 
     .status-stamp {
       font-family: 'Oswald', sans-serif;
@@ -50,7 +55,7 @@
 </head>
 <body class="min-h-screen bg-ticket-field">
 
-  <div class="md:flex">
+  <div id="marketingShell" class="md:flex">
 
     <!-- Sidebar + bottom nav agora vêm do shell.js -->
     <div id="shell"></div>
@@ -182,17 +187,34 @@
       },
     });
 
-    renderShell('marketing');
-
-    RotaI18n.apply();
     const $ = (id) => document.getElementById(id);
+
+    // Evita XSS quando o texto vem de campo livre digitado pela pessoa
+    // (texto do post, link de referência etc.).
+    function escapeHtml(str) {
+      return String(str ?? '').replace(/[&<>"']/g, (c) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+      }[c]));
+    }
+
+    // O link de referência é digitado livremente — sem isso, alguém
+    // poderia salvar "javascript:..." num href e ele executaria ao clicar.
+    // Só deixa passar http/https; qualquer outro esquema vira string vazia.
+    function linkSeguro(url) {
+      if (!url) return '';
+      try {
+        const parsed = new URL(url, window.location.origin);
+        return (parsed.protocol === 'http:' || parsed.protocol === 'https:') ? parsed.href : '';
+      } catch {
+        return '';
+      }
+    }
 
     const hoje = new Date();
     function renderHeaderMonth() {
       const locale = RotaI18n.get() === 'pt' ? 'pt-PT' : 'en-US';
       $('headerMonth').textContent = hoje.toLocaleDateString(locale, { month: 'short', year: 'numeric' }).replace('.', '').toUpperCase();
     }
-    renderHeaderMonth();
 
     const ICONE_REDE = { instagram: 'instagram', facebook: 'facebook' };
     const COR_REDE = { instagram: 'clay', facebook: 'petrol' };
@@ -235,11 +257,11 @@
       `;
     }
 
-    function selecionarRedeFiltro(rede) {
+    async function selecionarRedeFiltro(rede) {
       redeFiltro = rede;
       renderRedeChips();
-      if (vista === 'calendario') renderCalendario();
-      renderPosts();
+      if (vista === 'calendario') await renderCalendario();
+      await renderPosts();
     }
 
     // --- Alternar Lista / Calendário -------------------------------------
@@ -258,17 +280,17 @@
       $('tabCalendario').onclick = () => { vista = 'calendario'; aplicarVista(); };
     }
 
-    function aplicarVista() {
+    async function aplicarVista() {
       renderViewToggle();
       $('calendarWrap').classList.toggle('hidden', vista !== 'calendario');
-      if (vista === 'calendario') renderCalendario();
-      renderPosts();
+      if (vista === 'calendario') await renderCalendario();
+      await renderPosts();
     }
 
     // Conta os posts por dia do mês em exibição, respeitando status/rede
     // (o dia clicado é filtro à parte, não entra nesse mapa).
-    function postsPorDia() {
-      let posts = RotaDB.getPosts().filter(p => p.data_agendada);
+    async function postsPorDia() {
+      let posts = (await RotaDB.getPosts()).filter(p => p.data_agendada);
       if (statusFiltro) posts = posts.filter(p => p.status === statusFiltro);
       if (redeFiltro) posts = posts.filter(p => p.rede_social === redeFiltro);
 
@@ -280,12 +302,12 @@
       return mapa;
     }
 
-    function renderCalendario() {
+    async function renderCalendario() {
       const ano = mesCalendario.getFullYear();
       const mes = mesCalendario.getMonth();
       const primeiroDiaSemana = new Date(ano, mes, 1).getDay();
       const diasNoMes = new Date(ano, mes + 1, 0).getDate();
-      const mapa = postsPorDia();
+      const mapa = await postsPorDia();
       const hojeChave = chaveDia(hoje.toISOString());
 
       let celulas = '';
@@ -357,8 +379,8 @@
       lucide.createIcons();
     }
 
-    function renderPosts() {
-      let posts = RotaDB.getPosts();
+    async function renderPosts() {
+      let posts = await RotaDB.getPosts();
 
       if (statusFiltro) {
         posts = posts.filter(p => p.status === statusFiltro);
@@ -395,9 +417,9 @@
                     <p class="text-sm font-semibold text-ink">${dataLabel}</p>
                     <button data-post-id="${p.id}" class="statusBtn status-stamp text-${status.cor}" title="${RotaI18n.t('marketing.statusTitleHint')}">${status.label}</button>
                   </div>
-                  <p class="text-sm text-ink/60 truncate">${p.texto || RotaI18n.t('marketing.noText')}</p>
-                  ${p.link_referencia ? `
-                    <a href="${p.link_referencia}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-xs text-petrol hover:text-ink font-medium mt-1.5 transition">
+                  <p class="text-sm text-ink/60 truncate">${p.texto ? escapeHtml(p.texto) : RotaI18n.t('marketing.noText')}</p>
+                  ${linkSeguro(p.link_referencia) ? `
+                    <a href="${escapeHtml(linkSeguro(p.link_referencia))}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-xs text-petrol hover:text-ink font-medium mt-1.5 transition">
                       <i data-lucide="link" class="w-3.5 h-3.5"></i> ${RotaI18n.t('marketing.viewReference')}
                     </a>` : ''}
                 </div>
@@ -421,15 +443,15 @@
       // Clicar no selo avança pro próximo status do fluxo — mesmo padrão
       // do selo de item no client.html.
       document.querySelectorAll('.statusBtn').forEach(btn => {
-        btn.onclick = () => {
+        btn.onclick = async () => {
           const id = btn.dataset.postId;
-          const post = RotaDB.getPosts().find(p => p.id === id);
+          const post = (await RotaDB.getPosts()).find(p => p.id === id);
           if (!post) return;
           const posAtual = ORDEM_STATUS.indexOf(post.status);
           const proximo = ORDEM_STATUS[(posAtual + 1) % ORDEM_STATUS.length];
-          RotaDB.updatePostStatus(id, proximo);
-          if (vista === 'calendario') renderCalendario();
-          renderPosts();
+          await RotaDB.updatePostStatus(id, proximo);
+          if (vista === 'calendario') await renderCalendario();
+          await renderPosts();
         };
       });
 
@@ -442,9 +464,7 @@
       });
     }
 
-    renderFilterChip();
-    renderRedeChips();
-    aplicarVista();
+    // (renderFilterChip/renderRedeChips/aplicarVista rodam dentro do boot())
 
     // Campos do form de post — reaproveitado tanto no "Novo post" quanto na
     // edição, mesmo padrão do camposItemHtml() no client.html.
@@ -474,11 +494,11 @@
         </div>
         <div>
           <label class="${ROTA_LABEL_CLASS}">${RotaI18n.t('marketing.fieldText')}</label>
-          <textarea id="f_texto" rows="3" required class="${ROTA_INPUT_CLASS}" placeholder="${RotaI18n.t('marketing.fieldTextPlaceholder')}">${post.texto || ''}</textarea>
+          <textarea id="f_texto" rows="3" required class="${ROTA_INPUT_CLASS}" placeholder="${RotaI18n.t('marketing.fieldTextPlaceholder')}">${escapeHtml(post.texto || '')}</textarea>
         </div>
         <div>
           <label class="${ROTA_LABEL_CLASS}">${RotaI18n.t('marketing.fieldReferenceLink')}</label>
-          <input type="url" id="f_link" value="${post.link_referencia || ''}" class="${ROTA_INPUT_CLASS}" placeholder="${RotaI18n.t('marketing.fieldReferenceLinkPlaceholder')}" />
+          <input type="url" id="f_link" value="${escapeHtml(post.link_referencia || '')}" class="${ROTA_INPUT_CLASS}" placeholder="${RotaI18n.t('marketing.fieldReferenceLinkPlaceholder')}" />
         </div>`;
     }
 
@@ -487,12 +507,12 @@
         title: RotaI18n.t('marketing.modalNewPostTitle'),
         submitLabel: RotaI18n.t('marketing.modalSavePost'),
         bodyHtml: camposPostHtml(),
-        onSubmit: () => {
+        onSubmit: async () => {
           const texto = $('f_texto').value.trim();
           if (!texto) { $('f_texto').focus(); return; }
 
           const dataLocal = $('f_data').value; // formato "YYYY-MM-DDTHH:mm", hora local
-          RotaDB.savePost({
+          await RotaDB.savePost({
             rede_social: $('f_rede').value,
             status: $('f_status').value,
             data_agendada: dataLocal ? new Date(dataLocal).toISOString() : null,
@@ -501,26 +521,26 @@
           });
 
           RotaModal.close();
-          if (vista === 'calendario') renderCalendario();
-          renderPosts();
+          if (vista === 'calendario') await renderCalendario();
+          await renderPosts();
         },
       });
     }
 
-    function abrirEdicaoPost(id) {
-      const post = RotaDB.getPosts().find(p => p.id === id);
+    async function abrirEdicaoPost(id) {
+      const post = (await RotaDB.getPosts()).find(p => p.id === id);
       if (!post) return;
 
       RotaModal.open({
         title: RotaI18n.t('marketing.modalEditPostTitle'),
         submitLabel: RotaI18n.t('marketing.modalSaveChanges'),
         bodyHtml: camposPostHtml(post),
-        onSubmit: () => {
+        onSubmit: async () => {
           const texto = $('f_texto').value.trim();
           if (!texto) { $('f_texto').focus(); return; }
 
           const dataLocal = $('f_data').value;
-          RotaDB.updatePost(id, {
+          await RotaDB.updatePost(id, {
             rede_social: $('f_rede').value,
             status: $('f_status').value,
             data_agendada: dataLocal ? new Date(dataLocal).toISOString() : null,
@@ -529,35 +549,54 @@
           });
 
           RotaModal.close();
-          if (vista === 'calendario') renderCalendario();
-          renderPosts();
+          if (vista === 'calendario') await renderCalendario();
+          await renderPosts();
         },
       });
     }
 
-    function excluirPost(id) {
-      const post = RotaDB.getPosts().find(p => p.id === id);
+    async function excluirPost(id) {
+      const post = (await RotaDB.getPosts()).find(p => p.id === id);
       if (!post) return;
       const rotulo = post.texto ? `"${post.texto.slice(0, 40)}${post.texto.length > 40 ? '…' : ''}"` : RotaI18n.t('marketing.thisPost');
       if (!confirm(RotaI18n.t('marketing.confirmDeletePost', { rotulo }))) return;
 
-      RotaDB.deletePost(id);
-      if (vista === 'calendario') renderCalendario();
-      renderPosts();
+      await RotaDB.deletePost(id);
+      if (vista === 'calendario') await renderCalendario();
+      await renderPosts();
     }
 
-    $('newPostBtn').onclick = abrirNovoPost;
+    // ------------------------------------------------------------------
+    // Boot: exige sessão real antes de mostrar qualquer dado. Sem isso,
+    // dava pra abrir o marketing direto pela URL sem estar logado.
+    // ------------------------------------------------------------------
+    (async function boot() {
+      const session = await RotaDB.requireSession();
+      if (!session) return; // requireSession já redireciona pro login
 
-    document.title = RotaI18n.t('marketing.pageTitle');
-    RotaI18n.onChange(() => {
+      renderShell('marketing');
       RotaI18n.apply();
       document.title = RotaI18n.t('marketing.pageTitle');
       renderHeaderMonth();
+
       renderFilterChip();
       renderRedeChips();
-      if (vista === 'calendario') renderCalendario();
-      renderPosts();
-    });
+      await aplicarVista();
+
+      $('newPostBtn').onclick = abrirNovoPost;
+
+      $('marketingShell').style.visibility = 'visible';
+
+      RotaI18n.onChange(async () => {
+        RotaI18n.apply();
+        document.title = RotaI18n.t('marketing.pageTitle');
+        renderHeaderMonth();
+        renderFilterChip();
+        renderRedeChips();
+        if (vista === 'calendario') await renderCalendario();
+        await renderPosts();
+      });
+    })();
   </script>
 </body>
 </html>

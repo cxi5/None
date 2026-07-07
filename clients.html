@@ -23,12 +23,16 @@
     }
   </script>
   <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
   <link rel="stylesheet" href="style.css">
   <script src="data.js"></script>
   <script src="modal.js"></script>
   <style>
     .pb-safe { padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
     @media (min-width: 768px) { .pb-safe { padding-bottom: 2rem; } }
+    /* evita "flash" de conteúdo vazio enquanto a sessão é verificada */
+    #clientsShell { visibility: hidden; }
 
     /* selo de status — reaproveita a linguagem do carimbo "Aprovado" do login, em tamanho reduzido */
     .status-stamp {
@@ -47,7 +51,7 @@
 </head>
 <body class="min-h-screen bg-ticket-field">
 
-  <div class="md:flex">
+  <div id="clientsShell" class="md:flex">
 
     <!-- Sidebar + bottom nav agora vêm do shell.js -->
     <div id="shell"></div>
@@ -188,16 +192,22 @@
       },
     });
 
-    renderShell('clients');
-
-    RotaI18n.apply();
     const $ = (id) => document.getElementById(id);
 
-    // Quem está "logado" agora (heurística por nome, até termos login real)
-    // e se é admin — decide se mostra o filtro por agente ou já restringe a lista.
-    const usuarioAtual = RotaDB.getCurrentUser();
-    const meuMembro = RotaDB.getTeam().find(m => m.nome === usuarioAtual.nome);
-    const souAdmin = usuarioAtual.papel === 'admin';
+    // Evita XSS quando o texto vem de campo livre digitado pela pessoa
+    // (nome de cliente, descrição de item etc.), e não mais de um mock estático.
+    function escapeHtml(str) {
+      return String(str ?? '').replace(/[&<>"']/g, (c) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+      }[c]));
+    }
+
+    // Quem está logado (via sessão real do Supabase) e se é admin — decide
+    // se mostra o filtro por agente ou já restringe a lista.
+    let usuarioAtual = null;
+    let meuMembro = null;
+    let souAdmin = false;
+    let equipeCache = []; // evita re-buscar a equipe a cada card renderizado
 
     const TAMANHO_PAGINA = 10;
     let paginaAtual = 1;
@@ -209,15 +219,15 @@
     function renderClientCard(cliente, index) {
       const cor = CORES_AVATAR[index % CORES_AVATAR.length];
       const corTexto = cor === 'amber' ? 'text-ink' : 'text-paper';
-      const agente = RotaDB.getTeam().find(m => m.id === cliente.agente_id);
-      const nomeAgente = agente ? agente.nome : RotaI18n.t('clients.noAgent');
+      const agente = equipeCache.find(m => m.id === cliente.agente_id);
+      const nomeAgente = agente ? escapeHtml(agente.nome) : RotaI18n.t('clients.noAgent');
 
       const itensHtml = cliente.itens.length
         ? cliente.itens.map(item => `
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-2.5">
               <i data-lucide="${ICONE_TIPO[item.tipo] || 'package'}" class="w-4 h-4 text-ink/50 flex-shrink-0"></i>
-              <span class="text-sm text-ink">${item.descricao || RotaI18n.t('clients.noDescription')}</span>
+              <span class="text-sm text-ink">${item.descricao ? escapeHtml(item.descricao) : RotaI18n.t('clients.noDescription')}</span>
             </div>
             <span class="status-stamp text-${COR_STATUS[item.status] || 'ink'}">${RotaI18n.t('status.' + item.status) || item.status}</span>
           </div>`).join('')
@@ -234,8 +244,8 @@
             <a href="client.html?id=${cliente.id}" class="flex items-center gap-3 min-w-0 flex-1 hover:opacity-80 transition">
               <div class="w-11 h-11 rounded-full bg-${cor} ${corTexto} flex items-center justify-center font-display font-semibold flex-shrink-0">${RotaDB.initials(cliente.nome)}</div>
               <div class="min-w-0">
-                <p class="font-semibold text-ink text-sm truncate">${cliente.nome}</p>
-                <p class="text-xs text-ink/50 truncate">${cliente.contato || RotaI18n.t('clients.noContact')} · ${RotaI18n.t('clients.agentPrefix')} ${nomeAgente}</p>
+                <p class="font-semibold text-ink text-sm truncate">${escapeHtml(cliente.nome)}</p>
+                <p class="text-xs text-ink/50 truncate">${cliente.contato ? escapeHtml(cliente.contato) : RotaI18n.t('clients.noContact')} · ${RotaI18n.t('clients.agentPrefix')} ${nomeAgente}</p>
               </div>
             </a>
             <button onclick="toggleClientCard('${cliente.id}')" class="flex items-center gap-1.5 text-ink/40 hover:text-ink transition flex-shrink-0">
@@ -281,8 +291,8 @@
       lucide.createIcons();
     }
 
-    function renderClients() {
-      let clientes = RotaDB.getClients();
+    async function renderClients() {
+      let clientes = await RotaDB.getClients();
 
       // regra de visibilidade: agente só vê o que é dele, admin vê tudo
       // (ou filtra por um agente específico, se escolher no select)
@@ -362,21 +372,7 @@
       return (texto || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
     }
 
-    // Popula e exibe o filtro de agente só pra admin
-    if (souAdmin) {
-      const opcoes = RotaDB.getTeam()
-        .map(m => `<option value="${m.id}">${m.nome}</option>`).join('');
-      $('agenteFilter').insertAdjacentHTML('beforeend', opcoes);
-      $('agenteFilter').classList.remove('hidden');
-      $('agenteFilter').addEventListener('change', () => { paginaAtual = 1; renderClients(); });
-    }
-
-    renderFilterChip();
-    renderClients();
-
-    $('searchInput').addEventListener('input', () => { paginaAtual = 1; renderClients(); });
-
-    $('newClientBtn').onclick = () => {
+    function abrirNovoCliente() {
       RotaModal.open({
         title: RotaI18n.t('clients.modalTitle'),
         submitLabel: RotaI18n.t('clients.modalSubmit'),
@@ -402,11 +398,11 @@
             <textarea id="f_notas" rows="3" class="${ROTA_INPUT_CLASS}" placeholder="${RotaI18n.t('clients.fieldNotesPlaceholder')}"></textarea>
           </div>
         `,
-        onSubmit: () => {
+        onSubmit: async () => {
           const nome = $('f_nome').value.trim();
           if (!nome) { $('f_nome').focus(); return; }
 
-          RotaDB.saveClient({
+          await RotaDB.saveClient({
             nome,
             contato: $('f_contato').value.trim(),
             documento: $('f_documento').value.trim(),
@@ -415,18 +411,51 @@
           });
 
           RotaModal.close();
-          renderClients();
+          await renderClients();
         },
       });
-    };
+    }
 
-    document.title = RotaI18n.t('clients.pageTitle');
-    RotaI18n.onChange(() => {
+    // ------------------------------------------------------------------
+    // Boot: exige sessão real antes de mostrar qualquer dado. Sem isso,
+    // dava pra abrir a página direto pela URL sem estar logado.
+    // ------------------------------------------------------------------
+    (async function boot() {
+      const session = await RotaDB.requireSession();
+      if (!session) return; // requireSession já redireciona pro login
+
+      renderShell('clients');
       RotaI18n.apply();
       document.title = RotaI18n.t('clients.pageTitle');
+
+      usuarioAtual = await RotaDB.getCurrentUser();
+      equipeCache = await RotaDB.getTeam();
+      meuMembro = equipeCache.find(m => m.nome === usuarioAtual.nome);
+      souAdmin = usuarioAtual.papel === 'admin';
+
+      // Popula e exibe o filtro de agente só pra admin
+      if (souAdmin) {
+        const opcoes = equipeCache.map(m => `<option value="${m.id}">${escapeHtml(m.nome)}</option>`).join('');
+        $('agenteFilter').insertAdjacentHTML('beforeend', opcoes);
+        $('agenteFilter').classList.remove('hidden');
+        $('agenteFilter').addEventListener('change', () => { paginaAtual = 1; renderClients(); });
+      }
+
       renderFilterChip();
-      renderClients();
-    });
+      await renderClients();
+
+      $('clientsShell').style.visibility = 'visible';
+
+      $('searchInput').addEventListener('input', () => { paginaAtual = 1; renderClients(); });
+      $('newClientBtn').onclick = abrirNovoCliente;
+
+      RotaI18n.onChange(async () => {
+        RotaI18n.apply();
+        document.title = RotaI18n.t('clients.pageTitle');
+        renderFilterChip();
+        await renderClients();
+      });
+    })();
   </script>
 </body>
 </html>
